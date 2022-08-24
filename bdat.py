@@ -27,6 +27,48 @@ def islistlike(x):
     """Return whether x is a list-like type (list or tuple)."""
     return isinstance(x, list) or isinstance(x, tuple)
 
+def murmur32(s):
+    """Return the 32-bit Murmur3 hash of s using seed 0."""
+    c1 = 0xCC9E2D51
+    c2 = 0x1B873593
+    c3 = 0x85EBCA6B
+    c4 = 0xC2B2AE35
+    r1 = 15
+    r2 = 13
+    s3 = 16
+    s4 = 13
+    s5 = 16
+    m = 5
+    n = 0xE6546B64
+
+    s = s.encode('utf-8')
+    l = len(s)
+    hash = 0
+    i = 0
+    while i+4 <= l:
+        k = struct.unpack('<I', s[i:i+4])[0]
+        i += 4
+        k = (k * c1) & 0xFFFFFFFF
+        k = ((k << r1) | (k >> (32-r1))) & 0xFFFFFFFF
+        k = (k * c2) & 0xFFFFFFFF
+        hash ^= k
+        hash = ((hash << r2) | (hash >> (32-r2))) & 0xFFFFFFFF
+        hash = (hash * m + n) & 0xFFFFFFFF
+    if i < l:
+        s += b'\0\0\0'
+        k = struct.unpack('<I', s[i:i+4])[0]
+        k = (k * c1) & 0xFFFFFFFF
+        k = ((k << r1) | (k >> (32-r1))) & 0xFFFFFFFF
+        k = (k * c2) & 0xFFFFFFFF
+        hash ^= k
+    hash ^= l
+    hash ^= hash >> s3
+    hash = (hash * c3) & 0xFFFFFFFF
+    hash ^= hash >> s4
+    hash = (hash * c4) & 0xFFFFFFFF
+    hash ^= hash >> s5
+    return hash
+
 
 ########################################################################
 # Mapping from hashed strings to their original values
@@ -576,7 +618,7 @@ hashes = {
     0x981E9686: None,
     0xBF147F74: None,
     
-    # Event tables
+    # Event tables:
     0x71ABA395: "msg_ask110001",
     0xA0850A64: "msg_ask110003",
     0x2286ACD5: "msg_ask110004",
@@ -4127,7 +4169,7 @@ hashes = {
     0x9E928B8B: "msg_tq012614f",
     0x074D17D6: "msg_tq012615t",
 
-    # Other table names:
+    # Other tables:
     0xDB3F6A13: "BTL_Ai",
     0xB5B61435: "BTL_FA_Prm01",
     0xF350A3E5: "BTL_FA_Prm02",
@@ -7463,6 +7505,32 @@ class Bdat(object):
 
 
 ########################################################################
+# XC3 label unhashing
+
+def resolve_labels(tables):
+    """Unhash row labels (string IDs) in XC3 tables."""
+    for table in tables.values():
+        assert table.field(1).name in ('ID', 'label')
+        assert table.field(1).value_type == BdatValueType.HSTRING
+        if table.name.startswith('msg_cq') or table.name.startswith('msg_ev'):
+            prefix = table.name[4:]
+            labels = dict((table.get(row, 1), row)
+                          for row in range(table.num_rows))
+            id = 0
+            while labels:
+                if id >= 10000:
+                    print(f'Warning: failed to match some row labels in {table.name}',
+                          file=sys.stderr)
+                    break
+                label = f'{prefix}_{id:04d}'
+                hash_str = f'<{murmur32(label):08X}>'
+                row = labels.get(hash_str, None)
+                if row is not None:
+                    table.set(row, 1, label)
+                    del labels[hash_str]
+                id += 1
+
+########################################################################
 # Table cross-reference resolution
 # (note: these apply only to XC3 tables)
 
@@ -8222,6 +8290,7 @@ def main(argv):
             tables[table.name] = table
 
     if 'BTL_LvRev' in tables:  # XC3 only
+        resolve_labels(tables)
         resolve_xrefs(tables)
 
     if not os.path.exists(args.outdir):
