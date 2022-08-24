@@ -8197,8 +8197,8 @@ def resolve_field_xrefs(tables, table, field_idx, target):
                         idx_param1 = table.field_index('Param1')
                         idx_param2 = table.field_index('Param2')
                         type = table.get(row, idx_type)
-                        param1 = table.get(row, idx_type)
-                        param2 = table.get(row, idx_type)
+                        param1 = table.get(row, idx_param1)
+                        param2 = table.get(row, idx_param2)
                         if type <= 7:
                             value += f' ({param1})'
                         elif type != 255:
