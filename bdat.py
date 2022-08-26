@@ -8203,7 +8203,7 @@ def add_xref(table, row, field_idx, value, target_table, target_row):
     target_table.addref(target_row, table.name, table.get(row, 0), row_value)
 
 
-def resolve_field_xrefs(tables, table, field_idx, target):
+def resolve_field_xrefs(tables, table, field_idx, target, add_link):
     """Resolve cross-references in the given table column."""
     if not islistlike(target):
         target = (target,)
@@ -8277,7 +8277,11 @@ def resolve_field_xrefs(tables, table, field_idx, target):
                         raise ValueError(target[2])
             else: # len(target) <= 1
                 value = None  # default rules
-            add_xref(table, row, field_idx, value, target_table, target_row)
+            if add_link:
+                add_xref(table, row, field_idx, value, target_table, target_row)
+            else:
+                assert value is not None
+                table.set(row, field_idx, value)
 
 
 def resolve_xrefs(tables):
@@ -8287,11 +8291,12 @@ def resolve_xrefs(tables):
             continue  # force after FLD_NpcResource
         table = tables[table_name]
         for field, target in fields.items():
-            resolve_field_xrefs(tables,
-                                table, table.field_index(field), target)
+            resolve_field_xrefs(tables, table, table.field_index(field),
+                                target, False)
     for field, target in text_xrefs['FLD_NpcList'].items():
         resolve_field_xrefs(tables, tables['FLD_NpcList'],
-                            tables['FLD_NpcList'].field_index(field), target)
+                            tables['FLD_NpcList'].field_index(field), target,
+                            False)
     for name, table in tables.items():
         if name == 'BTL_Achievement':  # Special case for value-dependent refs
             idx_type = table.field_index('AchieveType')
@@ -8317,12 +8322,12 @@ def resolve_xrefs(tables):
                              target_table, target_row)
         if name in table_xrefs:
             for field, target in table_xrefs[name].items():
-                resolve_field_xrefs(tables,
-                                    table, table.field_index(field), target)
+                resolve_field_xrefs(tables, table, table.field_index(field),
+                                    target, True)
         for field, target in field_xrefs.items():
             try:
                 field_idx = table.field_index(field)
-                resolve_field_xrefs(tables, table, field_idx, target)
+                resolve_field_xrefs(tables, table, field_idx, target, True)
             except ValueError:
                 pass
         hash_re = re.compile(r'<([0-9A-F]{8})>$')
