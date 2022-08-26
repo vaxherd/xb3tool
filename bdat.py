@@ -7246,9 +7246,9 @@ class Bdat(object):
             ValueError: Raised on a data format error.
         """
         if self._version == 2:
-            return self._parseTable2(data, offset);
+            return self._parseTable2(data, offset)
         else:
-            return self._parseTable1(data, offset);
+            return self._parseTable1(data, offset)
 
     def _parseTable1(self, data, offset):
         """Parse a single table from a version 1 (XCX/XC2/XCDE) BDAT file."""
@@ -7407,6 +7407,10 @@ class Bdat(object):
             else:
                 name = u32(tdata, strings_ofs + name_ofs)
                 name = unhash(name, f'field_{name:08X}')
+            # This field is encoded as UINT32 but it's actually a reference
+            # to row IDs in other tables.
+            if table_name == 'SYS_GimmickLocation' and name == 'field_6C50B44E':
+                type = BdatValueType.HSTRING
             fields.append(BdatField(name, BdatFieldType.SCALAR, type))
 
         rows = []
