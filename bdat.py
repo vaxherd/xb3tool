@@ -6959,6 +6959,7 @@ class BdatTable(object):
         self._rows = rows
         self._refs = [None] * len(rows)
         self._hashid_map = {}
+        self._hashid_field_map = [None] * len(fields)
         try:
             if self._fields[1].name in ('ID', 'label') and self._fields[1].value_type == BdatValueType.HSTRING:
                 for row in range(len(self._rows)):
@@ -7006,7 +7007,7 @@ class BdatTable(object):
                 return i
         raise ValueError(f'Field {name} not found in table {self._name}')
 
-    def id_to_row(self, id):
+    def id_to_row(self, id, field_index=None):
         """Return the row index corresponding to the given numeric or hash ID.
 
         If id is an int, the row index returned is id - base_id (the base ID
@@ -7014,6 +7015,10 @@ class BdatTable(object):
         <HASH_VAL> (HASH_VAL being 8 uppercase hexadecimal digits), and the
         row index returned is the row whose hash-type ID value is the given
         hash value.
+
+        If field_index is specified, id must be a hash string, and
+        field_index gives the index of the field to use as the row key.
+        That field must be of type HSTRING.
 
         If id is out of range (when numeric) or not found (when a hash),
         None is returned.
@@ -7025,7 +7030,17 @@ class BdatTable(object):
             return None
         else:
             assert isinstance(id, str)
-            return self._hashid_map.get(id, None)
+            if field_index is None:
+                return self._hashid_map.get(id, None)
+            else:
+                assert field_index > 0 and field_index < self.num_fields
+                assert self._fields[field_index].value_type == BdatValueType.HSTRING
+                if not self._hashid_field_map[field_index]:
+                    self._hashid_field_map[field_index] = {}
+                    for row in range(len(self._rows)):
+                        id = self._rows[row][field_index]
+                        self._hashid_field_map[field_index][id] = row
+                return self._hashid_field_map[field_index].get(id, None)
 
     def get(self, row, field):
         """Return the content of the given cell."""
@@ -7570,6 +7585,7 @@ row_name_fields = {
     'QST_List': 'QuestTitle',
     'QST_RequestItemSet': 'Name',
     'QST_Task': 'TaskLog1',
+    'SYS_MapList': 'Name',
     'SYS_TutorialMessage': 'Title',
     'SYS_TutorialSummary': 'Title',
     'SYS_TutorialTask': 'Title',
@@ -7621,6 +7637,7 @@ text_xrefs = {
     'QST_RequestItemSet': {'Name': ('msg_qst_RequestItemSet', 'name')},
     'QST_Task': {'TaskLog1': ('msg_qst_task', 'name'),
                  'TaskLog2': ('msg_qst_task', 'name')},
+    'SYS_MapList': {'Name': ('28E8B08C', 'name')},
     'SYS_TutorialHintA': {'Text1': ('BBF540E7', 'name'),
                           'Text2': ('BBF540E7', 'name')},
     'SYS_TutorialMessage': {'Title': ('BBF540E7', 'name'),
@@ -7655,6 +7672,7 @@ refset_condition = ('FLD_ConditionList', )
 refset_enemy = ('2521C473', )
 refset_enhance = ('BTL_Enhance', )
 refset_event = (('23EE284B', '25B62687', 'BB0F57A4', '5B1D40C4'), )
+refset_gimmick = ('SYS_GimmickLocation.GimmickID', )
 refset_item = (('ITM_Accessory', 'ITM_Collection', 'ITM_Collepedia', 'ITM_Cylinder', 'ITM_Gem', 'ITM_Info', 'ITM_Precious'), )
 refset_npc = ('FLD_NpcList', )
 refset_pc = ('CHR_PC', )
@@ -7786,6 +7804,9 @@ field_xrefs = {
     'ShopItem18': refset_item,
     'ShopItem19': refset_item,
     'ShopItem20': refset_item,
+
+    'MapID': 'SYS_MapList',
+    'mapID': 'SYS_MapList',
 
     'NPCID': refset_npc,
     'NpcID': refset_npc,
@@ -7989,6 +8010,7 @@ table_xrefs = {
                            'field_32A30DD7': 'FLD_ColonyList'},
     'MNU_DlcGift': {'vol_id': '5CD15665',
                     'contents_id': 'DA526616'},
+    'MNU_MapInfo': {'field_3A8F0E6D': 'SYS_MapList'},
     'MNU_MapInfoFile': {'top_id': 'MNU_MapInfo'},
     'MNU_ShopList': {'TableID': 'MNU_ShopTable'},
     'MNU_UroSkillList': {'SkillID': refset_skill,
@@ -7999,6 +8021,7 @@ table_xrefs = {
                     'NextPurposeB': 'QST_Purpose'},
     'QST_TaskCollect': {'TargetID': refset_item},
     'QST_TaskTalk': {'TargetID': refset_npc},
+    'SYS_MapJumpList': {'FormationID': refset_gimmick},
     'SYS_TutorialEnemyInfo': {'field_10FF2123': refset_enemy,
                               'field_1A391DEB': refset_enemy,
                               'field_032170A4': refset_enemy},
@@ -8159,8 +8182,13 @@ def resolve_field_xrefs(tables, table, field_idx, target):
             target_table = None
             target_row = None
             for name in target_tables:
-                test_table = tables[name]
-                test_row = test_table.id_to_row(id)
+                if name == 'SYS_GimmickLocation.GimmickID':
+                    test_table = tables['SYS_GimmickLocation']
+                    idx_GimmickID = test_table.field_index('GimmickID')
+                    test_row = test_table.id_to_row(id, idx_GimmickID)
+                else:
+                    test_table = tables[name]
+                    test_row = test_table.id_to_row(id)
                 if test_row is not None:
                     if target_row is None:
                         target_table = test_table
@@ -8209,7 +8237,7 @@ def resolve_field_xrefs(tables, table, field_idx, target):
                             value += f' ({param2})'
                     else:
                         raise ValueError(target[2])
-            else: # len(target) > 1
+            else: # len(target) <= 1
                 value = None  # default rules
             add_xref(table, row, field_idx, value, target_table, target_row)
 
@@ -8262,6 +8290,8 @@ def resolve_xrefs(tables):
         hash_re = re.compile(r'<([0-9A-F]{8})>$')
         for field_idx in range(2, table.num_fields):
             field = table.field(field_idx)
+            if table.name == 'SYS_GimmickLocation' and field.name == 'GimmickID':
+                pass  # This is a key field, so any matches are hash collisions
             if field.value_type == BdatValueType.HSTRING:
                 for row in range(table.num_rows):
                     value = table.get(row, field_idx)
