@@ -7594,6 +7594,18 @@ row_name_fields = {
     '6EC8096C': 'Name',
     'BB82DEE6': 'Name',
     'D9B88F26': 'Name',
+    'gimmickLocation': 'LocationName',
+    '243E6271': 'LocationName',
+    '2F52EAA9': 'LocationName',
+    '48EB542B': 'LocationName',
+    '4C930865': 'LocationName',
+    '696784F9': 'LocationName',
+    '90C9B3BB': 'LocationName',
+    '9F336731': 'LocationName',
+    'A3C362AD': 'LocationName',
+    'C787DDCA': 'LocationName',
+    'CF4772C2': 'LocationName',
+    'DE1DB7BB': 'LocationName',
 }
 
 # List of direct references from tables to text strings.
@@ -7651,7 +7663,7 @@ text_xrefs = {
     'BB82DEE6': {'Name': ('F6E689C3', 'name')},  # Chain attack TP bonuses
     'D9B88F26': {'Name': ('FC27D14D', 'name')},  # Chain attack card list
     'EED24855': {'GroupName': ('4CF32197', 'name')},  # Unique monster list
-    # Per-map(?) enemy lists
+    # Per-map enemy lists
     'gimmickEnemyPop': {'GroupName': ('4CF32197', 'name')},
     '0277EA4F': {'GroupName': ('4CF32197', 'name')},
     '0CD3B481': {'GroupName': ('4CF32197', 'name')},
@@ -7662,7 +7674,21 @@ text_xrefs = {
     '7BECF394': {'GroupName': ('4CF32197', 'name')},
     'B7FACD23': {'GroupName': ('4CF32197', 'name')},
     'C76401A3': {'GroupName': ('4CF32197', 'name')},
+    'EED24855': {'GroupName': ('4CF32197', 'name')},
     'F4C65A41': {'GroupName': ('4CF32197', 'name')},
+    # Per-map location lists
+    'gimmickLocation': {'LocationName': ('28E8B08C', 'name')},
+    '243E6271': {'LocationName': ('28E8B08C', 'name')},
+    '2F52EAA9': {'LocationName': ('28E8B08C', 'name')},
+    '48EB542B': {'LocationName': ('28E8B08C', 'name')},
+    '4C930865': {'LocationName': ('28E8B08C', 'name')},
+    '696784F9': {'LocationName': ('28E8B08C', 'name')},
+    '90C9B3BB': {'LocationName': ('28E8B08C', 'name')},
+    '9F336731': {'LocationName': ('28E8B08C', 'name')},
+    'A3C362AD': {'LocationName': ('28E8B08C', 'name')},
+    'C787DDCA': {'LocationName': ('28E8B08C', 'name')},
+    'CF4772C2': {'LocationName': ('28E8B08C', 'name')},
+    'DE1DB7BB': {'LocationName': ('28E8B08C', 'name')},
 }
 # 9760BC94: hero names with titles (Silvercoat Ethel etc)
 
@@ -7807,6 +7833,8 @@ field_xrefs = {
 
     'MapID': 'SYS_MapList',
     'mapID': 'SYS_MapList',
+
+    'MapJumpID': 'SYS_MapJumpList',
 
     'NPCID': refset_npc,
     'NpcID': refset_npc,
