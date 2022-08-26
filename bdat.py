@@ -8292,7 +8292,7 @@ def resolve_xrefs(tables):
             field = table.field(field_idx)
             if table.name == 'SYS_GimmickLocation' and field.name == 'GimmickID':
                 pass  # This is a key field, so any matches are hash collisions
-            if field.value_type == BdatValueType.HSTRING:
+            elif field.value_type == BdatValueType.HSTRING:
                 for row in range(table.num_rows):
                     value = table.get(row, field_idx)
                     if isinstance(value, str):
