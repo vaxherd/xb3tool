@@ -283,7 +283,7 @@ hashes = {
     0x88EF0B3C: "EVT_Vignette",
     0x8B3160C1: None,  # Has fields: Exp, Pos[XY}, Scale[XY}, Wave{Rate,Freq,Random}, StartOffset
     0xFE1D4EF0: "EVT_Color",
-    0x81A91D19: None,  # Has fields: name, dist, range, foMin, pixel, lens, strength, blend, pixelLv, hlv, autoFocus, Focus
+    0x81A91D19: "EVT_Dof",
     0x8ED748D8: None,  # Has fields: ID, scale[XY]
     0x6BB765F3: "EVT_HeroEquip",
     0x07705A00: "QST_List",
@@ -335,7 +335,7 @@ hashes = {
     0x0B368E78: None,  # Has fields: PartsId, Locations, EffectCondition, EffectStatus, SeName, SeCondition, Offset[XYZ]
     0x0D81DAF8: None,  # Has fields: IconOffset, Interval{Min,Max}
     0xA1AE831D: None,  # Has fields: Range, Angle
-    0x121A92C9: None,  # Has fields: Foot[LR]00-02, Placement, Toe, Spine, LookAt, Eye
+    0x121A92C9: "RSC_IK",
     0x91A3DC94: "RSC_FootIK",
     0x81ED9E19: "RSC_PlacementIK",
     0x56BD5AC9: "RSC_ToeIK",
@@ -351,7 +351,7 @@ hashes = {
     0xEC6F90EE: "FLD_ObjList",
     0xB1963CFD: "MNU_ShopList",
     0xDCDBDB1F: "MNU_ShopTable",
-    0xB1902C5B: None,  # Has feilds: {StartEvent,ReactionEvent,Condition,Repeatable,EndFlag}1-6
+    0xB1902C5B: None,  # Has fields: {StartEvent,ReactionEvent,Condition,Repeatable,EndFlag}1-6
     0x83E0F284: None,  # Has fields: Grouping, {Character,VoiceID,Text,Time}1-5
     0xDAF44E8F: None,  # Has fields: Grouping, Character, VoiceID, Text, Spot, Info, Item
     0xFEF315B6: None,  # Has fields: EventID, Condition, SpotGimmick
@@ -5080,6 +5080,7 @@ hashes = {
     0xF6F16AA5: "HpMaxLv1",
     0x3396A06A: "HpMaxLv99",
     0x642232EC: "HpMaxRev",
+    0xC03F8D8E: "HpMaxRev1",
     0x86434390: "HpMaxRev2",
     0xAE6E5368: "HudIcon",
 
@@ -6096,9 +6097,12 @@ hashes = {
     0x9D86BEB0: "TalentArts1",
     0xC172A926: "TalentArts2",
     0x8679DD2A: "TalentArts3",
+    0x9BB123EE: "TalentExpRev",
     0xF6BAD063: "TalentExpRevHigh",
     0x18C4BBE3: "TalentExpRevLow",
     0x9EB18DE8: "TalentID",
+    0xB677DA57: "TalentPointRevHigh",
+    0x15264911: "TalentPointRevLow",
     0xC8FC78C0: "TalkCategory",
     0x3D4FED0F: "TalkID1",
     0x09A3CD53: "TalkID2",
