@@ -341,7 +341,7 @@ hashes = {
     0x56BD5AC9: "RSC_ToeIK",
     0xE87BEDBD: "RSC_LookAtIK",
     0xA57A8FFB: "RSC_SpineIK",
-    0x93BCD4DC: "SYS_AngleKansetu",  # FIXME: unclear if correct
+    0x93BCD4DC: "RSC_EyeIK",
     0x6B3F1942: None,  # Has fields: DefaultOn
     0x1432D8A7: "MNU_dialog",
     0xCD3B3FC3: None,  # Has fields: push_type, action_name
@@ -8063,6 +8063,18 @@ table_xrefs = {
                     'NextPurposeB': 'QST_Purpose'},
     'QST_TaskCollect': {'TargetID': refset_item},
     'QST_TaskTalk': {'TargetID': refset_npc},
+    'RSC_IK': {'FootL00': 'RSC_FootIK',
+               'FootR00': 'RSC_FootIK',
+               'FootL01': 'RSC_FootIK',
+               'FootR01': 'RSC_FootIK',
+               'FootL02': 'RSC_FootIK',
+               'FootR02': 'RSC_FootIK',
+               'Placement': 'RSC_PlacementIK',
+               'Toe': 'RSC_ToeIK',
+               'Spine': 'RSC_SpineIK',
+               'LookAt': 'RSC_LookAtIK',
+               'Eye': 'RSC_EyeIK',
+               'field_30B5C5E1': '6B3F1942'},
     'SYS_MapJumpList': {'FormationID': refset_gimmick},
     'SYS_TutorialEnemyInfo': {'field_10FF2123': refset_enemy,
                               'field_1A391DEB': refset_enemy,
