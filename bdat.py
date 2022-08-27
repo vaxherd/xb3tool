@@ -409,7 +409,7 @@ hashes = {
     0x6F56B53C: "SYS_CameraShake",
     0xA5595837: None,  # Has fields: Main, Soup(?), Center1, Center2
     0xEED24855: None,  # Unique monster list
-    0x13B8DA8C: None,  # Has fields: GraveID, EndCheck
+    0x13B8DA8C: None,  # UM condition parameters (FLD_ConditionList type 9)
     0x3CC7CE2D: "FLD_ConditionTutorial",
     0xAA6D70CA: "MNU_MapInfo",
     0xD5696E7F: "MNU_MapInfoFile",
@@ -7891,7 +7891,7 @@ field_xrefs = {
     'ColonyID3': 'FLD_ColonyList',
 
     'AccessCondition': refset_condition,
-    'Condition': refset_condition,
+    'Condition': refset_condition,  # Excluding FLD_ConditionList (special-cased below)
     'Condition1': refset_condition,
     'Condition2': refset_condition,
     'Condition3': refset_condition,
@@ -8544,7 +8544,28 @@ def resolve_xrefs(tables):
         for field, target in field_xrefs.items():
             try:
                 field_idx = table.field_index(field)
-                resolve_field_xrefs(tables, table, field_idx, target, True)
+                if name == 'FLD_ConditionList' and field == 'Condition':
+                    # This "Condition" field references a table selected by the
+                    # ConditionType value of the row, so we need to handle that
+                    # specially.  (We could use per-table entries, but there
+                    # are many tables with a Condition field and this is the
+                    # only exception to the usual case.)
+                    type_idx = table.field_index('ConditionType')
+                    for row in range(table.num_rows):
+                        type = table.get(row, type_idx)
+                        cond = table.get(row, field_idx)
+                        assert type > 0
+                        typename = ('List', 'Scenario', 'Quest', 'Env',
+                                    'Flag', 'Item', 'PT', 'MapGimmick',
+                                    None, 'Tutorial', 'PcLv', 'ClassLv')[type-1]
+                        if typename is None:
+                            target_table = tables['13B8DA8C']
+                        else:
+                            target_table = tables[f'FLD_Condition{typename}']
+                        add_xref(table, row, field_idx, None,
+                                 target_table, target_table.id_to_row(cond))
+                else:
+                    resolve_field_xrefs(tables, table, field_idx, target, True)
             except ValueError:
                 pass
         hash_re = re.compile(r'<([0-9A-F]{8})>$')
