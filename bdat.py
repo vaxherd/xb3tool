@@ -7156,16 +7156,22 @@ class BdatTable(object):
         assert index >= 0 and index < len(self._fields)
         return self._fields[index]
 
-    def field_index(self, name):
+    def field_index(self, name, allow_missing=False):
         """Return the index of the given field in this table.  The first
         field (index 0) is not considered.
 
         If the table has multiple fields with the same index, the first one
         is returned.
+
+        If the specified field is not found:
+           - If allow_missing is true, None is returned.
+           - If allow_missing is false, a ValueError is raised.
         """
         for i in range(1, len(self._fields)):
             if self._fields[i].name == name:
                 return i
+        if allow_missing:
+            return None
         raise ValueError(f'Field {name} not found in table {self._name}')
 
     def id_to_row(self, id, field_index=None):
@@ -7220,15 +7226,14 @@ class BdatTable(object):
             row: Row index.
             field: Field index.
             value: Value to set.
-            link_table: Name of table to which to link.
-            link_row: ID of row to which to link.
+            link_table: Name of table to which to link, or None.
+            link_row: ID of row to which to link, or None.
         """
         assert row < len(self._rows)
         assert field < len(self._fields)
         assert value is not None
         if link_table:
             assert isinstance(link_table, str)
-            assert link_row is not None
             self._rows[row][field] = (value, link_table, link_row)
         else:
             self._rows[row][field] = value
@@ -7324,7 +7329,11 @@ class BdatTable(object):
                     values = row[i]
                 for value in values:
                     if isinstance(value, tuple):
-                        value_str = (f'<a href="{value[1]}.html#{value[2]}">'
+                        if len(value) > 2:
+                            node = f'#{value[2]}'
+                        else:
+                            node = ''
+                        value_str = (f'<a href="{value[1]}.html{node}">'
                                      + self._print_value(value[0], self._fields[i])
                                      + '</a>')
                     else:
@@ -8427,8 +8436,8 @@ def add_xref(table, row, field_idx, value, target_table, target_row):
             name_idx = target_table.field_index(row_name_fields[target_table.name])
             value = target_table.get(target_row, name_idx)
         else:
-            value = ""
-        if value == "":
+            value = ''
+        if value == '':
             value = target_table.get(target_row, 0)
     table.set(row, field_idx, value,
               target_table.name, target_table.get(target_row, 0))
@@ -8437,8 +8446,8 @@ def add_xref(table, row, field_idx, value, target_table, target_row):
         name_idx = table.field_index(row_name_fields[table.name])
         row_value = table.get(row, name_idx)
     else:
-        row_value = ""
-    if row_value == "":
+        row_value = ''
+    if row_value == '':
         row_value = table.get(row, 0)
     target_table.addref(target_row, table.name, table.get(row, 0), row_value)
 
@@ -8490,14 +8499,12 @@ def resolve_field_xrefs(tables, table, field_idx, target, add_link):
                 elif len(target) > 2:
                     if target[2] == 'enhance':
                         for n in (1,2,3):
-                            try:
-                                param_idx = table.field_index(f'Param{n}')
+                            param_idx = table.field_index(f'Param{n}', True)
+                            if param_idx is not None:
                                 param = table.get(row, param_idx)
                                 if isinstance(param, float):
                                     param = f'{param:g}'
                                 value = value.replace(f'[ML:EnhanceParam paramtype={n} ]', param)
-                            except ValueError:
-                                pass
                     elif target[2] == 'urobody_name':
                         target_row += 81
                         value = target_table.get(target_row, target_field)
@@ -8526,6 +8533,7 @@ def resolve_field_xrefs(tables, table, field_idx, target, add_link):
 
 def resolve_xrefs(tables):
     """Resolve all cross-references in the given list of tables."""
+
     for table_name, fields in text_xrefs.items():
         if table_name == 'FLD_NpcList':
             continue  # force after FLD_NpcResource
@@ -8533,10 +8541,12 @@ def resolve_xrefs(tables):
         for field, target in fields.items():
             resolve_field_xrefs(tables, table, table.field_index(field),
                                 target, False)
+
     for field, target in text_xrefs['FLD_NpcList'].items():
         resolve_field_xrefs(tables, tables['FLD_NpcList'],
                             tables['FLD_NpcList'].field_index(field), target,
                             False)
+
     for name, table in tables.items():
         if name == 'BTL_Achievement':  # Special case for value-dependent refs
             idx_type = table.field_index('AchieveType')
@@ -8556,7 +8566,7 @@ def resolve_xrefs(tables):
                     target_row = target_table.id_to_row(param1)
                     target_field = target_table.field_index(row_name_fields[target_table.name])
                     value = target_table.get(target_row, target_field)
-                    if value == "":
+                    if value == '':
                         value = table.get(row, idx_param1)
                     add_xref(table, row, idx_param1, value,
                              target_table, target_row)
@@ -8565,8 +8575,8 @@ def resolve_xrefs(tables):
                 resolve_field_xrefs(tables, table, table.field_index(field),
                                     target, True)
         for field, target in field_xrefs.items():
-            try:
-                field_idx = table.field_index(field)
+            field_idx = table.field_index(field, True)
+            if field_idx is not None:
                 if name == 'FLD_ConditionList' and field == 'Condition':
                     # This "Condition" field references a table selected by the
                     # ConditionType value of the row, so we need to handle that
@@ -8589,8 +8599,6 @@ def resolve_xrefs(tables):
                                  target_table, target_table.id_to_row(cond))
                 else:
                     resolve_field_xrefs(tables, table, field_idx, target, True)
-            except ValueError:
-                pass
         hash_re = re.compile(r'<([0-9A-F]{8})>$')
         for field_idx in range(2, table.num_fields):
             field = table.field(field_idx)
@@ -8607,6 +8615,17 @@ def resolve_xrefs(tables):
                                 target_table = tables[target_table_name]
                                 add_xref(table, row, field_idx, None,
                                          target_table, target_row)
+
+    # Special links from event text names to text tables
+    for name, table in tables.items():
+        for field_name in ('mstxt', 'mstxt_ext'):
+            field = table.field_index(field_name, True)
+            if field is not None:
+                for row in range(table.num_rows):
+                    value = table.get(row, field)
+                    target = 'msg_' + value
+                    if target in tables:
+                        table.set(row, field, value, target, None)
 
 ########################################################################
 # Program entry point
