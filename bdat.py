@@ -97,30 +97,30 @@ hashes = {
     0xBC40F69E: "gimmickEvent",
     0x86B081D1: "gimmickPrecious",
     0x16ED5C1E: "gimmickObject",
-    0xBA1BE15F: None,
+    0xBA1BE15F: None,  # Has fields: Condition, KevesRate, KevesReward, AgnusRate, AgnusReward, FirstReward, AccessRange, IconOffset, NoSmoke
     0x0EF1103E: "gimmickEnemyWave",
     0xA4253BCA: "gimmickGrave",
     0xCEAA3005: "gimmickFootPrint",
     0x03397BD7: "gimmickWeather",
     0xF941E5C0: "gimmickEtherPoint",
-    0x2B7999C5: None,
+    0x2B7999C5: None,  # Has fields: Condition, EventID, Priority
     0x063C76AB: "gimmickCorpse",
-    0x6B40A33C: None,
+    0x6B40A33C: None,  # Has fields: EventTable, Motion, LookAt, Count, Pop
     0x04842934: "gimmickSE",
     0x9446EE90: "gimmickBGM",
-    0x65663358: None,
+    0x65663358: None,  # Has fields: Condition
     0xF21E3DF2: "gimmickEyepatchArea",
     0x7C065528: "gimmickEnemyDead",
-    0x815F9DEF: None,
-    0x41CBF846: None,
+    0x815F9DEF: None,  # Has fields: Condition, Icon
+    0x41CBF846: None,  # Nopon puzzle gimmick list?  Has fields: AccessRange, IconOffset, Piece1-7, Marking1-7, Parts{Eye,Switch,Gate}
     0x5E93DEC1: "gimmickBlackMist",
-    0x9BDB275E: None,
-    0x05112AA4: None,
-    0x95F00CDF: None,
-    0xF0A0A1B1: None,
-    0xE41F82B5: None,
-    0xD150D99A: None,  # Has fields: data[0-19] (data[0] has map names)
-    0x7A564F60: None,  # Has fields: Model, Motion, Action, Effect, Annotation, Comment
+    0x9BDB275E: None,  # Has fields: Condition
+    0x05112AA4: None,  # Has fields: affType
+    0x95F00CDF: None,  # Has fields: Condition, affType
+    0xF0A0A1B1: None,  # Has Fields: {TargetMob,Text,DispTime}1-3
+    0xE41F82B5: None,  # Has fields: DispRadius, DispHeight, CheckView, {Condition,Contents,InfoPiece}1-4
+    0xD150D99A: "RSC_GimmickFile",
+    0x7A564F60: "RSC_GimmickObject",
     0xA8030D51: None,  # Has fields: MovePoint
     0xE0114592: None,  # Has fields: startID, endID
     0xE6F796DD: None,  # Has fields: modelName, motionField, motionBattle, motionWeapon, motinoEvent, motionArts00-02, comment
@@ -222,7 +222,7 @@ hashes = {
     0x4725BFF5: None,  # Has fields: UpSpeed, MoveTime, FallRange, FallSpeed
     0x4A6BEB13: None,  # Has fields: mapID, posX, posY, posZ, text
     0x98313F02: "SYS_MapList",
-    0x31F6C033: None,  # Has fields: DefaultResource, Condition1
+    0x31F6C033: "RSC_MapFile",
     0xF242AAFD: "FLD_ConditionList",
     0xD5315732: "FLD_ConditionScenario",
     0xDA710DD5: "FLD_ConditionQuest",
@@ -246,8 +246,8 @@ hashes = {
     0x5A69FC7A: "ITM_Precious",
     0xCA4B7760: "ITM_Exchange",
     0x8D233450: "bgmlist",
-    0x173D04D6: None,  # Has fields: FieldIcon, MenuIcon
-    0xCE3F40EB: None,  # Has fields: MenuIcon
+    0x173D04D6: "RSC_CollectionIcon",
+    0xCE3F40EB: "RSC_GemIcon",
     0x949AA63A: None,  # Has fields: Reward{,Num}1-20, Life, Gold, GoldDivide, SP, BehaviorID
     0xE418C419: "ITM_RewardCollepedia",
     0x49125B68: "ITM_RewardQuest",
@@ -302,7 +302,7 @@ hashes = {
     0x0502353F: "QST_TaskGimmick",
     0x712B265B: "QST_TaskFollow",
     0x8C127EEB: "QST_TaskCondition",
-    0x5FE37202: None,
+    0x5FE37202: None,  # Table not present in data files
     0x5A6A68B2: None,  # Has fields: Category, Camera, Condition, {PC,Point,Motion,EyeMotion,Mount}1-2, {Object,ObjPoint}1-3
     0xDD6A6032: "SYS_MapPartsList",
     0xAE25EE94: None,  # Has fields: EffectName, Offset[XYZ], Priority
@@ -310,7 +310,7 @@ hashes = {
     0xA3186E4A: "SYS_WeatherRate",
     0x5E53D2EE: "SYS_WeatherList",
     0x9B7727C8: "SYS_WeatherTable",
-    0x69F7C5FB: None,  # Has fields: WeatherName, Effect, Se, HudIcon
+    0x69F7C5FB: "RSC_WeatherSet",
     0x0EE4CBE3: None,  # Has fields: FamilyTag, AiHungry, AiThirst, AiAnger
     0xE3C4E636: None,  # Has fields: AiFlock, AiFormation, RoleTag, AiHoming
     0x8C492368: None,  # No known fields
@@ -369,7 +369,7 @@ hashes = {
     0x32DBEBED: None,
     0xAA2FA6DE: "MNU_EquipDetail",
     0xEF81AE52: None,  # Has fields: DetailText1-6
-    0xF185DC10: None,  # Has fields: Model, Motion, OffsetId, IkName
+    0xF185DC10: "RSC_Story",  # FIXME: unclear if correct
     0x92D8F17B: "FLD_RelationNpc",
     0x938A4DD1: "FLD_RelationColony",
     0x4B91D8C8: None,  # Has fields: EventID, Comment
@@ -506,29 +506,29 @@ hashes = {
     0xAC73A945: "msg_btl_arts_name",
     0x7CF9D610: "msg_btl_buffdebuff_caption",
     0xF8F0A001: "msg_btl_buffdebuff_name",
-    0xF6E689C3: None,
+    0xF6E689C3: None,  # Chain attack TP bonus popup text
     0xFC27D14D: "msg_btl_chainorder_name",
     0xA391C96F: "msg_btl_combo_name",
     0xAA84C456: "msg_btl_enhance_cap",
     0x7907F75E: "msg_btl_enhance_name",
     0x455071CB: "msg_btl_roleact_caption",
-    0x56FFF926: None,
+    0x56FFF926: None,  # Empty table
     0xDC74E779: "msg_btl_skill_name",
     0x77B6A0EF: "msg_btl_stance_name",
     0xD96BDBBA: "msg_btl_subtitling",
     0xEAD5D4A9: "msg_btl_talent_caption",
     0xEA640EBA: "msg_btl_talent_name",
     0x0E3090DA: "msg_btl_weapon_type",
-    0x8B7D949B: None,
-    0x0103F5B8: None,
-    0x621C6EF4: None,
-    0x4187FB3B: None,
-    0x595F9BFC: None,
-    0xDA793D25: None,
-    0x51036BF4: None,
-    0x2C124487: None,
-    0xE2C3F848: None,
-    0xBCCDD7A5: None,
+    0x8B7D949B: None,  # Manana recipe list
+    0x0103F5B8: None,  # Canteen recipe list
+    0x621C6EF4: None,  # Radio dialogue subtitles (field exploration)
+    0x4187FB3B: "msg_fld_door_dialog",
+    0x595F9BFC: "msg_fld_door_name",
+    0xDA793D25: "msg_fld_elevator_dialog",
+    0x51036BF4: "msg_fld_field_lock",
+    0x2C124487: "msg_fld_footprint",
+    0xE2C3F848: "msg_fld_perk_name",
+    0xBCCDD7A5: "msg_fld_searchpoint",
     0x34233CF2: "msg_mnu_action_hud",
     0x8E175A1F: "msg_mnu_amiibo",
     0xB8F58D39: "msg_mnu_battle_ms",
@@ -536,7 +536,7 @@ hashes = {
     0x8554022B: "msg_mnu_cloudgem",
     0x2A9BD580: "msg_mnu_common_ms",
     0x10F03A79: "msg_mnu_comspot_ms",
-    0x23E826C6: None,
+    0x23E826C6: None,  # Chapter end dialogue subtitles
     0xDF7177AE: "msg_mnu_dlc_info",
     0xABB95378: "msg_mnu_equip_detail",
     0x23A3F9FA: "msg_mnu_event_name",
@@ -553,8 +553,8 @@ hashes = {
     0xF1CBAC59: "msg_mnu_map_ms",
     0x5DFDA895: "msg_mnu_minimap_areaname",
     0xA61679BA: "msg_mnu_obj_info_name",
-    0xAAEBE79E: None,
-    0x5FEC6350: None,
+    0xAAEBE79E: None,  # Opening credits (for Japanese voices)
+    0x5FEC6350: None,  # Opening credits (for English voices)
     0x1F0DC7C2: "msg_mnu_operation_guide",
     0x5F68C7D2: "msg_mnu_option",
     0x83AAF628: "msg_mnu_other_ms",
@@ -562,49 +562,49 @@ hashes = {
     0x754D1494: "msg_mnu_pupilnet_ms",
     0xB7001BB1: "msg_mnu_qst_ms",
     0x277983C9: "msg_mnu_saveload",
-    0x6E048BD1: None,
+    0x6E048BD1: None,  # Empty table
     0xC61BE14B: "msg_mnu_sort",
     0x5C52C972: "msg_mnu_style_standard_ms",
     0x29821FC5: "msg_mnu_system_ms",
     0x6D15742F: "msg_mnu_title",
-    0x2902008F: None,
+    0x2902008F: None,  # Tutorial battle menu text
     0xBBF540E7: "msg_mnu_tutorial_tips",
-    0xA1A111AE: None,
+    0xA1A111AE: None,  # Field popup text (landmark discovery etc.)
     0xEA19B333: "msg_qst_RequestItemSet",
     0x45A2D5AD: "msg_qst_overwrite",  # FIXME: unclear if correct
     0xAD40857C: "msg_qst_task",
     0xC617D216: "msg_colony_name",
     0x9B911635: "msg_colony_text",
-    0x4F89C921: None,
-    0x4ACCBB53: None,
-    0x4CF32197: None,
+    0x4F89C921: "msg_comspot_name",
+    0x4ACCBB53: "msg_comspot_text",
+    0x4CF32197: "msg_enemy_group_name",
     0x122A06D4: "msg_enemy_name",
     0x65FD1C43: "msg_enemy_type_name",
-    0x66DEC3A2: None,
+    0x66DEC3A2: None,  # Single empty string
     0x9AA4C028: "msg_item_accessory",
     0x133CD173: "msg_item_collection",
-    0xBEDB6533: None,
+    0xBEDB6533: None,  # Collepedia card request/response text
     0x24810A75: "msg_item_cylinder",
     0x6E269557: "msg_item_exchange",
     0x16630085: "msg_item_extra",
     0xD0A5476B: "msg_item_gem",
-    0xCA2198EC: None,
+    0xCA2198EC: None,  # Conversation titles
     0x3550B295: "msg_item_precious",
     0x33C3A247: "msg_item_recipe",
     0x06CEE8EA: "msg_kizuna_name",
     0x32601547: "msg_loading_tips",
     0x28E8B08C: "msg_location_name",
     0x6436BD4A: "msg_npc_name",
-    0xEDFB4E9F: None,
-    0xBA34C46E: None,
+    0xEDFB4E9F: None,  # NPC titles
+    0xBA34C46E: None,  # PC names
     0x16B245E3: "msg_shop_name",
     0xE48A94FF: "msg_sys_access_message",
     0x3BEB99D8: "msg_system_popup",
     0x1BBC9E6B: "msg_tutorial_ui",
     0x8EF4CF86: "msg_weather_name",
-    0x331C38A9: None,  # Nonexistent table (but listed in the program)
-    0xA942668F: None,  # Nonexistent table (but listed in the program)
-    0x3F3EBDB4: None,  # Nonexistent table (but listed in the program)
+    0x331C38A9: None,  # All these tables are not present in the data
+    0xA942668F: None,
+    0x3F3EBDB4: None,
     0xFD25F733: None,
     0xD633C26E: None,
     0xF17757AB: None,
@@ -862,7 +862,6 @@ hashes = {
     0x03CF9AC5: "msg_ev01320100",
     0x15E3D24F: "msg_ev01330100",
     0x9326625A: "msg_ev01340100",
-    0x0E586C24: "msg_ev10010100",
     0x7D98B10C: "msg_mv01100110",
     0x891A9204: "msg_mv01290110",
     0x4CC0803B: "msg_mv01310140",
@@ -4209,7 +4208,6 @@ hashes = {
     0xCD5509A5: "BTL_TL_PrmRev06",
     0x934AA80D: "BTL_TL_PrmRev07",
     0xBF4EA1B8: "BTL_TL_PrmRev08",
-    0xBF4EA1B8: "BTL_TL_PrmRev08",
     0xBB5036F7: "BTL_TL_PrmRev09",
     0x9449008E: "BTL_TL_PrmRev10",
     0xE10FBA8D: "BTL_TL_PrmRev11",
@@ -4268,8 +4266,6 @@ hashes = {
     0x0EE98229: "BTL_WpnParamU4",
     0xC82B9EDC: "BTL_WpnParamU5",
     0x1C97E25E: "BTL_WpnParamU6",
-    0x6EE6EE72: "CHR_TopProb",  # FIXME: unclear if correct
-    0x541B26AD: "FLD_RelationArrow",
     0xF8207CBA: "MNU_FacePatternList",
     0xD90FF31C: "MNU_FontSet01",
     0x06079AEA: "MNU_FontSet01_cn",
@@ -4287,6 +4283,11 @@ hashes = {
     0xE1E61948: "MNU_Text_IdList",
     0x686FDFDB: "MNU_filter",
     0xD4D03C1E: "MNU_sort",
+    0x23EE284B: None,  # Main scenario event table (10001-10672)
+    0x25B62687: None,  # Field event table (15001-15071)
+    0xBB0F57A4: None,  # Quest event table (16001-17681)
+    0x5B1D40C4: None,  # Generic dialogue table (20001-21327)
+    0xD1C136A1: None,  # Empty event table
 
     0x9416AC93: "1",
     0x0129E217: "2",
@@ -6534,6 +6535,9 @@ hashes = {
     0xA8C2FF93: "cam_lx",
     0x2FF4F0CB: "cam_ly",
     0x930A1C7E: "cam_lz",
+    0x5C3AE443: "cam_px",
+    0x6A6D0D9C: "cam_py",
+    0x60F16544: "cam_pz",
     0xE83EEBC1: "cancel_key",
     0xDF5E5B3A: "cancel_sound_id",
     0xE5D49F78: "cat_id",
@@ -6636,6 +6640,7 @@ hashes = {
     0x67A42037: "equip29",
     0x889F05BC: "equip30",
     0xE0FAAB9D: "equip31",
+    0xE76DE6A0: "eth_name",
     0x5F1D4572: "ev01_id",
     0xDE23162C: "ev02_id",
     0x8909EC49: "ev03_id",
@@ -6687,8 +6692,10 @@ hashes = {
     0x76DDA449: "icon_index",
     0x19C8662E: "image_no",
     0xF0929986: "image_type",
+    0x30AD578A: "img_id",
     0x077F34F0: "index",
     0xE22D9C0E: "influence",
+    0xD300A507: "initEquip",
     0x91B22EFE: "item",
 
     0x7419620C: "job",
@@ -6721,6 +6728,7 @@ hashes = {
     0x19A5205D: "mask_color",
     0xF764370B: "max_value",
     0x64282B04: "menu_command",
+    0xEA664517: "menu_sheet",
     0x0B146E5F: "menu_value",
     0x1B9FFA78: "min_value",
     0xFC144A3D: "mioHair",
@@ -6738,6 +6746,7 @@ hashes = {
     0x265958E0: "mountTag",
     0x762332A8: "mountTag2",
     0xA5AA8DD4: "mstxt",
+    0xC207DDD0: "mstxt_ext",
 
     0xDBAF43F0: "name",
     0x62D50195: "name1",
@@ -6805,6 +6814,7 @@ hashes = {
     0x6A135274: "pad_X",
     0x531B6467: "pad_Y",
     0x3519EFE3: "pad_select",
+    0x07C04EF9: "page_sheet",
     0x811DBDD3: "partition",
     0x1B25F9CD: "path_prefix",
     0xE101AC67: "pc",
@@ -6837,6 +6847,7 @@ hashes = {
     0x3D17AA93: "posx",
     0x0ECD83BF: "posy",
     0x29C32CDA: "posz",
+    0xB22FA8F0: "preMapjump",
     0xEA70AF69: "prio",
     0xAEFAEA7E: "push_type",  # FIXME: unclear if correct
 
@@ -6860,8 +6871,12 @@ hashes = {
     0x40307D1F: "resource",
     0x3F0EA114: "resourceAnnotation",
     0xD5F5DF3D: "resourceBody",
+    0x30EF38F2: "resourceCollision",
     0xB3A45D50: "resourceFace",
     0xA101EADB: "resourceHair",
+    0x7A1FE63E: "resourceMotionEnemy",
+    0x4DDA70BC: "resourceMotionEvent",
+    0xB26D311C: "resourceMotionField",
     0x268DC11D: "roty",
 
     0x224F4F87: "save",
@@ -6883,9 +6898,12 @@ hashes = {
     0x995AD550: "specified",
     0x3B74D6A2: "speed",
     0xFD4EDE72: "startID",
+    0x7B2C09DB: "starthour",  # FIXME: unclear if correct
     0x0AAFDDB0: "strength",
     0x554EE944: "style",
 
+    0x9EE99B1E: "talkattr",
+    0xACF3531A: "talker",
     0xC624AE24: "text",
     0x7E730326: "text2",
     0x6477F5E6: "text3",
@@ -7826,20 +7844,20 @@ text_xrefs = {
     '6EC8096C': {'Name': ('0103F5B8', 'name')},  # Canteen recipe list
     'BB82DEE6': {'Name': ('F6E689C3', 'name')},  # Chain attack TP bonuses
     'D9B88F26': {'Name': ('msg_btl_chainorder_name', 'name')},  # Chain attack card list
-    'EED24855': {'GroupName': ('4CF32197', 'name')},  # Unique monster list
+    'EED24855': {'GroupName': ('msg_enemy_group_name', 'name')},  # Unique monster list
     # Per-map enemy lists
-    'gimmickEnemyPop': {'GroupName': ('4CF32197', 'name')},
-    '0277EA4F': {'GroupName': ('4CF32197', 'name')},
-    '0CD3B481': {'GroupName': ('4CF32197', 'name')},
-    '232003CA': {'GroupName': ('4CF32197', 'name')},
-    '6999DAFE': {'GroupName': ('4CF32197', 'name')},
-    '778E3103': {'GroupName': ('4CF32197', 'name')},
-    '7A517BD1': {'GroupName': ('4CF32197', 'name')},
-    '7BECF394': {'GroupName': ('4CF32197', 'name')},
-    'B7FACD23': {'GroupName': ('4CF32197', 'name')},
-    'C76401A3': {'GroupName': ('4CF32197', 'name')},
-    'EED24855': {'GroupName': ('4CF32197', 'name')},
-    'F4C65A41': {'GroupName': ('4CF32197', 'name')},
+    'gimmickEnemyPop': {'GroupName': ('msg_enemy_group_name', 'name')},
+    '0277EA4F': {'GroupName': ('msg_enemy_group_name', 'name')},
+    '0CD3B481': {'GroupName': ('msg_enemy_group_name', 'name')},
+    '232003CA': {'GroupName': ('msg_enemy_group_name', 'name')},
+    '6999DAFE': {'GroupName': ('msg_enemy_group_name', 'name')},
+    '778E3103': {'GroupName': ('msg_enemy_group_name', 'name')},
+    '7A517BD1': {'GroupName': ('msg_enemy_group_name', 'name')},
+    '7BECF394': {'GroupName': ('msg_enemy_group_name', 'name')},
+    'B7FACD23': {'GroupName': ('msg_enemy_group_name', 'name')},
+    'C76401A3': {'GroupName': ('msg_enemy_group_name', 'name')},
+    'EED24855': {'GroupName': ('msg_enemy_group_name', 'name')},
+    'F4C65A41': {'GroupName': ('msg_enemy_group_name', 'name')},
     # Per-map location lists
     'gimmickLocation': {'LocationName': ('msg_location_name', 'name')},
     '243E6271': {'LocationName': ('msg_location_name', 'name')},
@@ -8044,6 +8062,9 @@ field_xrefs = {
     'NpcID5': refset_npc,
     'NpcID6': refset_npc,
 
+    'PCID1': refset_pc,
+    'PCID2': refset_pc,
+    'PCID3': refset_pc,
     'PcID': refset_pc,
 
     'QuestID': refset_quest,
@@ -8053,6 +8074,8 @@ field_xrefs = {
     'ScenarioFlag': 'SYS_ScenarioFlag',
 
     'TalentID': refset_talent,
+
+    'TutorialID': 'SYS_Tutorial',
 
     'field_E416DB96': '90A6221A',
 }
