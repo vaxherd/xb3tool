@@ -266,10 +266,10 @@ hashes = {
     0xD0253D11: None,  # Has fields: ChrID, ClassID, ArtsID
     0x8D9A36B7: None,  # Has fields: FlagBit
     0xA263E178: None,  # No known fields
-    0x23EE284B: None,  # Event list (10001+)
-    0x25B62687: None,  # Event list (15001+)
-    0xBB0F57A4: None,  # Event list (16001+)
-    0x5B1D40C4: None,  # Event list (20001+)
+    0x23EE284B: None,  # Event list (10001+: story events)
+    0x25B62687: None,  # Event list (15001+: field events)
+    0xBB0F57A4: None,  # Event list (16001+: quest events)
+    0x5B1D40C4: None,  # Event list (20001+: dialogue events)
     0xCC55A8C8: None,  # Has fields: setupName, objName, objType, objID, costume, objModel, wpnBlade, spWeapon
     0x3CF65A32: "EVT_nearfar",
     0xDB0270B0: None,  # Has fields: scenario, event, map (empty table)
@@ -6123,6 +6123,11 @@ hashes = {
     0x54ADA678: "Spot",
     0x976A02FB: "SpotGimmick",  # FIXME: unclear if correct
     0xA907267C: "SpotName",
+    0xEB049EC4: "StRevAgi",
+    0x7DF5A3B9: "StRevDex",
+    0x88336B00: "StRevHeal",
+    0x98D28C3C: "StRevHp",
+    0x10AEEB03: "StRevStr",
     0xA9C89843: "Stability",
     0x434EDE03: "Stance",
     0x999DB1DD: "Stance1",
