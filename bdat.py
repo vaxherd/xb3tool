@@ -6146,6 +6146,10 @@ hashes = {
     0x976A02FB: "SpotGimmick",  # FIXME: unclear if correct
     0xA907267C: "SpotName",
     0x16F9E2CB: "StCrtc",
+    0xBCA16DBC: "StGrdBack",
+    0x215C6589: "StGrdFront",
+    0x5BA94201: "StGrdLeft",
+    0xDB43B215: "StGrdRight",
     0xE1B1D651: "StEthDef",
     0x4BC38D67: "StPhyDef",
     0xEB049EC4: "StRevAgi",
