@@ -4596,6 +4596,7 @@ hashes = {
     0xF4C2CE83: "CaseSena",
     0x10391E96: "CaseTaion",
     0xCD3DA04B: "CastLength",
+    0x29619DB4: "CatBGM",
     0xAB8D5038: "CatMain",  # FIXME: unclear if correct
     0x689B60B2: "Category",
     0xD8485D1F: "CategoryPriority",
@@ -5974,6 +5975,7 @@ hashes = {
     0x30208976: "RstBreak",
     0x42FB5A6E: "RstDebuffEth",
     0xFBDD5A79: "RstDebuffPhy",
+    0x0ACBE885: "RstKback",
     0xD1F6D4A9: "RstSmash",
     0x5AB6C412: "Run",
 
@@ -6143,6 +6145,9 @@ hashes = {
     0x54ADA678: "Spot",
     0x976A02FB: "SpotGimmick",  # FIXME: unclear if correct
     0xA907267C: "SpotName",
+    0x16F9E2CB: "StCrtc",
+    0xE1B1D651: "StEthDef",
+    0x4BC38D67: "StPhyDef",
     0xEB049EC4: "StRevAgi",
     0x7DF5A3B9: "StRevDex",
     0x88336B00: "StRevHeal",
@@ -6258,6 +6263,7 @@ hashes = {
     0xF6BAD063: "TalentExpRevHigh",
     0x18C4BBE3: "TalentExpRevLow",
     0x9EB18DE8: "TalentID",
+    0x292D92D0: "TalentParamRev",
     0xB677DA57: "TalentPointRevHigh",
     0x15264911: "TalentPointRevLow",
     0xC8FC78C0: "TalkCategory",
