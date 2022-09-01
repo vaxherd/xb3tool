@@ -9286,6 +9286,8 @@ def resolve_xrefs(tables):
     for table_name, fields in text_xrefs.items():
         if table_name == 'FLD_NpcList':
             continue  # force after FLD_NpcResource
+        if not table_name in tables:
+          continue  # force skip missing tables
         table = tables[table_name]
         for field, target in fields.items():
             resolve_field_xrefs(tables, table, table.field_index(field),
