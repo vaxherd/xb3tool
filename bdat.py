@@ -7868,8 +7868,10 @@ class BdatTable(object):
                 s += f'      <td>\n'
                 s += f'        <details>\n'
                 s += f'          <summary>{len(self._refs[i])} refs</summary>\n'
-                for ref in sorted(self._refs[i], key=lambda x: f'x[0]#x[1]'):
-                    s += f'          <a href="{ref[0]}.html#{ref[1]}">{ref[0]}#{ref[2]}</a>\n'
+                br = '     '
+                for ref in sorted(self._refs[i], key=BdatTable._refkey):
+                    s += f'          {br}<a href="{ref[0]}.html#{ref[1]}">{ref[0]}#{ref[2]}</a>\n'
+                    br = '<br/>'
                 s += f'        </details>\n'
                 s += f'      </td>\n'
             else:
@@ -7895,6 +7897,14 @@ class BdatTable(object):
             s += '    </tr>\n'
         s += self._HTML_FOOTER
         return s
+
+    @staticmethod
+    def _refkey(x):
+        """Key generator for sorting references."""
+        if isinstance(x[1], int) or x[1].isdecimal():
+            return f'{x[0]}#{x[1]:10d}'
+        else:
+            return f'{x[0]}#{x[1]}'
 
     def _print_value(self, value, field):
         """Return the given value formatted for HTML."""
