@@ -193,7 +193,7 @@ hashes = {
     0xEDE2F037: "BTL_RoleSkill",
     0x7ECBAB62: "BTL_Stance",
     0x01ED884D: None,  # Has fields: EffID, MinScale, MaxScale
-    0x998A022B: None,  # No known fields
+    0x998A022B: "BTL_TargetLine",
     0x5E12B0D2: "BTL_Talent",
     0x599FEBD8: "BTL_TalentAptitude",
     0xD9D339FE: None,  # Has fields: {Num,Type,Param}01-40
@@ -458,7 +458,7 @@ hashes = {
     0xB52CB42D: None,  # Has fields: Before, Condition, After
     0x96AE47E6: "SYS_TutorialWaitTime",
     0x8E6B2295: None,  # Has fields: Category
-    0xF5EB8697: None,  # Has fields: MaxNumber, AddLv01-10
+    0xF5EB8697: "BTL_SpUnique",
     0xE6D8A7AE: "MNU_EventTheater_scn",
     0xD52EFD79: "MNU_FlagParam",
     0x09D4E3FD: None,  # Has fields: name ("fade_past_memory_short", "ma09a_gim_thunder" etc), comment
@@ -4495,6 +4495,7 @@ hashes = {
     0xD0FE369E: "BTL_TL_PrmRev29",
     0xCE6B3ED3: "BTL_TL_PrmRev30",
     0xA7EAC207: "BTL_TL_PrmRev31",
+    0x62C9918F: "BTL_TL_PrmRev32",
     0x310AE49E: "BTL_WpnParam01",
     0x71FCA5C7: "BTL_WpnParam02",
     0xE00E4C3C: "BTL_WpnParam03",
@@ -9165,7 +9166,7 @@ table_xrefs = {
     'DA526616': {'VolID': '5CD15665'},
     'DF81B4D2': {'affType': '76D0D7D9'},
     'E44BEAA2': {'PC': refset_pc},
-    'F5EB8697': {'SpUniqueEnemy': 'FLD_EnemyData'}, # Superboss challenge data
+    'BTL_SpUnique': {'SpUniqueEnemy': 'FLD_EnemyData'},
     'F9173812': {'PC01': refset_pc,
                  'ArtsSet01': 'A3CAD8C7',
                  'PC02': refset_pc,
