@@ -176,8 +176,8 @@ hashes = {
     0xB8530CDC: None,  # Has fields: Frame, COMMAND, Param1-8
     0x090BBC2F: None,  # Has fields: Frame, COMMAND, Param1-8
     0x6220E526: None,  # Has fields: Frame, COMMAND, Param1-8
-    0x6E79134D: None,  # Has fields: Param (Param: e.g. "se_ch04011010", "arts_swing_medium", "en02011110_eff03")
-    0x6BFB2715: None,  # Has fields: Param (looks like a gauge gain list)
+    0x6E79134D: "BTL_Event_Param",  # FIXME: check if correct
+    0x6BFB2715: "BTL_Event_Condition",  # FIXME: check if correct
     0xD9CA0366: None,  # Has fields: Condition, Param, Subtitling
     0xE312B1C6: "BTL_Grow",
     0x405C97AC: "BTL_HitCameraParam",
@@ -256,9 +256,9 @@ hashes = {
     0xF936594B: None,  # Has fields: Condition, SpotName, Text, IconOffset, Bonfire, [XYZ]Offset
     0xC5C5F70E: None,  # Has fields: Category, FormationCooking, FormationTraining
     0x2521C473: "FLD_EnemyData",
-    0xD0DCFD18: None,  # Has fields: EventType, EventID, ContinueEvent, comment
-    0xF08FCF57: None,  # No known fields
-    0xD880C44D: None,  # (Related to quest item consumption/reward?) Has fields: ItemID, Count
+    0xD0DCFD18: "SYS_FlowEventList",
+    0xF08FCF57: "SYS_FlowEventFlag",
+    0xD880C44D: "SYS_FlowEventItem",
     0xE3AE53B3: None,  # Has fields: Gimmick, Command
     0x09D17C70: None,  # Has fields: ArtsID, Status
     0xF01E66DE: None,  # Has fields: SkillID, Status (empty table)
@@ -310,8 +310,8 @@ hashes = {
     0x5E53D2EE: "SYS_WeatherList",
     0x9B7727C8: "SYS_WeatherTable",
     0x69F7C5FB: "RSC_WeatherSet",
-    0x0EE4CBE3: None,  # Has fields: FamilyTag, AiHungry, AiThirst, AiAnger
-    0xE3C4E636: None,  # Has fields: AiFlock, AiFormation, RoleTag, AiHoming
+    0x0EE4CBE3: "FLD_EnAiBase",
+    0xE3C4E636: "FLD_EnAiSetting",
     0x8C492368: None,  # No known fields
     0xDBF04CEB: "FLD_EnMove",
     0xF002B2F5: None,  # Has fields: affType, affName, actionTime1-4, defaultAnim, mountObj, mountTag, mountTag2, enableNopon
@@ -350,9 +350,9 @@ hashes = {
     0xEC6F90EE: "FLD_ObjList",
     0xB1963CFD: "MNU_ShopList",
     0xDCDBDB1F: "MNU_ShopTable",
-    0xB1902C5B: None,  # Has fields: {StartEvent,ReactionEvent,Condition,Repeatable,EndFlag}1-6
-    0x83E0F284: None,  # Has fields: Grouping, {Character,VoiceID,Text,Time}1-5
-    0xDAF44E8F: None,  # Has fields: Grouping, Character, VoiceID, Text, Spot, Info, Item
+    0xB1902C5B: "FLD_InterestEventTable",
+    0x83E0F284: "FLD_InterestEventStart",
+    0xDAF44E8F: "FLD_InterestEventReaction",
     0xFEF315B6: None,  # Has fields: EventID, Condition, SpotGimmick
     0xF9349351: None,  # Has fields: icon_index, type, obj_name, disp_range, disp_check
     0xFF057327: "CHR_UroBody",
@@ -389,7 +389,7 @@ hashes = {
     0xF02EB97C: None,  # Recipe upgrade list
     0x6EC8096C: None,  # Canteen recipe list
     0x3B47669B: "QST_RequestItemSet",
-    0x1FCFB323: None,  # Has fields: {Condition,BGM}1-4
+    0x1FCFB323: "SYS_BGMCondition",
     0x2CFCAF13: None,  # No known fields
     0x65ACA8AC: "SYS_SystemOpen",
     0x5611DDA6: "MNU_GuestIconList",
@@ -413,9 +413,9 @@ hashes = {
     0xAA6D70CA: "MNU_MapInfo",
     0xD5696E7F: "MNU_MapInfoFile",
     0x35D68F4D: None,  # Has fields: BoneName1-4, StepOffset, Vibration
-    0xF0F61B4E: None,  # Has fields: StepOffset1-4
+    0xF0F61B4E: "SYS_FootPrintOffset",  # FIXME: unclear if correct
     0x06955984: None,  # Has fields: Walk, Run, LandingDamage, Slide
-    0x5AC778BE: None,  # Has fields: Default, Soil, Sand, Grass, Wood, Iron, Snow, Carpet, Gel, Gravel, Water, Shallows, InWater, Mist
+    0x5AC778BE: "SYS_EffMaterial",
     0xEE61112B: "FLD_LookAt",  # FIXME: unclear if correct
     0xFB616D5F: "SYS_CharacterDirection",
     0x6009A5C3: "SYS_CommonDirection",
@@ -426,7 +426,7 @@ hashes = {
     0xC2CE883D: None,  # Has fields: Type, Value1-20, Comment
     0xDB31DA53: None,  # Has fields: {Name,Caption,Type,Value}1-3, Time, Comment
     0x67BCB6FE: "SYS_CommonEffect",
-    0xC2C2933F: None,  # Has fields: Character, {Motion,Probability}01-05
+    0xC2C2933F: "FLD_PcTalkAction",  # FIXME: unclear if correct
     0xAD80BED6: None,  # Has fields: Motion, MaxValue
     0xC60C0FBD: None,  # Has fields: Category, ValueOffset, ToonID(?), Comment
     0xE9E95941: None,  # Has fields: Category, ValueOffset, ToonID(?), Comment
@@ -5650,6 +5650,7 @@ hashes = {
     0xFAD55D6B: "IsQuestList1",
     0x1009E2FE: "IsQuestList2",
     0x38F7B663: "IsTop",
+    0xC4350E77: "IsUroboros",
     0xEBF43C80: "IsWater",
     0xE7F3EA97: "Item",
     0xDB6D9154: "Item1",
@@ -5721,6 +5722,7 @@ hashes = {
 
     0xA492DCCC: "Job",
 
+    0x210B556E: "KeepEnhance",
     0xC253A756: "Keepf",
     0xC4B89BE5: "KevesRate",
     0x87D7DB09: "KevesReward",
