@@ -5532,6 +5532,10 @@ hashes = {
     0xD6A42E29: "HeroChainEff",
     0xA9F6CEEB: "HeroFlagNo",
     0x9AFDCD9C: "Hide",
+    0x4D189057: "HideTaskUI1",
+    0xAA9F58AB: "HideTaskUI2",
+    0xE7FED45F: "HideTaskUI3",
+    0x3D8543D2: "HideTaskUI4",
     0x28947DB8: "HideUI",
     0x71DA17C2: "HideWeapon",
     0xD7EFBEEF: "Hip",
@@ -6325,6 +6329,7 @@ hashes = {
     0x1C71FF5D: "ReAct16",
     0xA8AF8F6D: "ReActMax",
     0x905CE8C5: "ReActMin",
+    0x423127F5: "ReActUI",
     0x5B5C1FC4: "ReactEnemy",
     0x3799636E: "ReactNPC",
     0x3BD5D0C5: "ReactPC",
@@ -6981,6 +6986,7 @@ hashes = {
     0xAD8839C3: "UIName5",
     0x4BB72C2F: "UIName6",
     0x82D83E85: "UIOff",
+    0x2C0FCB67: "UIParam1",
     0x1E43B8B1: "UIX",
     0xE21937B8: "UIY",
     0x32FC4F37: "Ultimate",
@@ -9286,6 +9292,8 @@ def resolve_xrefs(tables):
     for table_name, fields in text_xrefs.items():
         if table_name == 'FLD_NpcList':
             continue  # force after FLD_NpcResource
+        if not table_name in tables:
+          continue  # force skip missing tables
         table = tables[table_name]
         for field, target in fields.items():
             resolve_field_xrefs(tables, table, table.field_index(field),
