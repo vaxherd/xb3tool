@@ -247,7 +247,7 @@ hashes = {
     0x8D233450: "bgmlist",
     0x173D04D6: "RSC_CollectionIcon",
     0xCE3F40EB: "RSC_GemIcon",
-    0x949AA63A: None,  # Has fields: Reward{,Num}1-20, Life, Gold, GoldDivide, SP, BehaviorID
+    0x949AA63A: "ITM_RewardAssort",
     0xE418C419: "ITM_RewardCollepedia",
     0x49125B68: "ITM_RewardQuest",
     0xD88E0DEB: None,  # Has fields: Colony, RespectPoint, BonusExp
@@ -259,10 +259,10 @@ hashes = {
     0xD0DCFD18: "SYS_FlowEventList",
     0xF08FCF57: "SYS_FlowEventFlag",
     0xD880C44D: "SYS_FlowEventItem",
-    0xE3AE53B3: None,  # Has fields: Gimmick, Command
-    0x09D17C70: None,  # Has fields: ArtsID, Status
-    0xF01E66DE: None,  # Has fields: SkillID, Status (empty table)
-    0xD0253D11: None,  # Has fields: ChrID, ClassID, ArtsID
+    0xE3AE53B3: "SYS_FlowEventLaunchGimmick",
+    0x09D17C70: "SYS_FlowEventArtsStatus",
+    0xF01E66DE: "SYS_FlowEventSkillStatus",
+    0xD0253D11: "SYS_FlowEventArtsSet",
     0x8D9A36B7: None,  # Has fields: FlagBit
     0xA263E178: None,  # No known fields
     0x23EE284B: None,  # Event list (10001+: story events)
@@ -275,15 +275,15 @@ hashes = {
     0x98D41CEB: "EVT_MapObjList",
     0x9994480F: "EVT_Place",
     0xABC5B89C: "EVT_HideList",  # FIXME: unclear if correct
-    0x065DE649: None,  # Has fields: Character
+    0x065DE649: "EVT_TalkMouth",
     0xD8C16C44: None,  # Has fields: Facial, Character
     0xE36B8F14: "EVT_Gradation",
     0x3AE0FC2B: None,  # Has fields: ColorScale, WhiteAddRate
     0x88EF0B3C: "EVT_Vignette",
-    0x8B3160C1: None,  # Has fields: Exp, Pos[XY}, Scale[XY}, Wave{Rate,Freq,Random}, StartOffset
+    0x8B3160C1: "EVT_RadialBlur",
     0xFE1D4EF0: "EVT_Color",
     0x81A91D19: "EVT_Dof",
-    0x8ED748D8: None,  # Has fields: ID, scale[XY]
+    0x8ED748D8: "EVT_ScreenShake",
     0x6BB765F3: "EVT_HeroEquip",
     0x07705A00: "QST_List",
     0xFF0E544C: "QST_Purpose",
@@ -371,7 +371,7 @@ hashes = {
     0xF185DC10: "RSC_Story",  # FIXME: unclear if correct
     0x92D8F17B: "FLD_RelationNpc",
     0x938A4DD1: "FLD_RelationColony",
-    0x4B91D8C8: None,  # Has fields: EventID, Comment
+    0x4B91D8C8: "FLD_KizunaChangeFlag",
     0x2BBE255B: None,  # Has fields: {NpcID,value}1-6, Comment
     0xE1C78647: None,  # Has fields: {ColonyID,value}1-3, Comment
     0x861D003A: None,  # Has fields: {RelationID,value}1-10, Comment
@@ -390,7 +390,7 @@ hashes = {
     0x6EC8096C: None,  # Canteen recipe list
     0x3B47669B: "QST_RequestItemSet",
     0x1FCFB323: "SYS_BGMCondition",
-    0x2CFCAF13: None,  # No known fields
+    0x2CFCAF13: "SYS_FlowEventAddFlag",
     0x65ACA8AC: "SYS_SystemOpen",
     0x5611DDA6: "MNU_GuestIconList",
     0x7C8EEF72: None,  # Has fields: eff_col
@@ -404,11 +404,11 @@ hashes = {
     0xF1E32CAF: "MNU_QuestTask",
     0x96ECF5BF: "MNU_InputAct",
     0xFB06EACE: "MNU_InputPad",
-    0x38031E0F: None,  # Has fields: Interval, Damage
+    0x38031E0F: "FLD_DamageFloor",
     0x6F56B53C: "SYS_CameraShake",
-    0xA5595837: None,  # Has fields: Main, Soup(?), Center1, Center2
+    0xA5595837: "FLD_MealObject",
     0xEED24855: None,  # Unique monster list
-    0x13B8DA8C: None,  # UM condition parameters (FLD_ConditionList type 9)
+    0x13B8DA8C: "FLD_ConditionUMonster",
     0x3CC7CE2D: "FLD_ConditionTutorial",
     0xAA6D70CA: "MNU_MapInfo",
     0xD5696E7F: "MNU_MapInfoFile",
@@ -422,7 +422,7 @@ hashes = {
     0x2BE55EEA: "SYS_UniqueDirection",
     0x9ADB8D4C: "SYS_DirectionBranch",
     0x473B9203: "SYS_DirectionParam",
-    0xCBF26BB3: None,  # Has fields: Name, Caption, Type, Comment
+    0xCBF26BB3: "FLD_PerkPermanent",
     0xC2CE883D: None,  # Has fields: Type, Value1-20, Comment
     0xDB31DA53: None,  # Has fields: {Name,Caption,Type,Value}1-3, Time, Comment
     0x67BCB6FE: "SYS_CommonEffect",
@@ -471,7 +471,7 @@ hashes = {
     0xCF66EB21: "QST_QuestImageList",
     0xB971C420: None,  # Has fields: Talent, ArtsID, Special
     0x5F654D94: None,  # Has fields: Talent, SkillID
-    0xAFD8D84D: None,  # Has fields: Type, R, G, B, Time, WaitEnd
+    0xAFD8D84D: "SYS_FlowEventFade",
     0xB93870C8: "SYS_TutorialMessage",
     0x2177D111: "MNU_VoiceList",
     0xE15A6DE7: None,  # Has fields: RewardA1-2, RewardB1-2
@@ -485,7 +485,7 @@ hashes = {
     0xFA253EBF: "BTL_AutoSetArts",
     0x139348CC: "BTL_AutoSetGem",
     0x13DED235: "BTL_AutoSetSkill",
-    0x1D96E424: None,  # (Possibly: MNU_QuestNotSell) Has fields: Condition, Item01-10
+    0x1D96E424: "MNU_QuestNotSell",
     0x7A066663: None,  # Has fields: TaskID, MapID, Comment
     0xE7251BBB: "MNU_MapSlide",  # FIXME: unclear if correct
     0x3D608A6E: "MNU_QuestFollow",
@@ -511,7 +511,7 @@ hashes = {
     0xAA84C456: "msg_btl_enhance_cap",
     0x7907F75E: "msg_btl_enhance_name",
     0x455071CB: "msg_btl_roleact_caption",
-    0x56FFF926: None,  # Empty table
+    0x56FFF926: "msg_btl_roleact_cat",
     0xDC74E779: "msg_btl_skill_name",
     0x77B6A0EF: "msg_btl_stance_name",
     0xD96BDBBA: "msg_btl_subtitling",
@@ -535,7 +535,7 @@ hashes = {
     0x8554022B: "msg_mnu_cloudgem",
     0x2A9BD580: "msg_mnu_common_ms",
     0x10F03A79: "msg_mnu_comspot_ms",
-    0x23E826C6: None,  # Chapter end dialogue subtitles
+    0x23E826C6: "msg_mnu_diary_mono_ms",
     0xDF7177AE: "msg_mnu_dlc_info",
     0xABB95378: "msg_mnu_equip_detail",
     0x23A3F9FA: "msg_mnu_event_name",
@@ -552,8 +552,8 @@ hashes = {
     0xF1CBAC59: "msg_mnu_map_ms",
     0x5DFDA895: "msg_mnu_minimap_areaname",
     0xA61679BA: "msg_mnu_obj_info_name",
-    0xAAEBE79E: None,  # Opening credits (for Japanese voices)
-    0x5FEC6350: None,  # Opening credits (for English voices)
+    0xAAEBE79E: "msg_mnu_op_credits",
+    0x5FEC6350: "msg_mnu_op_credits_en",
     0x1F0DC7C2: "msg_mnu_operation_guide",
     0x5F68C7D2: "msg_mnu_option",
     0x83AAF628: "msg_mnu_other_ms",
@@ -566,9 +566,9 @@ hashes = {
     0x5C52C972: "msg_mnu_style_standard_ms",
     0x29821FC5: "msg_mnu_system_ms",
     0x6D15742F: "msg_mnu_title",
-    0x2902008F: None,  # Tutorial battle menu text
+    0x2902008F: "msg_mnu_trail_name",  # Presumably a misspelling of "trial"
     0xBBF540E7: "msg_mnu_tutorial_tips",
-    0xA1A111AE: None,  # Field popup text (landmark discovery etc.)
+    0xA1A111AE: "msg_mnu_update_ms",
     0xEA19B333: "msg_qst_RequestItemSet",
     0x45A2D5AD: "msg_qst_overwrite",  # FIXME: unclear if correct
     0xAD40857C: "msg_qst_task",
@@ -594,7 +594,7 @@ hashes = {
     0x32601547: "msg_loading_tips",
     0x28E8B08C: "msg_location_name",
     0x6436BD4A: "msg_npc_name",
-    0xEDFB4E9F: None,  # NPC titles
+    0xEDFB4E9F: "msg_npc_tag_name",
     0xBA34C46E: None,  # PC names
     0x16B245E3: "msg_shop_name",
     0xE48A94FF: "msg_sys_access_message",
@@ -4531,6 +4531,8 @@ hashes = {
     0x0EE98229: "BTL_WpnParamU4",
     0xC82B9EDC: "BTL_WpnParamU5",
     0x1C97E25E: "BTL_WpnParamU6",
+    0x79EC47C7: "FLD_EnTribe",  # FIXME: unclear if correct
+    0x36C6913C: "ITM_RewardCollectionList",
     0xF8207CBA: "MNU_FacePatternList",
     0xD90FF31C: "MNU_FontSet01",
     0x06079AEA: "MNU_FontSet01_cn",
@@ -6657,7 +6659,7 @@ hashes = {
     0x3ACA445C: "SortNo",
     0x55914E09: "SortParam",
     0x07003D62: "Sound",
-    0xF87E01F8: "Soup",  # FIXME: unclear if correct
+    0xF87E01F8: "Soup",
     0xFADD8F74: "SpBattle",
     0x36D44960: "SpMax",
     0x8AFDD2DD: "SpMax1",
@@ -8391,6 +8393,7 @@ row_name_fields = {
     'FLD_NpcList': 'field_7F0A3296',
     'FLD_NpcResource': 'Name',
     'FLD_NpcResource': 'Name',
+    'FLD_PerkPermanent': 'Name',
     'ITM_Accessory': 'Name',
     'ITM_Collection': 'Name',
     'ITM_Collepedia': 'Text',
@@ -8453,7 +8456,9 @@ text_xrefs = {
     'FLD_EnemyData': {'MsgName': ('msg_enemy_name', 'name')},
     'FLD_NpcList': {'field_7F0A3296': ('FLD_NpcResource', 'Name')},
     'FLD_NpcResource': {'Name': ('msg_npc_name', 'name'),
-                        'Nickname': ('EDFB4E9F', 'name')},
+                        'Nickname': ('msg_npc_tag_name', 'name')},
+    'FLD_PerkPermanent': {'Name': ('msg_fld_perk_name', 'name'),
+                          'Caption': ('msg_fld_perk_name', 'name')},
     'FLD_RelationColony': {'Text1': ('msg_kizuna_name', 'name'),
                            'Text2': ('msg_kizuna_name', 'name'),
                            'Text3': ('msg_kizuna_name', 'name'),
@@ -8540,6 +8545,7 @@ refset_enhance = ('BTL_Enhance', )
 refset_event = (('23EE284B', '25B62687', 'BB0F57A4', '5B1D40C4'), )
 refset_gimmick = ('SYS_GimmickLocation.GimmickID', )
 refset_item = (('ITM_Accessory', 'ITM_Collection', 'ITM_Collepedia', 'ITM_Cylinder', 'ITM_Gem', 'ITM_Info', 'ITM_Precious'), )
+refset_map = (('SYS_MapList'), )
 refset_npc = ('FLD_NpcList', )
 refset_pc = ('CHR_PC', )
 refset_quest = ('QST_List', )
@@ -8591,8 +8597,6 @@ field_xrefs = {
 
     'CookRecipe': 'FLD_CookRecipe',
 
-    'DebScenarioFlag': 'SYS_ScenarioFlag',
-
     'EnemyID': refset_enemy,
     'EnemyID1': refset_enemy,
     'EnemyID2': refset_enemy,
@@ -8613,6 +8617,8 @@ field_xrefs = {
     'EnhanceID': refset_enhance,
 
     'EnhanceEffect': 'BTL_EnhanceEff',
+
+    'Navi': refset_gimmick,
 
     'IK': 'RSC_IK',
     'IkName': 'RSC_IK',
@@ -8710,12 +8716,12 @@ field_xrefs = {
     'ShopItem19': refset_item,
     'ShopItem20': refset_item,
 
-    'CurrentMap': 'SYS_MapList',
-    'LinkMapID': 'SYS_MapList',
-    'MapID': 'SYS_MapList',
-    'mapID': 'SYS_MapList',
-
     'MapJumpID': 'SYS_MapJumpList',
+
+    'CurrentMap': refset_map,
+    'LinkMapID': refset_map,
+    'MapID': refset_map,
+    'mapID': refset_map,
 
     'NPCID': refset_npc,
     'NpcID': refset_npc,
@@ -8735,6 +8741,7 @@ field_xrefs = {
 
     'Reaction': 'BTL_Reaction',
 
+    'DebScenarioFlag': 'SYS_ScenarioFlag',
     'ScenarioFlag': 'SYS_ScenarioFlag',
 
     'SysOpenID': 'SYS_SystemOpen',
@@ -8914,6 +8921,7 @@ table_xrefs = {
     'BTL_Skill_PC': {'UseTalent': refset_talent,
                      'UseChr': refset_pc,
                      'EnSkillAchieve': 'BTL_Achievement'},
+    'BTL_SpUnique': {'SpUniqueEnemy': 'FLD_EnemyData'},
     'BTL_Talent': {'WeaponType': 'BTL_WpnType',
                    'WeaponType2': 'BTL_WpnType',
                    'TalentAptitude1': 'BTL_TalentAptitude',
@@ -8961,7 +8969,17 @@ table_xrefs = {
                'ChainOrder': 'D9B88F26',
                'HeroChainEff': refset_enhance},
     'EVT_HeroEquip': {'pc': refset_pc},
+    'FLD_ColonyList': {'map': refset_map,
+                       'Reward1': 'FLD_PerkPermanent',
+                       'Reward2': 'FLD_PerkPermanent',
+                       'Reward3': 'FLD_PerkPermanent',
+                       'Reward4': 'FLD_PerkPermanent',
+                       'Reward5': 'FLD_PerkPermanent'},
     'FLD_ConditionClassLv': {'ClassID': refset_talent},
+    'FLD_ConditionQuest': {'QuestFlag1': (None, None, 'condition_quest'),
+                           'QuestFlag2': (None, None, 'condition_quest'),
+                           'NotQuestFlag1': (None, None, 'condition_quest'),
+                           'NotQuestFlag2': (None, None, 'condition_quest')},
     'FLD_ConditionScenario': {'ScenarioMin': 'SYS_ScenarioFlag',
                               'ScenarioMax': 'SYS_ScenarioFlag',
                               'NotScenarioMin': 'SYS_ScenarioFlag',
@@ -8982,6 +9000,11 @@ table_xrefs = {
                      'FreePieceID4': refset_item,
                      'FreePieceID5': refset_item,
                      'NeedCharacter': refset_pc},
+    'FLD_KizunaChangeFlag': {'EventID': refset_event,
+                             'NpcIconFlag': '2BBE255B',
+                             'ColonyIconFlag': 'E1C78647',
+                             'ArrowNpcFlag': '861D003A',
+                             'ArrowColonyFlag': 'FAC1F258'},
     'FLD_NpcList': {'TalkListID': 'FLD_NpcTalkList',
                     'Resource1': 'FLD_NpcResource',
                     'Resource2': 'FLD_NpcResource',
@@ -9023,10 +9046,15 @@ table_xrefs = {
     'MNU_saveload_scenario': {'ScenarioCond': refset_condition},
     'QST_List': {'RewardSetA': 'ITM_RewardQuest',
                  'RewardSetB': 'ITM_RewardQuest',
-                 'StartPurpose': 'QST_Purpose'},
+                 'StartPurpose': 'QST_Purpose',
+                 'LinkQuest': 'QST_List'},
     'QST_Purpose': {'TaskID': 'QST_Task',
                     'NextPurposeA': 'QST_Purpose',
                     'NextPurposeB': 'QST_Purpose'},
+    'QST_Task': {'TaskID1': (None, None, 'qst_task'),
+                 'TaskID2': (None, None, 'qst_task'),
+                 'TaskID3': (None, None, 'qst_task'),
+                 'TaskID4': (None, None, 'qst_task')},
     'QST_TaskCollect': {'TargetID': refset_item},
     'QST_TaskRequest': {'ItemSetID1': 'QST_RequestItemSet',
                         'ItemSetID2': 'QST_RequestItemSet',
@@ -9050,6 +9078,9 @@ table_xrefs = {
                'LookAt': 'RSC_LookAtIK',
                'Eye': 'RSC_EyeIK',
                'field_30B5C5E1': '6B3F1942'},
+    'SYS_FlowEventArtsSet': {'ChrID': refset_pc,
+                             'ClassID': refset_talent,
+                             'ArtsID': refset_arts_pc},
     'SYS_MapJumpList': {'FormationID': refset_gimmick},
     'SYS_MapList': {'ResourceId': 'RSC_MapFile',
                     'WeatherData': 'SYS_WeatherTable'},
@@ -9117,26 +9148,26 @@ table_xrefs = {
                  'RelationID8': 'FLD_RelationNpc',
                  'RelationID9': 'FLD_RelationNpc',
                  'RelationID10': 'FLD_RelationNpc'},
-    '949AA63A': {'Reward1': refset_item,
-                 'Reward2': refset_item,
-                 'Reward3': refset_item,
-                 'Reward4': refset_item,
-                 'Reward5': refset_item,
-                 'Reward6': refset_item,
-                 'Reward7': refset_item,
-                 'Reward8': refset_item,
-                 'Reward9': refset_item,
-                 'Reward10': refset_item,
-                 'Reward11': refset_item,
-                 'Reward12': refset_item,
-                 'Reward13': refset_item,
-                 'Reward14': refset_item,
-                 'Reward15': refset_item,
-                 'Reward16': refset_item,
-                 'Reward17': refset_item,
-                 'Reward18': refset_item,
-                 'Reward19': refset_item,
-                 'Reward20': refset_item},
+    'ITM_RewardAssort': {'Reward1': refset_item,
+                         'Reward2': refset_item,
+                         'Reward3': refset_item,
+                         'Reward4': refset_item,
+                         'Reward5': refset_item,
+                         'Reward6': refset_item,
+                         'Reward7': refset_item,
+                         'Reward8': refset_item,
+                         'Reward9': refset_item,
+                         'Reward10': refset_item,
+                         'Reward11': refset_item,
+                         'Reward12': refset_item,
+                         'Reward13': refset_item,
+                         'Reward14': refset_item,
+                         'Reward15': refset_item,
+                         'Reward16': refset_item,
+                         'Reward17': refset_item,
+                         'Reward18': refset_item,
+                         'Reward19': refset_item,
+                         'Reward20': refset_item},
     'A3CAD8C7': {'Talent': refset_talent,
                  'arts01': refset_arts_pc,
                  'arts02': refset_arts_pc,
@@ -9150,9 +9181,6 @@ table_xrefs = {
                  'ArtsID': (('BTL_Arts_PC', 'E29EF7E9'), )},
     'BF287371': {'affType': '76D0D7D9'},
     'C29E28FD': {'Object1': 'RSC_MapObjList'},
-    'D0253D11': {'ChrID': refset_pc,
-                 'ClassID': refset_talent,
-                 'ArtsID': refset_arts_pc},
     'D327B2BC': {'TaskID': 'QST_Task'},
     'D9B88F26': {'CompBonus1': refset_enhance,
                  'CompBonus2': refset_enhance,
@@ -9168,7 +9196,6 @@ table_xrefs = {
     'DA526616': {'VolID': '5CD15665'},
     'DF81B4D2': {'affType': '76D0D7D9'},
     'E44BEAA2': {'PC': refset_pc},
-    'BTL_SpUnique': {'SpUniqueEnemy': 'FLD_EnemyData'},
     'F9173812': {'PC01': refset_pc,
                  'ArtsSet01': 'A3CAD8C7',
                  'PC02': refset_pc,
@@ -9227,7 +9254,27 @@ def resolve_field_xrefs(tables, table, field_idx, target, add_link):
             target_table = None
             target_row = None
             for name in target_tables:
-                if name == 'SYS_GimmickLocation.GimmickID':
+                if name is None:
+                    if target[2] == 'condition_quest':
+                        flag_idx = field_idx+1
+                        if table.get(row, flag_idx) == 1:
+                            test_table = tables['QST_List']
+                        else:
+                            assert table.get(row, flag_idx) == 0
+                            test_table = tables['QST_Purpose']
+                        test_row = test_table.id_to_row(id)
+                    elif target[2] == 'qst_task':
+                        type_idx = field_idx-1
+                        type = table.get(row, type_idx)
+                        assert type >= 0
+                        typename = ('Battle', 'Talk', 'Event', 'Ask',
+                                    'Reach', 'Chase', 'Request', 'Collect',
+                                    'Collepedia', 'Gimmick', 'Follow', 'Condition')[type]
+                        test_table = tables[f'QST_Task{typename}']
+                        test_row = test_table.id_to_row(id)
+                    else:
+                        raise Exception(f'Unhandled special case: {target[2]}')
+                elif name == 'SYS_GimmickLocation.GimmickID':
                     test_table = tables['SYS_GimmickLocation']
                     idx_GimmickID = test_table.field_index('GimmickID')
                     test_row = test_table.id_to_row(id, idx_GimmickID)
@@ -9241,7 +9288,7 @@ def resolve_field_xrefs(tables, table, field_idx, target, add_link):
                     else:
                         raise ValueError(f'Duplicate ID {id} in table {target_table_name} (reference from {table.name}#{table.get(row, 0)})')
             if target_row is None:
-                # Suppress known unamtched cases
+                # Suppress intentionally unmatching cases
                 if table.name == 'QST_Purpose' and table.field(field_idx).name.startswith('NextPurpose') and (id == 30000 or id == 30001):
                     pass
                 elif table.name == 'QST_TaskTalk' and table.field(field_idx).name == 'TargetID' and re.match(r'^[0-9]+$', id):
@@ -9249,39 +9296,42 @@ def resolve_field_xrefs(tables, table, field_idx, target, add_link):
                 else:
                     print(f'Warning: {table.name}[{table.get(row, 0)}].{table.field(field_idx).name} ({id}) not matched', file=sys.stderr)
                 continue
-            if len(target) > 1:
+            if len(target) > 1 and target[1] is not None:
                 target_field = target_table.field_index(target[1])
                 value = target_table.get(target_row, target_field)
                 if value is None or value == '':
                     value = id
-                elif len(target) > 2:
-                    if target[2] == 'enhance':
-                        for n in (1,2,3):
-                            param_idx = table.field_index(f'Param{n}', True)
-                            if param_idx is not None:
-                                param = table.get(row, param_idx)
-                                if isinstance(param, float):
-                                    param = f'{param:g}'
-                                value = value.replace(f'[ML:EnhanceParam paramtype={n} ]', param)
-                    elif target[2] == 'urobody_name':
-                        target_row += 81
-                        value = target_table.get(target_row, target_field)
-                    elif target[2] == 'achievement':
-                        value = target_table.get(target_row, target_field)
-                        idx_type = table.field_index('AchieveType')
-                        idx_param1 = table.field_index('Param1')
-                        idx_param2 = table.field_index('Param2')
-                        type = table.get(row, idx_type)
-                        param1 = table.get(row, idx_param1)
-                        param2 = table.get(row, idx_param2)
-                        if type <= 7:
-                            value += f' ({param1})'
-                        elif type != 255:
-                            value += f' ({param2})'
-                    else:
-                        raise ValueError(target[2])
-            else: # len(target) <= 1
-                value = None  # default rules
+            else:
+                value = None  # Default rules
+            if len(target) > 2:
+                if target[2] == 'enhance':
+                    value = str(value)
+                    for n in (1,2,3):
+                        param_idx = table.field_index(f'Param{n}', True)
+                        if param_idx is not None:
+                            param = table.get(row, param_idx)
+                            if isinstance(param, float):
+                                param = f'{param:g}'
+                            value = value.replace(f'[ML:EnhanceParam paramtype={n} ]', param)
+                elif target[2] == 'urobody_name':
+                    target_row += 81
+                    value = target_table.get(target_row, target_field)
+                elif target[2] == 'achievement':
+                    value = target_table.get(target_row, target_field)
+                    idx_type = table.field_index('AchieveType')
+                    idx_param1 = table.field_index('Param1')
+                    idx_param2 = table.field_index('Param2')
+                    type = table.get(row, idx_type)
+                    param1 = table.get(row, idx_param1)
+                    param2 = table.get(row, idx_param2)
+                    if type <= 7:
+                        value += f' ({param1})'
+                    elif type != 255:
+                        value += f' ({param2})'
+                elif target[2] in ('condition_quest', 'qst_task'):
+                    pass  # No additional logic
+                else:
+                    raise Exception(f'Unhandled special case: {target[2]}')
             if add_link:
                 add_xref(table, row, field_idx, value, target_table, target_row)
             else:
@@ -9350,11 +9400,8 @@ def resolve_xrefs(tables):
                         assert type > 0
                         typename = ('List', 'Scenario', 'Quest', 'Env',
                                     'Flag', 'Item', 'PT', 'MapGimmick',
-                                    None, 'Tutorial', 'PcLv', 'ClassLv')[type-1]
-                        if typename is None:
-                            target_table = tables['13B8DA8C']
-                        else:
-                            target_table = tables[f'FLD_Condition{typename}']
+                                    'UMonster', 'Tutorial', 'PcLv', 'ClassLv')[type-1]
+                        target_table = tables[f'FLD_Condition{typename}']
                         add_xref(table, row, field_idx, None,
                                  target_table, target_table.id_to_row(cond))
                 else:
