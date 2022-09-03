@@ -424,7 +424,7 @@ hashes = {
     0x473B9203: "SYS_DirectionParam",
     0xCBF26BB3: "FLD_PerkPermanent",
     0xC2CE883D: None,  # Has fields: Type, Value1-20, Comment
-    0xDB31DA53: None,  # Has fields: {Name,Caption,Type,Value}1-3, Time, Comment
+    0xDB31DA53: None,  # Has fields: {Name,Caption,Type,Value}1-3, Time, Comment -> food perk list
     0x67BCB6FE: "SYS_CommonEffect",
     0xC2C2933F: "FLD_PcTalkAction",  # FIXME: unclear if correct
     0xAD80BED6: None,  # Has fields: Motion, MaxValue
@@ -8535,6 +8535,9 @@ text_xrefs = {
     'BB82DEE6': {'Name': ('F6E689C3', 'name')},  # Chain attack TP bonuses
     'D9B88F26': {'Name': ('msg_btl_chainorder_name', 'name')},  # Chain attack card list
     'EED24855': {'GroupName': ('msg_enemy_group_name', 'name')},  # Unique monster list
+    'DB31DA53': {'Name1': ('msg_fld_perk_name', 'name'), 'Name2': ('msg_fld_perk_name', 'name'), # Food perk list
+                 'Name3': ('msg_fld_perk_name', 'name'), 'Caption1': ('msg_fld_perk_name', 'name'), 
+                 'Caption2': ('msg_fld_perk_name', 'name'), 'Caption3': ('msg_fld_perk_name', 'name') }
 }
 
 refset_arts_en = ('BTL_Arts_En', )
@@ -8551,6 +8554,7 @@ refset_pc = ('CHR_PC', )
 refset_quest = ('QST_List', )
 refset_quest_taskid = (('QST_TaskAsk', 'QST_TaskBattle', 'QST_TaskChase', 'QST_TaskCollect', 'QST_TaskCollepedia', 'QST_TaskCondition', 'QST_TaskEvent', 'QST_TaskFollow', 'QST_TaskGimmick', 'QST_TaskReach', 'QST_TaskRequest', 'QST_TaskTalk', 'QST_TaskTalkGroup'), )
 refset_skill = ('BTL_Skill_PC', )
+refset_stance = ('BTL_Stance', )
 refset_talent = ('BTL_Talent', )
 
 # List of fields which are always ID references to other tables.
@@ -8753,6 +8757,13 @@ field_xrefs = {
     'SysWeatherID': 'SYS_WeatherList',
 
     'field_E416DB96': '90A6221A',
+    
+    'Stance': refset_stance,
+    'Stance1': refset_stance,
+    'Stance2': refset_stance,
+    'Stance3': refset_stance,
+    'Stance4': refset_stance,
+    'Stance5': refset_stance,
 }
 
 # List of table-specific fields which are ID references to other tables.
@@ -8897,7 +8908,6 @@ table_xrefs = {
                   'EnemyAiHead': 'BTL_EnemyAi',
                   'EnemyAiTail': 'BTL_EnemyAi',
                   'EnemyFamily': 'BTL_EnFamily',
-                  'Stance': 'BTL_Stance',
                   'AutoSlot0': refset_arts_en,
                   'AutoSlot1': refset_arts_en,
                   'AutoSlot2': refset_arts_en,
@@ -8917,6 +8927,9 @@ table_xrefs = {
                   'ArtsSlot13': refset_arts_en,
                   'ArtsSlot14': refset_arts_en,
                   'ArtsSlot15': refset_arts_en,
+                  'EnhanceSlot0': refset_enhance,
+                  'EnhanceSlot1': refset_enhance,
+                  'EnhanceSlot2': refset_enhance,
                   'RageStance': 'BTL_Stance'},
     'BTL_Skill_PC': {'UseTalent': refset_talent,
                      'UseChr': refset_pc,
