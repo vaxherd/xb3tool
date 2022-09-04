@@ -188,7 +188,7 @@ hashes = {
     0xE9E4E964: "BTL_MotionState",
     0x02BF2924: "BTL_Reaction",
     0x64BED5F9: "BTL_RoleAct",
-    0x47AEC412: None,  # Has fields: Name, Caption, Type, RangeType, BaseNum, Interval, BaseTime, Effect, EffectID, BulletID, BulletEffID, HealType, Icon - "BTL_SetUp" matches the hash but looks wrong? - might be reaction list for ReActNN in BTL_Arts_*?
+    0x47AEC412: "BTL_SetUp",
     0xE1BC18F7: "BTL_Skill_PC",
     0xEDE2F037: "BTL_RoleSkill",
     0x7ECBAB62: "BTL_Stance",
@@ -265,10 +265,10 @@ hashes = {
     0xD0253D11: "SYS_FlowEventArtsSet",
     0x8D9A36B7: None,  # Has fields: FlagBit
     0xA263E178: None,  # No known fields
-    0x23EE284B: None,  # Event list (10001+: story events)
-    0x25B62687: None,  # Event list (15001+: field events)
-    0xBB0F57A4: None,  # Event list (16001+: quest events)
-    0x5B1D40C4: None,  # Event list (20001+: dialogue events)
+    0x23EE284B: "EVT_listEv",
+    0x25B62687: "EVT_listFev",
+    0xBB0F57A4: "EVT_listQst",
+    0x5B1D40C4: "EVT_listTlk",
     0xCC55A8C8: None,  # Has fields: setupName, objName, objType, objID, costume, objModel, wpnBlade, spWeapon
     0x3CF65A32: "EVT_nearfar",
     0xDB0270B0: None,  # Has fields: scenario, event, map (empty table)
@@ -276,7 +276,7 @@ hashes = {
     0x9994480F: "EVT_Place",
     0xABC5B89C: "EVT_HideList",  # FIXME: unclear if correct
     0x065DE649: "EVT_TalkMouth",
-    0xD8C16C44: None,  # Has fields: Facial, Character
+    0xD8C16C44: "EVT_AngleMouth",
     0xE36B8F14: "EVT_Gradation",
     0x3AE0FC2B: None,  # Has fields: ColorScale, WhiteAddRate
     0x88EF0B3C: "EVT_Vignette",
@@ -387,7 +387,7 @@ hashes = {
     0xAF5A7B80: "FLD_CraftCookList",
     0x0D4DD27E: None,  # Has fields: SpotGimmick, TableID, Comment
     0xF02EB97C: None,  # Recipe upgrade list
-    0x6EC8096C: None,  # Canteen recipe list
+    0x6EC8096C: "FLD_MealRecipe",
     0x3B47669B: "QST_RequestItemSet",
     0x1FCFB323: "SYS_BGMCondition",
     0x2CFCAF13: "SYS_FlowEventAddFlag",
@@ -423,8 +423,8 @@ hashes = {
     0x9ADB8D4C: "SYS_DirectionBranch",
     0x473B9203: "SYS_DirectionParam",
     0xCBF26BB3: "FLD_PerkPermanent",
-    0xC2CE883D: None,  # Has fields: Type, Value1-20, Comment
-    0xDB31DA53: None,  # Has fields: {Name,Caption,Type,Value}1-3, Time, Comment -> food perk list
+    0xC2CE883D: "FLD_PerkResource",
+    0xDB31DA53: "FLD_PerkTemporary",
     0x67BCB6FE: "SYS_CommonEffect",
     0xC2C2933F: "FLD_PcTalkAction",  # FIXME: unclear if correct
     0xAD80BED6: None,  # Has fields: Motion, MaxValue
@@ -446,7 +446,7 @@ hashes = {
     0x3D5EC9E5: "SYS_TutorialTask",
     0x4E31A784: None,  # Has fields: Intensity, StartOffset
     0x6F42026E: None,  # Has fields: ColorScale, WhiteAddRate
-    0x5750277F: None,  # Has fields: Exp, Pos[XY], Scale[XY], Wave{Rate,Freq,Random}, StartOffset
+    0x5750277F: "FLD_RadialBlur",
     0x6BD7030D: "FLD_Vignette",
     0xD465E6B7: "SYS_GimmickPreparing",
     0xDE695AF0: None,  # Has fields: cam_l[xyz], cam_angle
@@ -455,7 +455,7 @@ hashes = {
     0xD327B2BC: None,  # Has fields: QuestID, TaskID, Comment
     0xC672E6FC: "SYS_Vibration",
     0x7147D811: "FLD_MobScale",
-    0xB52CB42D: None,  # Has fields: Before, Condition, After
+    0xB52CB42D: "FLD_ObjConvert",
     0x96AE47E6: "SYS_TutorialWaitTime",
     0x8E6B2295: "SYS_IntermissionSave",
     0xF5EB8697: "BTL_SpUnique",
@@ -4549,7 +4549,9 @@ hashes = {
     0x0EE98229: "BTL_WpnParamU4",
     0xC82B9EDC: "BTL_WpnParamU5",
     0x1C97E25E: "BTL_WpnParamU6",
+    0xD1C136A1: None,  # Empty event table
     0x79EC47C7: "FLD_EnTribe",  # FIXME: unclear if correct
+    0x541B26AD: "FLD_RelationArrow",
     0x36C6913C: "ITM_RewardCollectionList",
     0xF8207CBA: "MNU_FacePatternList",
     0xD90FF31C: "MNU_FontSet01",
@@ -4568,11 +4570,6 @@ hashes = {
     0xE1E61948: "MNU_Text_IdList",
     0x686FDFDB: "MNU_filter",
     0xD4D03C1E: "MNU_sort",
-    0x23EE284B: None,  # Main scenario event table (10001-10672)
-    0x25B62687: None,  # Field event table (15001-15071)
-    0xBB0F57A4: None,  # Quest event table (16001-17681)
-    0x5B1D40C4: None,  # Generic dialogue table (20001-21327)
-    0xD1C136A1: None,  # Empty event table
 
     0x9416AC93: "1",
     0x0129E217: "2",
@@ -5454,6 +5451,7 @@ hashes = {
     0xAA7B6559: "FlgDmgFloor",
     0xDF127B9E: "FlgFixed",
     0xCB8CA51B: "FlgLevAttack",
+    0x4517E638: "FlgLevBattleOff",
     0x84FBF2CE: "FlgMoveFloor",
     0x12BAB949: "FlgNoDead",
     0xD80DA70D: "FlgNoFalling",
@@ -6655,7 +6653,6 @@ hashes = {
     0x6A98F183: "Skill5",
     0x7E7DFE51: "Skill6",
     0x9534FCC4: "SkillID",
-    0x8B13A658: "SkillIdGet", # FIXME: unclear if correct
     0xC9DB78A2: "Slide",
     0x42ACCD11: "SlotIdx",
     0xFBE02251: "Slow",
@@ -8422,6 +8419,7 @@ row_name_fields = {
     'FLD_ColonyList': 'Name',
     'FLD_CookRecipe': 'Name',
     'FLD_EnemyData': 'MsgName',
+    'FLD_MealRecipe': 'Name',
     'FLD_NpcList': 'field_7F0A3296',
     'FLD_NpcResource': 'Name',
     'FLD_NpcResource': 'Name',
@@ -8444,7 +8442,6 @@ row_name_fields = {
     'SYS_TutorialSummary': 'Title',
     'SYS_TutorialTask': 'Title',
     'SYS_TrialList': 'Title',
-    '6EC8096C': 'Name',
     'BB82DEE6': 'Name',
     'D9B88F26': 'Name',
     'gimmickLocation': 'LocationName',
@@ -8487,11 +8484,18 @@ text_xrefs = {
                        'Caption': ('msg_colony_text', 'name')},
     'FLD_CookRecipe': {'Name': ('8B7D949B', 'name')},
     'FLD_EnemyData': {'MsgName': ('msg_enemy_name', 'name')},
+    'FLD_MealRecipe': {'Name': ('0103F5B8', 'name')},
     'FLD_NpcList': {'field_7F0A3296': ('FLD_NpcResource', 'Name')},
     'FLD_NpcResource': {'Name': ('msg_npc_name', 'name'),
                         'Nickname': ('msg_npc_tag_name', 'name')},
     'FLD_PerkPermanent': {'Name': ('msg_fld_perk_name', 'name'),
                           'Caption': ('msg_fld_perk_name', 'name')},
+    'FLD_PerkTemporary': {'Name1': ('msg_fld_perk_name', 'name'),
+                          'Name2': ('msg_fld_perk_name', 'name'),
+                          'Name3': ('msg_fld_perk_name', 'name'),
+                          'Caption1': ('msg_fld_perk_name', 'name'), 
+                          'Caption2': ('msg_fld_perk_name', 'name'),
+                          'Caption3': ('msg_fld_perk_name', 'name')},
     'FLD_RelationColony': {'Text1': ('msg_kizuna_name', 'name'),
                            'Text2': ('msg_kizuna_name', 'name'),
                            'Text3': ('msg_kizuna_name', 'name'),
@@ -8567,15 +8571,8 @@ text_xrefs = {
     'ma20a_GMK_Location': {'LocationName': ('msg_location_name', 'name')},
     'ma22a_GMK_Location': {'LocationName': ('msg_location_name', 'name')},
     'ma90a_GMK_Location': {'LocationName': ('msg_location_name', 'name')},
-    '6EC8096C': {'Name': ('0103F5B8', 'name')},  # Canteen recipe list
     'BB82DEE6': {'Name': ('F6E689C3', 'name')},  # Chain attack TP bonuses
     'D9B88F26': {'Name': ('msg_btl_chainorder_name', 'name')},  # Chain attack card list
-    'DB31DA53': {'Name1': ('msg_fld_perk_name', 'name'), # Food perk list
-                 'Name2': ('msg_fld_perk_name', 'name'),
-                 'Name3': ('msg_fld_perk_name', 'name'),
-                 'Caption1': ('msg_fld_perk_name', 'name'), 
-                 'Caption2': ('msg_fld_perk_name', 'name'),
-                 'Caption3': ('msg_fld_perk_name', 'name')},
     'EED24855': {'GroupName': ('msg_enemy_group_name', 'name')},  # Unique monster list
 }
 
@@ -8584,7 +8581,7 @@ refset_arts_pc = ('BTL_Arts_PC', )
 refset_condition = ('FLD_ConditionList', )
 refset_enemy = ('FLD_EnemyData', )
 refset_enhance = ('BTL_Enhance', )
-refset_event = (('23EE284B', '25B62687', 'BB0F57A4', '5B1D40C4'), )
+refset_event = (('EVT_listEv', 'EVT_listFev', 'EVT_listQst', 'EVT_listTlk'), )
 refset_gimmick = ('SYS_GimmickLocation.GimmickID', )
 refset_item = (('ITM_Accessory', 'ITM_Collection', 'ITM_Collepedia', 'ITM_Cylinder', 'ITM_Gem', 'ITM_Info', 'ITM_Precious'), )
 refset_map = (('SYS_MapList'), )
@@ -9021,6 +9018,14 @@ table_xrefs = {
                'ChainOrder': 'D9B88F26',
                'HeroChainEff': refset_enhance},
     'EVT_HeroEquip': {'pc': refset_pc},
+    'EVT_listEv': {'linkID': refset_event,
+                   'linkCondition': 'FLD_ConditionList'},
+    'EVT_listFev': {'linkID': refset_event,
+                    'linkCondition': 'FLD_ConditionList'},
+    'EVT_listQst': {'linkID': refset_event,
+                    'linkCondition': 'FLD_ConditionList'},
+    'EVT_listTlk': {'linkID': refset_event,
+                    'linkCondition': 'FLD_ConditionList'},
     'FLD_ColonyList': {'map': refset_map,
                        'Reward1': 'FLD_PerkPermanent',
                        'Reward2': 'FLD_PerkPermanent',
@@ -9202,14 +9207,6 @@ table_xrefs = {
     '152F4D70': {'field_791E2B72': 'C6B4111D'},  # see around v1.1.0:1b7cac
     '1623B3A0': {'ContentsID': 'MNU_DLCContentsInfo'},
     '1A109460': {'ItmGemID': refset_item},  # mapping from gem ID to item ID
-    '23EE284B': {'linkID': refset_event,
-                 'linkCondition': 'FLD_ConditionList'},
-    '25B62687': {'linkID': refset_event,
-                 'linkCondition': 'FLD_ConditionList'},
-    'BB0F57A4': {'linkID': refset_event,
-                 'linkCondition': 'FLD_ConditionList'},
-    '5B1D40C4': {'linkID': refset_event,
-                 'linkCondition': 'FLD_ConditionList'},
     '268AE713': {'affType': '76D0D7D9'},
     '39D667D1': {'Talent': refset_talent},
     '4DA4962C': {'NPC': refset_npc},
