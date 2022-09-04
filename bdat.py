@@ -77,7 +77,7 @@ hashes = {
     0x00000000: "",
 
     # List of tables from program initialization (in init array order):
-    0x1D9A5B2B: None,
+    0x1D9A5B2B: None,  # Has fields: Condition (likely a gimmick table, lexically before gimmickBGM)
     0x22556A12: "gimmickEnemyAff",
     0x33975AC6: "gimmickMob",
     0x5D8D6C4E: "gimmickFixedMob",
@@ -102,7 +102,7 @@ hashes = {
     0xCEAA3005: "gimmickFootPrint",
     0x03397BD7: "gimmickWeather",
     0xF941E5C0: "gimmickEtherPoint",
-    0x2B7999C5: None,  # Has fields: Condition, EventID, Priority
+    0x2B7999C5: None,  # Has fields: Condition, EventID, Priority (likely a gimmick table, lexically between gimmickPrecious and gimmickPuzzle)
     0x063C76AB: "gimmickCorpse",
     0x6B40A33C: "gimmickInterest",
     0x04842934: "gimmickSE",
@@ -113,7 +113,7 @@ hashes = {
     0x815F9DEF: "gimmickIconLocator",
     0x41CBF846: "gimmickPuzzle",
     0x5E93DEC1: "gimmickBlackMist",
-    0x9BDB275E: None,  # Has fields: Condition
+    0x9BDB275E: None,  # Has fields: Condition (likely a gimmick table, lexically between gimmickFootPrint and gimmickGrave)
     0x05112AA4: None,  # Has fields: affType
     0x95F00CDF: None,  # Has fields: Condition, affType
     0xF0A0A1B1: None,  # Has Fields: {TargetMob,Text,DispTime}1-3
@@ -250,8 +250,8 @@ hashes = {
     0x949AA63A: "ITM_RewardAssort",
     0xE418C419: "ITM_RewardCollepedia",
     0x49125B68: "ITM_RewardQuest",
-    0xD88E0DEB: None,  # Has fields: Colony, RespectPoint, BonusExp
-    0xB7136B52: None,  # Has fields: Item{Id,Rate}1-10, ItemCountMin, ItemCountMax
+    0xD88E0DEB: "ITM_RewardGrieve",
+    0xB7136B52: "ITM_RewardDroppedSupplies",
     0xFF63B067: "SYS_DropItemBehavior",
     0xF936594B: None,  # Has fields: Condition, SpotName, Text, IconOffset, Bonfire, [XYZ]Offset
     0xC5C5F70E: None,  # Has fields: Category, FormationCooking, FormationTraining
@@ -414,7 +414,7 @@ hashes = {
     0xD5696E7F: "MNU_MapInfoFile",
     0x35D68F4D: None,  # Has fields: BoneName1-4, StepOffset, Vibration
     0xF0F61B4E: "SYS_FootPrintOffset",  # FIXME: unclear if correct
-    0x06955984: None,  # Has fields: Walk, Run, LandingDamage, Slide
+    0x06955984: "SYS_EffConvert",
     0x5AC778BE: "SYS_EffMaterial",
     0xEE61112B: "FLD_LookAt",  # FIXME: unclear if correct
     0xFB616D5F: "SYS_CharacterDirection",
@@ -434,9 +434,9 @@ hashes = {
     0x40A97F5D: "FLD_PcFormation",
     0xB8A49792: "FLD_NpcTalkAction",
     0x32E3254F: "QST_NaviMapList",  # FIXME: unclear if correct
-    0x03B52788: None,  # (Tutorial battle list) Has fields: Comment, Tutorial, Title, Thumbnail, Summary, Leader, Party, Condition
-    0xF9173812: None,  # (Tutorial battle party list) Has fields: Comment, {PC,Level,ArtsSet}01-06, HERO, LevelHero
-    0xA3CAD8C7: None,  # (Tutorial battle arts set list) Has fields: Talent, arts01-06
+    0x03B52788: "SYS_TrialList",
+    0xF9173812: "SYS_TrialPartyInfo",
+    0xA3CAD8C7: "SYS_TrialPcInfo",
     0x8C1FA2DE: "SYS_Tutorial",
     0x03DB7192: "SYS_TutorialEnemyInfo",
     0x7DEB6EAF: "MNU_HeroList",
@@ -448,7 +448,7 @@ hashes = {
     0x6F42026E: None,  # Has fields: ColorScale, WhiteAddRate
     0x5750277F: None,  # Has fields: Exp, Pos[XY], Scale[XY], Wave{Rate,Freq,Random}, StartOffset
     0x6BD7030D: "FLD_Vignette",
-    0xD465E6B7: None,  # Has fields: Gimmick
+    0xD465E6B7: "SYS_GimmickPreparing",
     0xDE695AF0: None,  # Has fields: cam_l[xyz], cam_angle
     0xCA4DD4C0: "SYS_SpAttack",
     0x72C56041: None,  # Has fields: {PC,Motion,Object}1-2
@@ -457,7 +457,7 @@ hashes = {
     0x7147D811: "FLD_MobScale",
     0xB52CB42D: None,  # Has fields: Before, Condition, After
     0x96AE47E6: "SYS_TutorialWaitTime",
-    0x8E6B2295: None,  # Has fields: Category
+    0x8E6B2295: "SYS_IntermissionSave",
     0xF5EB8697: "BTL_SpUnique",
     0xE6D8A7AE: "MNU_EventTheater_scn",
     0xD52EFD79: "MNU_FlagParam",
@@ -595,7 +595,7 @@ hashes = {
     0x28E8B08C: "msg_location_name",
     0x6436BD4A: "msg_npc_name",
     0xEDFB4E9F: "msg_npc_tag_name",
-    0xBA34C46E: None,  # PC names
+    0xBA34C46E: "msg_player_name",
     0x16B245E3: "msg_shop_name",
     0xE48A94FF: "msg_sys_access_message",
     0x3BEB99D8: "msg_system_popup",
@@ -618,6 +618,7 @@ hashes = {
     0xBF147F74: None,
 
     # Per-map gimmick tables:
+    0x0685D826: None,  # Gimmick table 1D9A5B2B for ma01a
     0x04A1DCB1: "ma01a_GMK_BGM",
     0x85EC3F24: "ma01a_GMK_BlackMist",
     0x484E2D46: "ma01a_GMK_Collection",
@@ -642,11 +643,13 @@ hashes = {
     0x042D6C87: "ma01a_GMK_Mob",
     0x94084666: "ma01a_GMK_Object",
     0x2897B486: "ma01a_GMK_Precious",
+    0xF0D5C3B6: None,  # Gimmick table 2B7999C5 for ma01a
     0xABD3FA12: "ma01a_GMK_SDropping",
     0x7A6BAA0F: "ma01a_GMK_SE",
     0xCA3A550C: "ma01a_GMK_Schedule",
     0xD3CA0EAC: "ma01a_GMK_TreasureBox",
     0x98D399DD: "ma01a_GMK_Weather",
+    0xA528E95A: None,  # Gimmick table 1D9A5B2B for ma04a
     0xBF7E7932: "ma04a_GMK_BGM",
     0x5329F692: "ma04a_GMK_BlackMist",
     0xFF93F580: "ma04a_GMK_Collection",
@@ -670,12 +673,14 @@ hashes = {
     0x8DB9C573: "ma04a_GMK_Mob",
     0x6AE57581: "ma04a_GMK_Object",
     0xB6B2C14B: "ma04a_GMK_Precious",
+    0x9ED5F02A: None,  # Gimmick table 2B7999C5 for ma04a
     0x58115357: "ma04a_GMK_Puzzle",
     0x8D25BEAB: "ma04a_GMK_SDropping",
     0xCFBD8F67: "ma04a_GMK_SE",
     0x5EE882F4: "ma04a_GMK_Schedule",
     0x11575C39: "ma04a_GMK_TreasureBox",
     0x08EB258E: "ma04a_GMK_Weather",
+    0xA5532EDB: None,  # Gimmick table 1D9A5B2B for ma07a
     0xDACBF97D: "ma07a_GMK_BGM",
     0x7D77D9D9: "ma07a_GMK_BlackMist",
     0xF52DD204: "ma07a_GMK_Collection",
@@ -703,12 +708,14 @@ hashes = {
     0xD2B6A86A: "ma07a_GMK_Mob",
     0xE7939CB2: "ma07a_GMK_Object",
     0xF193906C: "ma07a_GMK_Precious",
+    0xFD4384CB: None,  # Gimmick table 2B7999C5 for ma07a
     0x6683B96B: "ma07a_GMK_Puzzle",
     0x82937F70: "ma07a_GMK_SDropping",
     0xA068C2AC: "ma07a_GMK_SE",
     0x7A89211E: "ma07a_GMK_Schedule",
     0x4DD862B4: "ma07a_GMK_TreasureBox",
     0xE13AE2C3: "ma07a_GMK_Weather",
+    0x3ADA937D: None,  # Gimmick table 1D9A5B2B for ma09a
     0x5FCF31FF: "ma09a_GMK_BGM",
     0x89A99E06: "ma09a_GMK_BlackMist",
     0x2A743DDE: "ma09a_GMK_Collection",
@@ -737,10 +744,12 @@ hashes = {
     0x5803D22C: "ma09a_GMK_Mob",
     0x67A747F3: "ma09a_GMK_Object",
     0x30C9DAD1: "ma09a_GMK_Precious",
+    0x7F26B64B: None,  # Gimmick table 2B7999C5 for ma09a
     0x07C86B78: "ma09a_GMK_SDropping",
     0x7035C808: "ma09a_GMK_SE",
     0x325EFCF7: "ma09a_GMK_Schedule",
     0x982DFD15: "ma09a_GMK_TreasureBox",
+    0xB56054E1: None,  # Gimmick table 1D9A5B2B for ma11a
     0xCB1B986F: "ma11a_GMK_BGM",
     0x6CF533BE: "ma11a_GMK_BlackMist",
     0x320FBEE9: "ma11a_GMK_Collection",
@@ -769,12 +778,14 @@ hashes = {
     0xE72501AC: "ma11a_GMK_Mob",
     0xAE60B64B: "ma11a_GMK_Object",
     0x78D1E214: "ma11a_GMK_Precious",
+    0x92738207: None,  # Gimmick table 2B7999C5 for ma11a
     0x3FE2E815: "ma11a_GMK_Puzzle",
     0x5970FDF6: "ma11a_GMK_SDropping",
     0x4968C64D: "ma11a_GMK_SE",
     0x73660EB3: "ma11a_GMK_Schedule",
     0xEBA530C2: "ma11a_GMK_TreasureBox",
     0x0750E780: "ma11a_GMK_Weather",
+    0x705D2D04: None,  # Gimmick table 1D9A5B2B for ma14a
     0x4E40AEEB: "ma14a_GMK_EnemyDead",
     0x232003CA: "ma14a_GMK_EnemyPop",
     0x801E851E: "ma14a_GMK_Event",
@@ -785,9 +796,11 @@ hashes = {
     0xB77EF7D3: "ma14a_GMK_MapJumpList",
     0x99D4E0C8: "ma14a_GMK_Mob",
     0xE9BE9D87: "ma14a_GMK_Object",
+    0x1E19833D: None,  # Gimmick table 2B7999C5 for ma14a
     0x2E91445C: "ma14a_GMK_SE",
     0x7E10FCE2: "ma14a_GMK_Schedule",
     0x05BF69D7: "ma14a_GMK_TreasureBox",
+    0xF9DECA62: None,  # Gimmick table 1D9A5B2B for ma15a
     0xA4246CAE: "ma15a_GMK_BGM",
     0x5138D4F3: "ma15a_GMK_Collection",
     0x00B64CCA: "ma15a_GMK_Door",
@@ -812,6 +825,7 @@ hashes = {
     0x3C8E3EEF: "ma15a_GMK_Mob",
     0x7185B927: "ma15a_GMK_Object",
     0xDBD5150D: "ma15a_GMK_Precious",
+    0x296A9010: None,  # Gimmick table 2B7999C5 for ma15a
     0xBA0E6DBC: "ma15a_GMK_SE",
     0xC1EE0D8F: "ma15a_GMK_Schedule",
     0x4098C72D: "ma15a_GMK_TreasureBox",
@@ -834,6 +848,7 @@ hashes = {
     0x6FABC0A3: "ma17a_GMK_MapJumpList",
     0xA5E3C704: "ma17a_GMK_Object",
     0x6A79E665: "ma17a_GMK_Precious",
+    0x0CD9C2AE: None,  # Gimmick table 2B7999C5 for ma17a
     0x7C9F69DC: "ma17a_GMK_SE",
     0x2475C723: "ma17a_GMK_TreasureBox",
     0x13613F65: "ma17a_GMK_Weather",
@@ -841,6 +856,7 @@ hashes = {
     0x87D440CB: "ma20a_GMK_Event",
     0x79C5B81C: "ma20a_GMK_FlowEvent",
     0xA3C362AD: "ma20a_GMK_Location",
+    0x5D68EF5C: None,  # Gimmick table 2B7999C5 for ma20a
     0x7A54A077: "ma20a_GMK_SE",
     0x8186EE86: "ma21a_GMK_MapJumpList",
     0xD80B9EAE: "ma21a_GMK_SE",
@@ -862,6 +878,7 @@ hashes = {
     0xB6FE0BE7: "ma22a_GMK_MapJumpList",
     0xA86F352B: "ma22a_GMK_Object",
     0x893F6918: "ma22a_GMK_Precious",
+    0xEC13CCD6: None,  # Gimmick table 2B7999C5 for ma22a
     0x1C28797B: "ma22a_GMK_SE",
     0x8E71D160: "ma22a_GMK_TreasureBox",
     0x6BD005A9: "ma90a_GMK_BGM",
@@ -878,6 +895,7 @@ hashes = {
     0x2F52EAA9: "ma90a_GMK_Location",
     0x803EFBB0: "ma90a_GMK_Object",
     0xD3ADCF9B: "ma90a_GMK_Precious",
+    0x4A868241: None,  # Gimmick table 2B7999C5 for ma90a
     0xFC8B2F17: "ma90a_GMK_SDropping",
     0x70EB4338: "ma90a_GMK_SE",
     0x56902927: "ma90a_GMK_TreasureBox",
@@ -7844,12 +7862,19 @@ class BdatTable(object):
                     self._hashid_field_map[field_index][id] = row
             return self._hashid_field_map[field_index].get(id, None)
 
-    def get(self, row, field):
-        """Return the content of the given cell."""
+    def get(self, row, field, raw=False):
+        """Return the content of the given cell.
+
+        [Parameters]
+            row: Row index.
+            field: Field index.
+            raw: If True, return the original value of the cell (before
+                any set() calls).
+        """
         assert row < len(self._rows)
         assert field < len(self._fields)
         if isinstance(self._rows[row][field], tuple):
-            return self._rows[row][field][0]
+            return self._rows[row][field][0 if raw else 1]
         else:
             return self._rows[row][field]
 
@@ -7867,11 +7892,16 @@ class BdatTable(object):
         assert row < len(self._rows)
         assert field < len(self._fields)
         assert value is not None
+        if isinstance(self._rows[row][field], tuple):
+            initial_value = self._rows[row][field][0]
+        else:
+            initial_value = self._rows[row][field]
         if link_table:
             assert isinstance(link_table, str)
-            self._rows[row][field] = (value, link_table, link_row)
+            self._rows[row][field] = (initial_value, value,
+                                      link_table, link_row)
         else:
-            self._rows[row][field] = value
+            self._rows[row][field] = (initial_value, value)
 
     def addref(self, row, ref_name, ref_row, ref_value):
         """Add a reference to the given row from the named table and row.
@@ -7965,15 +7995,17 @@ class BdatTable(object):
                 else:
                     values = row[i]
                 for value in values:
-                    if isinstance(value, tuple):
-                        if len(value) > 2:
-                            node = f'#{value[2]}'
+                    if isinstance(value, tuple) and len(value) >= 4:
+                        if value[3] is not None:
+                            node = f'#{value[3]}'
                         else:
                             node = ''
-                        value_str = (f'<a href="{value[1]}.html{node}">'
-                                     + self._print_value(value[0], self._fields[i])
+                        value_str = (f'<a href="{value[2]}.html{node}">'
+                                     + self._print_value(value[1], self._fields[i])
                                      + '</a>')
                     else:
+                        if isinstance(value, tuple):
+                            value = value[1]
                         value_str = self._print_value(value, self._fields[i])
                     s += f'      <td>{value_str}</td>\n'
             # end for
@@ -8401,6 +8433,7 @@ row_name_fields = {
     'ITM_Gem': 'Name',
     'ITM_Info': 'Name',
     'ITM_Precious': 'Name',
+    'MNU_EventTheater_scn': 'title',
     'MNU_MapInfo': 'disp_name',
     'MNU_ShopList': 'Name',
     'QST_List': 'QuestTitle',
@@ -8410,7 +8443,7 @@ row_name_fields = {
     'SYS_TutorialMessage': 'Title',
     'SYS_TutorialSummary': 'Title',
     'SYS_TutorialTask': 'Title',
-    '03B52788': 'Title',
+    'SYS_TrialList': 'Title',
     '6EC8096C': 'Name',
     'BB82DEE6': 'Name',
     'D9B88F26': 'Name',
@@ -8448,7 +8481,7 @@ text_xrefs = {
                    'Caption': ('msg_btl_talent_caption', 'name')},
     'BTL_WpnType': {'Name': ('msg_btl_weapon_type', 'name'),
                     'Name2': ('msg_btl_weapon_type', 'name')},
-    'CHR_PC': {'Name': ('BA34C46E', 'name')},
+    'CHR_PC': {'Name': ('msg_player_name', 'name')},
     'CHR_UroBody': {'Name': ('msg_mnu_char_ms', 'name', 'urobody_name')},
     'FLD_ColonyList': {'Name': ('msg_colony_name', 'name'),
                        'Caption': ('msg_colony_text', 'name')},
@@ -8483,6 +8516,9 @@ text_xrefs = {
                      'Caption': ('msg_item_precious', 'name'),
                      'Name2': ('msg_item_precious', 'name'),
                      'Caption2': ('msg_item_precious', 'name')},
+    'MNU_EventTheater_scn': {'title': ('msg_mnu_event_name', 'name'),
+                             'scn_category': ('msg_mnu_event_theater_ms', 'name', 'scn_category'),
+                             'scn_group': ('msg_mnu_event_theater_ms', 'name', 'scn_group')},
     'MNU_MapInfo': {'disp_name': ('msg_mnu_minimap_areaname', 'name')},
     'MNU_PatchDetailA': {'DetailIndexText': ('msg_mnu_patch_info', 'name'),
                          'DetailInfoText': ('msg_mnu_patch_info', 'name'),
@@ -8499,6 +8535,7 @@ text_xrefs = {
     'QST_Task': {'TaskLog1': ('msg_qst_task', 'name'),
                  'TaskLog2': ('msg_qst_task', 'name')},
     'SYS_MapList': {'Name': ('msg_location_name', 'name')},
+    'SYS_TrialList': {'Title': ('msg_mnu_tutorial_tips', 'name')},
     'SYS_TutorialHintA': {'Text1': ('msg_mnu_tutorial_tips', 'name'),
                           'Text2': ('msg_mnu_tutorial_tips', 'name')},
     'SYS_TutorialMessage': {'Title': ('msg_mnu_tutorial_tips', 'name'),
@@ -8530,14 +8567,16 @@ text_xrefs = {
     'ma20a_GMK_Location': {'LocationName': ('msg_location_name', 'name')},
     'ma22a_GMK_Location': {'LocationName': ('msg_location_name', 'name')},
     'ma90a_GMK_Location': {'LocationName': ('msg_location_name', 'name')},
-    '03B52788': {'Title': ('msg_mnu_tutorial_tips', 'name')},  # Tutorial battle list
     '6EC8096C': {'Name': ('0103F5B8', 'name')},  # Canteen recipe list
     'BB82DEE6': {'Name': ('F6E689C3', 'name')},  # Chain attack TP bonuses
     'D9B88F26': {'Name': ('msg_btl_chainorder_name', 'name')},  # Chain attack card list
+    'DB31DA53': {'Name1': ('msg_fld_perk_name', 'name'), # Food perk list
+                 'Name2': ('msg_fld_perk_name', 'name'),
+                 'Name3': ('msg_fld_perk_name', 'name'),
+                 'Caption1': ('msg_fld_perk_name', 'name'), 
+                 'Caption2': ('msg_fld_perk_name', 'name'),
+                 'Caption3': ('msg_fld_perk_name', 'name')},
     'EED24855': {'GroupName': ('msg_enemy_group_name', 'name')},  # Unique monster list
-    'DB31DA53': {'Name1': ('msg_fld_perk_name', 'name'), 'Name2': ('msg_fld_perk_name', 'name'), # Food perk list
-                 'Name3': ('msg_fld_perk_name', 'name'), 'Caption1': ('msg_fld_perk_name', 'name'), 
-                 'Caption2': ('msg_fld_perk_name', 'name'), 'Caption3': ('msg_fld_perk_name', 'name') }
 }
 
 refset_arts_en = ('BTL_Arts_En', )
@@ -8930,7 +8969,7 @@ table_xrefs = {
                   'EnhanceSlot0': refset_enhance,
                   'EnhanceSlot1': refset_enhance,
                   'EnhanceSlot2': refset_enhance,
-                  'RageStance': 'BTL_Stance'},
+                  'RageStance': refset_stance},
     'BTL_Skill_PC': {'UseTalent': refset_talent,
                      'UseChr': refset_pc,
                      'EnSkillAchieve': 'BTL_Achievement'},
@@ -9042,6 +9081,26 @@ table_xrefs = {
     'ITM_Collepedia': {'Reward1': 'ITM_RewardCollepedia',
                        'RelationID': 'FLD_RelationNpc',
                        'ColonyRelationID': 'FLD_RelationColony'},
+    'ITM_RewardAssort': {'Reward1': refset_item,
+                         'Reward2': refset_item,
+                         'Reward3': refset_item,
+                         'Reward4': refset_item,
+                         'Reward5': refset_item,
+                         'Reward6': refset_item,
+                         'Reward7': refset_item,
+                         'Reward8': refset_item,
+                         'Reward9': refset_item,
+                         'Reward10': refset_item,
+                         'Reward11': refset_item,
+                         'Reward12': refset_item,
+                         'Reward13': refset_item,
+                         'Reward14': refset_item,
+                         'Reward15': refset_item,
+                         'Reward16': refset_item,
+                         'Reward17': refset_item,
+                         'Reward18': refset_item,
+                         'Reward19': refset_item,
+                         'Reward20': refset_item},
     'ITM_RewardCollepedia': {'Reward1': refset_item},
     'ITM_RewardQuest': {'Reward1': refset_item,
                         'Reward2': refset_item,
@@ -9052,6 +9111,16 @@ table_xrefs = {
                        'SubTitleText': 'msg_mnu_dlc_info'},
     'MNU_DlcGift': {'vol_id': 'MNU_DLCVolInfo',
                     'contents_id': 'MNU_DLCContentsInfo'},
+    'MNU_EventTheater_scn': {'ev01_id': refset_event,
+                             'ev02_id': refset_event,
+                             'ev03_id': refset_event,
+                             'ev04_id': refset_event,
+                             'ev05_id': refset_event,
+                             'ev06_id': refset_event,
+                             'ev07_id': refset_event,
+                             'ev08_id': refset_event,
+                             'ev09_id': refset_event,
+                             'ev10_id': refset_event},
     'MNU_MapInfoFile': {'top_id': 'MNU_MapInfo'},
     'MNU_ShopList': {'TableID': 'MNU_ShopTable'},
     'MNU_UroSkillList': {'SkillID': refset_skill,
@@ -9094,9 +9163,30 @@ table_xrefs = {
     'SYS_FlowEventArtsSet': {'ChrID': refset_pc,
                              'ClassID': refset_talent,
                              'ArtsID': refset_arts_pc},
+    'SYS_GimmickPreparing': {'Gimmick': refset_gimmick},
     'SYS_MapJumpList': {'FormationID': refset_gimmick},
     'SYS_MapList': {'ResourceId': 'RSC_MapFile',
                     'WeatherData': 'SYS_WeatherTable'},
+    'SYS_TrialPartyInfo': {'PC01': refset_pc,
+                           'ArtsSet01': 'SYS_TrialPcInfo',
+                           'PC02': refset_pc,
+                           'ArtsSet02': 'SYS_TrialPcInfo',
+                           'PC03': refset_pc,
+                           'ArtsSet03': 'SYS_TrialPcInfo',
+                           'PC04': refset_pc,
+                           'ArtsSet04': 'SYS_TrialPcInfo',
+                           'PC05': refset_pc,
+                           'ArtsSet05': 'SYS_TrialPcInfo',
+                           'PC06': refset_pc,
+                           'ArtsSet06': 'SYS_TrialPcInfo'},
+    'SYS_TrialPcInfo': {'Talent': refset_talent,
+                        'arts01': refset_arts_pc,
+                        'arts02': refset_arts_pc,
+                        'arts03': refset_arts_pc,
+                        'arts04': refset_arts_pc,
+                        'arts05': refset_arts_pc,
+                        'arts06': refset_arts_pc,
+                        'NoahTalentArts': refset_arts_pc},
     'SYS_Tutorial': {'EnemyInfo': 'SYS_TutorialEnemyInfo'},
     'SYS_TutorialEnemyInfo': {'field_10FF2123': refset_enemy,
                               'field_1A391DEB': refset_enemy,
@@ -9105,8 +9195,8 @@ table_xrefs = {
                  'field_DC34361E': refset_gimmick,
                  'field_224F1DF3': refset_gimmick,
                  'CollectionID': 'FLD_AffCollection'},
-    '03B52788': {'Leader': refset_pc,
-                 'Party': 'F9173812'},  # Tutorial battle list
+    'SYS_TrialList': {'Leader': refset_pc,
+                      'Party': 'SYS_TrialPartyInfo'},
     '0B368E78': {'EffectCondition': refset_condition,
                  'SeCondition': refset_condition},
     '152F4D70': {'field_791E2B72': 'C6B4111D'},  # see around v1.1.0:1b7cac
@@ -9161,34 +9251,6 @@ table_xrefs = {
                  'RelationID8': 'FLD_RelationNpc',
                  'RelationID9': 'FLD_RelationNpc',
                  'RelationID10': 'FLD_RelationNpc'},
-    'ITM_RewardAssort': {'Reward1': refset_item,
-                         'Reward2': refset_item,
-                         'Reward3': refset_item,
-                         'Reward4': refset_item,
-                         'Reward5': refset_item,
-                         'Reward6': refset_item,
-                         'Reward7': refset_item,
-                         'Reward8': refset_item,
-                         'Reward9': refset_item,
-                         'Reward10': refset_item,
-                         'Reward11': refset_item,
-                         'Reward12': refset_item,
-                         'Reward13': refset_item,
-                         'Reward14': refset_item,
-                         'Reward15': refset_item,
-                         'Reward16': refset_item,
-                         'Reward17': refset_item,
-                         'Reward18': refset_item,
-                         'Reward19': refset_item,
-                         'Reward20': refset_item},
-    'A3CAD8C7': {'Talent': refset_talent,
-                 'arts01': refset_arts_pc,
-                 'arts02': refset_arts_pc,
-                 'arts03': refset_arts_pc,
-                 'arts04': refset_arts_pc,
-                 'arts05': refset_arts_pc,
-                 'arts06': refset_arts_pc,
-                 'NoahTalentArts': refset_arts_pc},
     'A6AAF689': {'ArtsID': refset_arts_pc},
     'B971C420': {'Talent': refset_talent,
                  'ArtsID': (('BTL_Arts_PC', 'E29EF7E9'), )},
@@ -9209,18 +9271,6 @@ table_xrefs = {
     'DA526616': {'VolID': '5CD15665'},
     'DF81B4D2': {'affType': '76D0D7D9'},
     'E44BEAA2': {'PC': refset_pc},
-    'F9173812': {'PC01': refset_pc,
-                 'ArtsSet01': 'A3CAD8C7',
-                 'PC02': refset_pc,
-                 'ArtsSet02': 'A3CAD8C7',
-                 'PC03': refset_pc,
-                 'ArtsSet03': 'A3CAD8C7',
-                 'PC04': refset_pc,
-                 'ArtsSet04': 'A3CAD8C7',
-                 'PC05': refset_pc,
-                 'ArtsSet05': 'A3CAD8C7',
-                 'PC06': refset_pc,
-                 'ArtsSet06': 'A3CAD8C7'},
     'FAC1F258': {'RelationID1': 'FLD_RelationColony',
                  'RelationID2': 'FLD_RelationColony',
                  'RelationID3': 'FLD_RelationColony',
@@ -9341,6 +9391,18 @@ def resolve_field_xrefs(tables, table, field_idx, target, add_link):
                         value += f' ({param1})'
                     elif type != 255:
                         value += f' ({param2})'
+                elif target[2] == 'scn_category':
+                    target_row += 40
+                    value = target_table.get(target_row, target_field)
+                elif target[2] == 'scn_group':
+                    category = table.get(row, field_idx-1, True)
+                    if category == 1:
+                        target_row += 1
+                        value = target_table.get(target_row, target_field)
+                    elif category != 0:
+                        target_table = tables['msg_player_name']
+                        target_row -= 7
+                        value = target_table.get(target_row, target_field)
                 elif target[2] in ('condition_quest', 'qst_task'):
                     pass  # No additional logic
                 else:
@@ -9445,7 +9507,10 @@ def resolve_xrefs(tables):
             if field is not None:
                 for row in range(table.num_rows):
                     value = table.get(row, field)
-                    target = 'msg_' + value
+                    if field_name.startswith('mstxt'):
+                        target = 'msg_' + value
+                    else:
+                        target = value
                     if target in tables:
                         table.set(row, field, value, target, None)
 
