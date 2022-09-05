@@ -150,7 +150,7 @@ hashes = {
     0xFA3E7D62: None,  # Has fields: TankProb1-3, AttackerProb1-3, HealerProb1-3
     0xAD08DF86: "BTL_Enemy",
     0xC1053235: "BTL_EnemyAi",
-    0xC6B4111D: None,  # Enemy (unique/event?) drop table
+    0xC6B4111D: "BTL_EnemyDrop_Appoint",
     0xFAB21EAA: "BTL_EnemyDrop_Material",
     0x88BBE290: "BTL_EnemyDrop_Normal",
     0x152F4D70: None,  # Has fields: RevGold
@@ -362,7 +362,7 @@ hashes = {
     0x5A744A5C: None,
     0x85A8179F: "FLD_KizunaColony",
     0x7E6F5DCC: None,  # Has fields: name, hint, icon_index, menu_command, menu_value
-    0x1A109460: None,
+    0x1A109460: "MNU_Cloudgem",
     0x7CE82B08: "MNU_saveload_scenario",
     0x2DA282E2: "MNU_game_option_category",
     0x32DBEBED: None,
@@ -9104,9 +9104,9 @@ table_xrefs = {
                'DefAcce1': refset_item,
                'DefAcce2': refset_item,
                'DefAcce3': refset_item,
-               'DefGem1': '1A109460',
-               'DefGem2': '1A109460',
-               'DefGem3': '1A109460',
+               'DefGem1': 'MNU_Cloudgem',
+               'DefGem2': 'MNU_Cloudgem',
+               'DefGem3': 'MNU_Cloudgem',
                'UroBody': 'CHR_UroBody',
                'UroPartner': refset_pc,
                'UroCondition': refset_condition,
@@ -9161,7 +9161,7 @@ table_xrefs = {
                               'NotScenarioMin': 'SYS_ScenarioFlag',
                               'NotScenarioMax': 'SYS_ScenarioFlag'},
     'FLD_EnemyData': {'IdBattleEnemy': 'BTL_Enemy',
-                      'field_C6717CFE': '152F4D70',  # guessed from UM drops and 152F4D70->C6B4111D link
+                      'field_C6717CFE': '152F4D70',
                       'IdDropPrecious': refset_item,
                       'GetEnArts': refset_arts_pc,
                       'GetEnSkill': refset_skill},
@@ -9346,7 +9346,7 @@ table_xrefs = {
                  'Contents2': '70810224',
                  'Contents3': '70810224',
                  'Contents4': '70810224'},
-    '152F4D70': {'field_791E2B72': 'C6B4111D'},  # see around v1.1.0:1b7cac
+    '152F4D70': {'field_791E2B72': 'BTL_EnemyDrop_Appoint'},
     '1623B3A0': {'ContentsID': 'MNU_DLCContentsInfo'},
     '1A109460': {'ItmGemID': refset_item},  # mapping from gem ID to item ID
     '268AE713': {'affType': '76D0D7D9'},
