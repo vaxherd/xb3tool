@@ -343,7 +343,7 @@ hashes = {
     0x93BCD4DC: "RSC_EyeIK",
     0x6B3F1942: None,  # Has fields: DefaultOn
     0x1432D8A7: "MNU_dialog",
-    0xCD3B3FC3: None,  # Has fields: push_type, action_name
+    0xCD3B3FC3: "MNU_action_hud",
     0xC29E28FD: None,  # Has fields: MenuCategory, Object1, ObjPoint1
     0x02913D16: None,  # Has fields: CaseNoah, CaseMio, CaseEunie, CaseTaion, CaseLanz, CaseSena, HideWeapon
     0x20992C15: "SYS_Mount",
@@ -354,7 +354,7 @@ hashes = {
     0x83E0F284: "FLD_InterestEventStart",
     0xDAF44E8F: "FLD_InterestEventReaction",
     0xFEF315B6: None,  # Has fields: EventID, Condition, SpotGimmick
-    0xF9349351: None,  # Has fields: icon_index, type, obj_name, disp_range, disp_check
+    0xF9349351: "MNU_obj_info",
     0xFF057327: "CHR_UroBody",
     0xE44BEAA2: None,  # Has fields: PC, PointType, Motion, EyeMotion, MountObj
     0x0828980E: "FLD_ColonyList",
@@ -385,7 +385,7 @@ hashes = {
     0x7729B35C: None,  # Has fields: Condition, Item{Id,Rate}1-10
     0x0A316038: "FLD_CookRecipe",
     0xAF5A7B80: "FLD_CraftCookList",
-    0x0D4DD27E: None,  # Has fields: SpotGimmick, TableID, Comment
+    0x0D4DD27E: "FLD_CraftMealList",
     0xF02EB97C: None,  # Recipe upgrade list
     0x6EC8096C: "FLD_MealRecipe",
     0x3B47669B: "QST_RequestItemSet",
@@ -407,13 +407,13 @@ hashes = {
     0x38031E0F: "FLD_DamageFloor",
     0x6F56B53C: "SYS_CameraShake",
     0xA5595837: "FLD_MealObject",
-    0xEED24855: None,  # Unique monster list
+    0xEED24855: "FLD_UMonsterList",
     0x13B8DA8C: "FLD_ConditionUMonster",
     0x3CC7CE2D: "FLD_ConditionTutorial",
     0xAA6D70CA: "MNU_MapInfo",
     0xD5696E7F: "MNU_MapInfoFile",
-    0x35D68F4D: None,  # Has fields: BoneName1-4, StepOffset, Vibration
-    0xF0F61B4E: "SYS_FootPrintOffset",  # FIXME: unclear if correct
+    0x35D68F4D: "SYS_FootPrintDetection",
+    0xF0F61B4E: "SYS_FootPrintOffset",
     0x06955984: "SYS_EffConvert",
     0x5AC778BE: "SYS_EffMaterial",
     0xEE61112B: "FLD_LookAt",  # FIXME: unclear if correct
@@ -449,7 +449,7 @@ hashes = {
     0x5750277F: "FLD_RadialBlur",
     0x6BD7030D: "FLD_Vignette",
     0xD465E6B7: "SYS_GimmickPreparing",
-    0xDE695AF0: None,  # Has fields: cam_l[xyz], cam_angle
+    0xDE695AF0: "MNU_form_cam",
     0xCA4DD4C0: "SYS_SpAttack",
     0x72C56041: None,  # Has fields: {PC,Motion,Object}1-2
     0xD327B2BC: None,  # Has fields: QuestID, TaskID, Comment
@@ -478,8 +478,8 @@ hashes = {
     0xA8FEE5F0: "MNU_UroSkillList",
     0xAFD83F1B: "MNU_Attachment",
     0x8CA278B0: "SYS_LoadingTips",
-    0x08EF7F06: None,  # Has fields: name, ScenarioFlag
-    0x74385681: None,  # Has fields: PcID, TalentID, ArtistName, WeaponName, Voice1-4, ArtsVoice1-6, Arts1-6
+    0x08EF7F06: "MNU_formation_list",
+    0x74385681: "MNU_HeroDictionary",
     0xC810A4F3: None,  # Has fields: NumberingID, OpenFlag, LotID, RewordName, RewordText
     0x2FE3444A: "BTL_AutoSetAccessory",
     0xFA253EBF: "BTL_AutoSetArts",
@@ -4569,6 +4569,13 @@ hashes = {
     0x4CF1C296: "MNU_TextLink_Mstxt",
     0xE1E61948: "MNU_Text_IdList",
     0x686FDFDB: "MNU_filter",
+    0x85C68AD1: "MNU_option_camera",
+    0x54D69CFB: "MNU_option_display",
+    0x09F8A812: "MNU_option_formation",
+    0xED440CCA: "MNU_option_game",
+    0x241FE03A: "MNU_option_message",
+    0x12110072: "MNU_option_notice",
+    0x9CFC5B3B: "MNU_option_sound",
     0xD4D03C1E: "MNU_sort",
 
     0x9416AC93: "1",
@@ -5830,6 +5837,8 @@ hashes = {
     0x66E78B9A: "Marking5",
     0xE3A92C2B: "Marking6",
     0x69F8C198: "Marking7",
+    0x337DB4A7: "MaterialDropNumMax",
+    0x9F2DF785: "MaterialDropNumMin",
     0xA71DE7C9: "MaterialDropProb",
     0x009B610D: "MaxDelay",
     0xDF998797: "MaxHeight",
@@ -5991,6 +6000,8 @@ hashes = {
     0x80F89F24: "NoUro",
     0xF93D37D3: "NoahTalentArts",
     0x390B012D: "Normal",
+    0x6DC57ACC: "NormalDropNumMax",
+    0x59557DAA: "NormalDropNumMin",
     0xB0E5FFB2: "NormalDropProb",
     0x4A86AE4A: "Not1",
     0xD0DB2BA8: "Not2",
@@ -8506,6 +8517,7 @@ text_xrefs = {
                         'Text3': ('msg_kizuna_name', 'name'),
                         'Text4': ('msg_kizuna_name', 'name'),
                         'Text5': ('msg_kizuna_name', 'name')},
+    'FLD_UMonsterList': {'GroupName': ('msg_enemy_group_name', 'name')},
     'ITM_Accessory': {'Name': ('msg_item_accessory', 'name')},
     'ITM_Collection': {'Name': ('msg_item_collection', 'name')},
     'ITM_Collepedia': {'Text': ('BEDB6533', 'name'),
@@ -8523,6 +8535,11 @@ text_xrefs = {
     'MNU_EventTheater_scn': {'title': ('msg_mnu_event_name', 'name'),
                              'scn_category': ('msg_mnu_event_theater_ms', 'name', 'scn_category'),
                              'scn_group': ('msg_mnu_event_theater_ms', 'name', 'scn_group')},
+    'MNU_HeroDictionary': {'field_AD39AD18': ('msg_mnu_hero_book', 'name'),
+                           'field_251175EF': ('msg_mnu_hero_book', 'name'),
+                           'ArtistName': ('msg_mnu_hero_book', 'name'),
+                           'field_3530020D': ('msg_mnu_hero_hint', 'name'),
+                           'field_C65F4B14': ('msg_mnu_hero_hint', 'name')},
     'MNU_MapInfo': {'disp_name': ('msg_mnu_minimap_areaname', 'name')},
     'MNU_PatchDetailA': {'DetailIndexText': ('msg_mnu_patch_info', 'name'),
                          'DetailInfoText': ('msg_mnu_patch_info', 'name'),
@@ -8530,6 +8547,94 @@ text_xrefs = {
     'MNU_PatchInfo': {'PatchNameText': ('msg_mnu_patch_info', 'name'),
                       'field_2AF7F370': ('msg_mnu_patch_info', 'name')},
     'MNU_ShopList': {'Name': ('msg_shop_name', 'name')},
+    'MNU_game_option_category': {'name': ('msg_mnu_option', 'name'),
+                                 'help': ('msg_mnu_option', 'name')},
+    '44F0EA5A': {'name': ('msg_mnu_option', 'name'),
+                 'help': ('msg_mnu_option', 'name'),
+                 'help1': ('msg_mnu_option', 'name'),
+                 'help2': ('msg_mnu_option', 'name'),
+                 'help3': ('msg_mnu_option', 'name'),
+                 'help4': ('msg_mnu_option', 'name'),
+                 'field_5925DC4C': ('msg_mnu_option', 'name'),
+                 'field_7D13B44A': ('msg_mnu_option', 'name'),
+                 'field_B6E3A0D7': ('msg_mnu_option', 'name'),
+                 'field_D8225635': ('msg_mnu_option', 'name'),
+                 'field_6FBE92E0': ('msg_mnu_option', 'name')},
+    'MNU_option_camera': {'name': ('msg_mnu_option', 'name'),
+                          'help': ('msg_mnu_option', 'name'),
+                          'help1': ('msg_mnu_option', 'name'),
+                          'help2': ('msg_mnu_option', 'name'),
+                          'help3': ('msg_mnu_option', 'name'),
+                          'help4': ('msg_mnu_option', 'name'),
+                          'field_5925DC4C': ('msg_mnu_option', 'name'),
+                          'field_7D13B44A': ('msg_mnu_option', 'name'),
+                          'field_B6E3A0D7': ('msg_mnu_option', 'name'),
+                          'field_D8225635': ('msg_mnu_option', 'name'),
+                          'field_6FBE92E0': ('msg_mnu_option', 'name')},
+    'MNU_option_display': {'name': ('msg_mnu_option', 'name'),
+                           'help': ('msg_mnu_option', 'name'),
+                           'help1': ('msg_mnu_option', 'name'),
+                           'help2': ('msg_mnu_option', 'name'),
+                           'help3': ('msg_mnu_option', 'name'),
+                           'help4': ('msg_mnu_option', 'name'),
+                           'field_5925DC4C': ('msg_mnu_option', 'name'),
+                           'field_7D13B44A': ('msg_mnu_option', 'name'),
+                           'field_B6E3A0D7': ('msg_mnu_option', 'name'),
+                           'field_D8225635': ('msg_mnu_option', 'name'),
+                           'field_6FBE92E0': ('msg_mnu_option', 'name')},
+    'MNU_option_formation': {'name': ('msg_mnu_option', 'name'),
+                             'help': ('msg_mnu_option', 'name'),
+                             'help1': ('msg_mnu_option', 'name'),
+                             'help2': ('msg_mnu_option', 'name'),
+                             'help3': ('msg_mnu_option', 'name'),
+                             'help4': ('msg_mnu_option', 'name'),
+                             'field_5925DC4C': ('msg_mnu_option', 'name'),
+                             'field_7D13B44A': ('msg_mnu_option', 'name'),
+                             'field_B6E3A0D7': ('msg_mnu_option', 'name')},
+    'MNU_option_game': {'name': ('msg_mnu_option', 'name'),
+                        'help': ('msg_mnu_option', 'name'),
+                        'help1': ('msg_mnu_option', 'name'),
+                        'help2': ('msg_mnu_option', 'name'),
+                        'help3': ('msg_mnu_option', 'name'),
+                        'help4': ('msg_mnu_option', 'name'),
+                        'field_5925DC4C': ('msg_mnu_option', 'name'),
+                        'field_7D13B44A': ('msg_mnu_option', 'name'),
+                        'field_B6E3A0D7': ('msg_mnu_option', 'name'),
+                        'field_D8225635': ('msg_mnu_option', 'name'),
+                        'field_6FBE92E0': ('msg_mnu_option', 'name')},
+    'MNU_option_message': {'name': ('msg_mnu_option', 'name'),
+                           'help': ('msg_mnu_option', 'name'),
+                           'help1': ('msg_mnu_option', 'name'),
+                           'help2': ('msg_mnu_option', 'name'),
+                           'help3': ('msg_mnu_option', 'name'),
+                           'help4': ('msg_mnu_option', 'name'),
+                           'field_5925DC4C': ('msg_mnu_option', 'name'),
+                           'field_7D13B44A': ('msg_mnu_option', 'name'),
+                           'field_B6E3A0D7': ('msg_mnu_option', 'name'),
+                           'field_D8225635': ('msg_mnu_option', 'name'),
+                           'field_6FBE92E0': ('msg_mnu_option', 'name')},
+    'MNU_option_notice': {'name': ('msg_mnu_option', 'name'),
+                          'help': ('msg_mnu_option', 'name'),
+                          'help1': ('msg_mnu_option', 'name'),
+                          'help2': ('msg_mnu_option', 'name'),
+                          'help3': ('msg_mnu_option', 'name'),
+                          'help4': ('msg_mnu_option', 'name'),
+                          'field_5925DC4C': ('msg_mnu_option', 'name'),
+                          'field_7D13B44A': ('msg_mnu_option', 'name'),
+                          'field_B6E3A0D7': ('msg_mnu_option', 'name'),
+                          'field_D8225635': ('msg_mnu_option', 'name'),
+                          'field_6FBE92E0': ('msg_mnu_option', 'name')},
+    'MNU_option_sound': {'name': ('msg_mnu_option', 'name'),
+                         'help': ('msg_mnu_option', 'name'),
+                         'help1': ('msg_mnu_option', 'name'),
+                         'help2': ('msg_mnu_option', 'name'),
+                         'help3': ('msg_mnu_option', 'name'),
+                         'help4': ('msg_mnu_option', 'name'),
+                         'field_5925DC4C': ('msg_mnu_option', 'name'),
+                         'field_7D13B44A': ('msg_mnu_option', 'name'),
+                         'field_B6E3A0D7': ('msg_mnu_option', 'name'),
+                         'field_D8225635': ('msg_mnu_option', 'name'),
+                         'field_6FBE92E0': ('msg_mnu_option', 'name')},
     'MNU_saveload_scenario': {'Chapter': ('msg_mnu_saveload', 'name')},
     'QST_List': {'QuestTitle': ('msg_qst_task', 'name'),
                  'Summary': ('msg_qst_task', 'name'),
@@ -8573,7 +8678,6 @@ text_xrefs = {
     'ma90a_GMK_Location': {'LocationName': ('msg_location_name', 'name')},
     'BB82DEE6': {'Name': ('F6E689C3', 'name')},  # Chain attack TP bonuses
     'D9B88F26': {'Name': ('msg_btl_chainorder_name', 'name')},  # Chain attack card list
-    'EED24855': {'GroupName': ('msg_enemy_group_name', 'name')},  # Unique monster list
 }
 
 refset_arts_en = ('BTL_Arts_En', )
@@ -8778,6 +8882,8 @@ field_xrefs = {
     'PCID2': refset_pc,
     'PCID3': refset_pc,
     'PcID': refset_pc,
+
+    'CraftBuff': 'FLD_PerkTemporary',
 
     'QuestID': refset_quest,
 
@@ -9095,6 +9201,7 @@ table_xrefs = {
                         'TalkID5': 'FLD_NpcTalkResource'},
     'FLD_RelationColony': {'field_6E741E84': 'FLD_ColonyList',
                            'field_32A30DD7': 'FLD_ColonyList'},
+    'FLD_UMonsterList': {'Zone': refset_map},
     'ITM_Collepedia': {'Reward1': 'ITM_RewardCollepedia',
                        'RelationID': 'FLD_RelationNpc',
                        'ColonyRelationID': 'FLD_RelationColony'},
@@ -9196,6 +9303,8 @@ table_xrefs = {
                            'ArtsSet05': 'SYS_TrialPcInfo',
                            'PC06': refset_pc,
                            'ArtsSet06': 'SYS_TrialPcInfo'},
+    'SYS_TrialList': {'Leader': refset_pc,
+                      'Party': 'SYS_TrialPartyInfo'},
     'SYS_TrialPcInfo': {'Talent': refset_talent,
                         'arts01': refset_arts_pc,
                         'arts02': refset_arts_pc,
@@ -9212,8 +9321,6 @@ table_xrefs = {
                  'field_DC34361E': refset_gimmick,
                  'field_224F1DF3': refset_gimmick,
                  'CollectionID': 'FLD_AffCollection'},
-    'SYS_TrialList': {'Leader': refset_pc,
-                      'Party': 'SYS_TrialPartyInfo'},
     '0184414B': {'Contents1': '7138BADF',
                  'Contents2': '7138BADF',
                  'Contents3': '7138BADF',
@@ -9266,14 +9373,14 @@ table_xrefs = {
                  'Object1': 'RSC_MapObjList',
                  'PC2': refset_pc,
                  'Object2': 'RSC_MapObjList'},
-    '74385681': {'field_F5E05E39': 'FLD_ConditionList',
-                 'field_08C0C3DD': refset_quest,
-                 'Arts1': refset_arts_pc,
-                 'Arts2': refset_arts_pc,
-                 'Arts3': refset_arts_pc,
-                 'Arts4': refset_arts_pc,
-                 'Arts5': refset_arts_pc,
-                 'Arts6': refset_arts_pc},
+    'MNU_HeroDictionary': {'field_F5E05E39': 'FLD_ConditionList',
+                           'field_08C0C3DD': refset_quest,
+                           'Arts1': refset_arts_pc,
+                           'Arts2': refset_arts_pc,
+                           'Arts3': refset_arts_pc,
+                           'Arts4': refset_arts_pc,
+                           'Arts5': refset_arts_pc,
+                           'Arts6': refset_arts_pc},
     '76FFBF3F': {'affType': '76D0D7D9'},
     '7A066663': {'TaskID': refset_quest_taskid},
     '7A25F920': {'Contents1': '808F8A04',
@@ -9561,9 +9668,10 @@ def resolve_xrefs(tables):
 
     # Special links from table names to tables
     for name, table in tables.items():
-        for field_name in ('ForgeType',            # ITM_Accessory
-                           'TalentParamRev',       # BTL_Talent
-                           'mstxt', 'mstxt_ext'):  # Event lists
+        for field_name in ('ForgeType',           # ITM_Accessory
+                           'TalentParamRev',      # BTL_Talent
+                           'mstxt', 'mstxt_ext',  # Event lists
+                           'page_sheet'):         # MNU_game_option_category
             field = table.field_index(field_name, True)
             if field is not None:
                 for row in range(table.num_rows):
