@@ -8052,11 +8052,12 @@ class BdatTable(object):
 class Bdat(object):
     """Class wrapping a BDAT file."""
 
-    def __init__(self, path):
+    def __init__(self, path, verbose=0):
         """Initialize a Bdat isntance.
 
         Parameters:
             path: Pathname of the BDAT file.
+            verbose: Verbosity level for parse status messages.
 
         Raises:
             OSError: Raised if the file cannot be read.
@@ -8064,17 +8065,18 @@ class Bdat(object):
         self.path = path  # For external reference.
         self.name = os.path.basename(path)  # For external reference.
         with open(path, 'rb') as f:
-            self._tables = self._parse(f.read())
+            self._tables = self._parse(f.read(), verbose)
 
     def tables(self):
         """Return a list of tables contained in this BDAT file."""
         return list(self._tables)  # Make a copy.
 
-    def _parse(self, data):
+    def _parse(self, data, verbose):
         """Parse the given data as a BDAT file.
 
         Parameters:
             data: BDAT file data, as a bytes.
+            verbose: Verbosity level.
 
         Return value:
             List containing one BdatTable instance for each table in the file.
@@ -8099,15 +8101,16 @@ class Bdat(object):
             raise ValueError(f'Invalid table count {num_tables}')
         if len(data) < offset + 8 + 4*num_tables:
             raise ValueError('File is too short')
-        return list(self._parseTable(data, u32(data, offset+8+4*i))
+        return list(self._parseTable(data, u32(data, offset+8+4*i), verbose)
                     for i in range(num_tables))
 
-    def _parseTable(self, data, offset):
+    def _parseTable(self, data, offset, verbose):
         """Parse a single table from a BDAT file.
 
         Parameters:
             data: BDAT file data, as a bytes.
             offset: Byte offset of the beginning of the table.
+            verbose: Verbosity level.
 
         Return value:
             BdatTable instance for the table.
@@ -8116,11 +8119,11 @@ class Bdat(object):
             ValueError: Raised on a data format error.
         """
         if self._version == 2:
-            return self._parseTable2(data, offset)
+            return self._parseTable2(data, offset, verbose)
         else:
-            return self._parseTable1(data, offset)
+            return self._parseTable1(data, offset, verbose)
 
-    def _parseTable1(self, data, offset):
+    def _parseTable1(self, data, offset, verbose):
         """Parse a single table from a version 1 (XCX/XC2/XCDE) BDAT file."""
         if len(data) < offset+36:
             raise ValueError(f'Table at 0x{offset:X}: Truncated data or invalid offset')
@@ -8145,6 +8148,8 @@ class Bdat(object):
             raise ValueError(f'Table at 0x{offset:X}: Invalid encryption flag {encryption}')
 
         table_name = self._stringz(tdata, names_ofs, hash_ofs)
+        if verbose >= 1:
+            print(f'[{self.path}] {table_name}')
 
         fields = [(BdatField('ID', BdatFieldType.SCALAR, BdatValueType.UINT32), None, None)]
         for i in range(field_count):
@@ -8242,7 +8247,7 @@ class Bdat(object):
 
         return BdatTable(table_name, list(f[0] for f in fields), rows)
 
-    def _parseTable2(self, data, offset):
+    def _parseTable2(self, data, offset, verbose):
         """Parse a single table from a version 2 (XC3) BDAT file."""
         if len(data) < offset+48:
             raise ValueError(f'Table at 0x{offset:X}: Truncated data or invalid offset')
@@ -8266,6 +8271,8 @@ class Bdat(object):
             table_name = unhash(table_name, f'{table_name:08X}')
         else:
             table_name = self.name.replace('.bdat', '')
+        if verbose >= 1:
+            print(f'[{self.path}] {table_name}')
 
         raw_field_names = tdata[strings_ofs]
         fields = [BdatField('ID', BdatFieldType.SCALAR, BdatValueType.UINT32)]
@@ -8329,6 +8336,10 @@ class Bdat(object):
                     size = 2
                 else:
                     assert False
+                if i == 0 and verbose >= 2:
+                    typename = re.sub(r'BdatValueType\.', '',
+                                      str(field.value_type))
+                    print(f'   (+{value_ofs - rows_ofs}) {field.name}: {typename}')
                 value = struct.unpack('<'+unpack, tdata[value_ofs:value_ofs+size])[0]
                 value_ofs += size
                 if field.value_type == BdatValueType.STRING:
@@ -9524,6 +9535,8 @@ def resolve_field_xrefs(tables, table, field_idx, target, add_link):
                     pass
                 elif table.name == 'QST_TaskTalk' and table.field(field_idx).name == 'TargetID' and re.match(r'^[0-9]+$', id):
                     pass
+                elif table.name == 'QST_TaskRequest' and table.field(field_idx).name.startswith('ItemSetID') and re.match(r'^[0-9]+$', id):
+                    pass
                 else:
                     print(f'Warning: {table.name}[{table.get(row, 0)}].{table.field(field_idx).name} ({id}) not matched', file=sys.stderr)
                 continue
@@ -9690,15 +9703,19 @@ def main(argv):
     """Program entry point."""
     parser = argparse.ArgumentParser(
         description='Extract tables from Xenoblade BDAT files.')
+    parser.add_argument('-v', '--verbose', action='count',
+                        help=('Output status messages during parsing.\n'
+                              'Use multiple times for more verbosity.'))
     parser.add_argument('-o', '--outdir', metavar='OUTDIR', required=True,
                         help='Path of output directory for table HTML files.')
     parser.add_argument('files', metavar='FILE', nargs='+',
                         help='Paths of BDAT files to read.')
     args = parser.parse_args()
+    verbose = args.verbose if args.verbose is not None else 0
 
     tables = {}
     for file in args.files:
-        bdat = Bdat(file)
+        bdat = Bdat(file, verbose)
         for table in bdat.tables():
             tables[table.name] = table
 
