@@ -8658,6 +8658,8 @@ field_xrefs = {
 
     'EnhanceEffect': 'BTL_EnhanceEff',
 
+    'EventTable': 'FLD_InterestEventStart',
+
     'Navi': refset_gimmick,
 
     'IK': 'RSC_IK',
