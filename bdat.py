@@ -8689,6 +8689,7 @@ text_xrefs = {
     'ma90a_GMK_Location': {'LocationName': ('msg_location_name', 'name')},
     'BB82DEE6': {'Name': ('F6E689C3', 'name')},  # Chain attack TP bonuses
     'D9B88F26': {'Name': ('msg_btl_chainorder_name', 'name')},  # Chain attack card list
+    'F936594B': {'SpotName': ('msg_comspot_name', 'name')}, # Rest Spot
 }
 
 refset_arts_en = ('BTL_Arts_En', )
