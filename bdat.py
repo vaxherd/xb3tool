@@ -7997,17 +7997,17 @@ class BdatTable(object):
                 return None
             else:
                 assert isinstance(id, str)
-                return self._hashid_map.get(id, None)
+                return self._hashid_map.get(id)
         else:
             assert field_index > 0 and field_index < self.num_fields
             if not self._hashid_field_map[field_index]:
                 self._hashid_field_map[field_index] = {}
                 for row in range(len(self._rows)):
-                    id = self._rows[row][field_index]
-                    if isinstance(id, tuple):
-                        id = id[0]
-                    self._hashid_field_map[field_index][id] = row
-            return self._hashid_field_map[field_index].get(id, None)
+                    val = self._rows[row][field_index]
+                    if isinstance(val, tuple):
+                        val = val[0]
+                    self._hashid_field_map[field_index][val] = row
+            return self._hashid_field_map[field_index].get(id)
 
     def get(self, row, field, raw=False):
         """Return the content of the given cell.
@@ -8568,7 +8568,7 @@ def resolve_labels(tables):
                     break
                 label = f'{prefix}_{id:04d}'
                 hash_str = f'<{murmur32(label):08X}>'
-                row = labels.get(hash_str, None)
+                row = labels.get(hash_str)
                 if row is not None:
                     table.set(row, 1, label)
                     del labels[hash_str]
@@ -8581,7 +8581,7 @@ def resolve_labels(tables):
                 m = hash_matcher.match(value)
                 assert m
                 hash = int(m.group(1), base=16)
-                name = objnames.get(hash, None)
+                name = objnames.get(hash)
                 if name:
                     table.set(row, 1, name)
                 else:
@@ -8595,7 +8595,7 @@ def resolve_labels(tables):
                     break
                 name = f'{prefix}{id:03d}'
                 hash = murmur32(name)
-                row = labels.get(hash, None)
+                row = labels.get(hash)
                 if row is not None:
                     table.set(row, 1, name)
                     del labels[hash]
