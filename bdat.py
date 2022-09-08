@@ -7675,6 +7675,15 @@ hashes = {
     0x8B8A1BF1: "z16",
 }
 
+# UINT fields that should be parsed as HSTRINGs
+uint_hashes = {
+    '8F29BCAF': ['LocationBdat', 'field_5177BA21'],
+    'C5C5F70E': ['FormationTopWindow', 'FormationCooking', 'field_07F1CB46',
+                 'field_F1D020CF', 'field_E27F23C7', 'FormationCookingAction', 
+                 'FormationTraining'],
+    'SYS_GimmickLocation': ['field_6C50B44E', 'Option1']
+}
+
 # Sanity check on unhash table
 if False:
     for hash, word in hashes.items():
@@ -8286,7 +8295,8 @@ class Bdat(object):
                 name = unhash(name, f'field_{name:08X}')
             # This field is encoded as UINT32 but it's actually a reference
             # to row IDs in other tables.
-            if table_name == 'SYS_GimmickLocation' and name == 'field_6C50B44E':
+            uint_table = uint_hashes.get(table_name)
+            if uint_table is not None and name in uint_table:
                 type = BdatValueType.HSTRING
             fields.append(BdatField(name, BdatFieldType.SCALAR, type))
 
