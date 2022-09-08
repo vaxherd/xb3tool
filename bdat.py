@@ -253,7 +253,7 @@ hashes = {
     0xD88E0DEB: "ITM_RewardGrieve",
     0xB7136B52: "ITM_RewardDroppedSupplies",
     0xFF63B067: "SYS_DropItemBehavior",
-    0xF936594B: None,  # Has fields: Condition, SpotName, Text, IconOffset, Bonfire, [XYZ]Offset
+    0xF936594B: None,  # Rest spot list
     0xC5C5F70E: None,  # Has fields: Category, FormationCooking, FormationTraining
     0x2521C473: "FLD_EnemyData",
     0xD0DCFD18: "SYS_FlowEventList",
@@ -359,7 +359,7 @@ hashes = {
     0xE44BEAA2: None,  # Has fields: PC, PointType, Motion, EyeMotion, MountObj
     0x0828980E: "FLD_ColonyList",
     0x22F5273E: "FLD_KizunaNpc",
-    0x5A744A5C: None,
+    0x5A744A5C: None,  # Top menu definition table
     0x85A8179F: "FLD_KizunaColony",
     0x7E6F5DCC: None,  # Has fields: name, hint, icon_index, menu_command, menu_value
     0x1A109460: "MNU_Cloudgem",
@@ -4553,11 +4553,13 @@ hashes = {
     0x79EC47C7: "FLD_EnTribe",  # FIXME: unclear if correct
     0x541B26AD: "FLD_RelationArrow",
     0x36C6913C: "ITM_RewardCollectionList",
+    0xE97C90CE: None,  # "Characters" menu definition table
     0xF8207CBA: "MNU_FacePatternList",
     0xD90FF31C: "MNU_FontSet01",
     0x06079AEA: "MNU_FontSet01_cn",
     0x0CFF6E6B: "MNU_FontSet01_kr",
     0x8543AF98: "MNU_FontSet01_tw",
+    0xE97C90CE: None,  # Unknown menu definition table
     0x2CB06FE9: "MNU_Layer",
     0x5645DB7F: "MNU_ResFont",
     0x56E714AA: "MNU_ResFontStyle",
@@ -4566,6 +4568,7 @@ hashes = {
     0xAB68D046: "MNU_ResMSProj",
     0xF8103211: "MNU_ResourceCategory",
     0x2B760A8C: "MNU_ResourceType",
+    0xE97C90CE: None,  # "System" menu definition table
     0x4CF1C296: "MNU_TextLink_Mstxt",
     0xE1E61948: "MNU_Text_IdList",
     0x686FDFDB: "MNU_filter",
@@ -8822,9 +8825,17 @@ text_xrefs = {
     'ma20a_GMK_Location': {'LocationName': ('msg_location_name', 'name')},
     'ma22a_GMK_Location': {'LocationName': ('msg_location_name', 'name')},
     'ma90a_GMK_Location': {'LocationName': ('msg_location_name', 'name')},
-    'BB82DEE6': {'Name': ('F6E689C3', 'name')},  # Chain attack TP bonuses
-    'D9B88F26': {'Name': ('msg_btl_chainorder_name', 'name')},  # Chain attack card list
-    'F936594B': {'SpotName': ('msg_comspot_name', 'name')}, # Rest Spot
+    '5A744A5C': {'name': ('msg_mnu_mainmenu', 'name'),
+                 'hint': ('msg_mnu_mainmenu', 'name')},
+    'B30AE3F7': {'name': ('msg_mnu_mainmenu', 'name'),
+                 'hint': ('msg_mnu_mainmenu', 'name')},
+    'BB82DEE6': {'Name': ('F6E689C3', 'name')},
+    'D9B88F26': {'Name': ('msg_btl_chainorder_name', 'name')},
+    'DEC58736': {'name': ('msg_mnu_mainmenu', 'name'),
+                 'hint': ('msg_mnu_mainmenu', 'name')},
+    'E97C90CE': {'name': ('msg_mnu_mainmenu', 'name'),
+                 'hint': ('msg_mnu_mainmenu', 'name')},
+    'F936594B': {'SpotName': ('msg_comspot_name', 'name')},
 }
 
 refset_arts_en = ('BTL_Arts_En', )
@@ -9834,6 +9845,7 @@ def resolve_xrefs(tables):
         for field_name in ('ForgeType',           # ITM_Accessory
                            'TalentParamRev',      # BTL_Talent
                            'mstxt', 'mstxt_ext',  # Event lists
+                           'menu_sheet',          # Menu tables
                            'page_sheet'):         # MNU_game_option_category
             field = table.field_index(field_name, True)
             if field is not None:
@@ -9843,6 +9855,9 @@ def resolve_xrefs(tables):
                         target = 'msg_' + value
                     else:
                         target = value
+                        m = re.match(r'^<([0-9A-F]{8})>$', target)
+                        if m:
+                            target = m.group(1)
                     if target in tables:
                         table.set(row, field, value, target, None)
 
