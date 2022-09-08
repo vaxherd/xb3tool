@@ -8004,6 +8004,8 @@ class BdatTable(object):
                 self._hashid_field_map[field_index] = {}
                 for row in range(len(self._rows)):
                     id = self._rows[row][field_index]
+                    if isinstance(id, tuple):
+                        id = id[0]
                     self._hashid_field_map[field_index][id] = row
             return self._hashid_field_map[field_index].get(id, None)
 
@@ -8532,7 +8534,26 @@ class Bdat(object):
 
 def resolve_labels(tables):
     """Unhash row labels (string IDs) in XC3 tables."""
-    for table in tables.values():
+    gmknames = dict()
+    hash_matcher = re.compile(r'^<([0-9A-F]{8})>$')
+
+    hidelist = tables['EVT_HideList']
+    objnames = dict()
+    for i in range(1,16):
+        field = hidelist.field_index(f'hideObj{i:02d}')
+        for row in range(hidelist.num_rows):
+            name = hidelist.get(row, field)
+            if name != '':
+                hash = murmur32(name)
+                if hash in objnames:
+                    if objnames[hash] != name:
+                        print(f'Warning: object name {name} hash {hash:08X} collides with existing name {hashes[hash]}', file=sys.stderr)
+                else:
+                    objnames[hash] = name
+                    gmknames[f'<{hash:08X}>'] = name
+
+    # Sort table list for sensible warning output order.
+    for table in sorted(tables.values(), key=lambda t: t.name):
         assert table.field(1).name in ('ID', 'label')
         assert table.field(1).value_type == BdatValueType.HSTRING
         if table.name.startswith('msg_cq') or table.name.startswith('msg_ev'):
@@ -8552,6 +8573,47 @@ def resolve_labels(tables):
                     table.set(row, 1, label)
                     del labels[hash_str]
                 id += 1
+
+        elif re.match(r'ma..a_GMK_Object', table.name):
+            labels = dict()
+            for row in range(table.num_rows):
+                value = table.get(row, 1)
+                m = hash_matcher.match(value)
+                assert m
+                hash = int(m.group(1), base=16)
+                name = objnames.get(hash, None)
+                if name:
+                    table.set(row, 1, name)
+                else:
+                    labels[hash] = row
+            prefix = 'MA' + table.name[2:4] + 'AGMK_MAPOBJ'
+            id = 0
+            while labels:
+                if id >= 1000:
+                    print(f'Warning: failed to match some row labels in {table.name}',
+                          file=sys.stderr)
+                    break
+                name = f'{prefix}{id:03d}'
+                hash = murmur32(name)
+                row = labels.get(hash, None)
+                if row is not None:
+                    table.set(row, 1, name)
+                    del labels[hash]
+                    hashstr = f'<{hash:08X}>'
+                    if hashstr in gmknames:
+                        print(f'Warning: gimmick name {name} hash {hash:08X} collides with existing name {hashes[hash]}', file=sys.stderr)
+                    else:
+                        gmknames[hashstr] = name
+                id += 1
+
+    # SYS_GimmickLocation.GimmickID comes last because we need the dict
+    # of gimmick IDs from per-map tables.
+    gmkloc = tables['SYS_GimmickLocation']
+    idx_GimmickID = gmkloc.field_index('GimmickID')
+    for row in range(gmkloc.num_rows):
+        id = gmkloc.get(row, idx_GimmickID)
+        if id in gmknames:
+            gmkloc.set(row, idx_GimmickID, gmknames[id])
 
 ########################################################################
 # Table cross-reference resolution
@@ -8597,6 +8659,7 @@ row_name_fields = {
     'QST_List': 'QuestTitle',
     'QST_RequestItemSet': 'Name',
     'QST_Task': 'TaskLog1',
+    'SYS_GimmickLocation': 'GimmickID',
     'SYS_MapList': 'Name',
     'SYS_TutorialMessage': 'Title',
     'SYS_TutorialSummary': 'Title',
@@ -8845,6 +8908,7 @@ refset_enemy = ('FLD_EnemyData', )
 refset_enhance = ('BTL_Enhance', )
 refset_event = (('EVT_listEv', 'EVT_listFev', 'EVT_listQst', 'EVT_listTlk'), )
 refset_gimmick = ('SYS_GimmickLocation.GimmickID', )
+refset_gimmick_object = (None, None, 'gimmick_object')
 refset_item = (('ITM_Accessory', 'ITM_Collection', 'ITM_Collepedia', 'ITM_Cylinder', 'ITM_Gem', 'ITM_Info', 'ITM_Precious'), )
 refset_map = (('SYS_MapList'), )
 refset_npc = ('FLD_NpcList', )
@@ -9295,6 +9359,22 @@ table_xrefs = {
                'ChainOrder': 'D9B88F26',
                'HeroChainEff': refset_enhance},
     'EVT_HeroEquip': {'pc': refset_pc},
+    'EVT_HideList': {'hideObj01': refset_gimmick_object,
+                     'hideObj02': refset_gimmick_object,
+                     'hideObj03': refset_gimmick_object,
+                     'hideObj04': refset_gimmick_object,
+                     'hideObj05': refset_gimmick_object,
+                     'hideObj06': refset_gimmick_object,
+                     'hideObj07': refset_gimmick_object,
+                     'hideObj08': refset_gimmick_object,
+                     'hideObj09': refset_gimmick_object,
+                     'hideObj10': refset_gimmick_object,
+                     'hideObj11': refset_gimmick_object,
+                     'hideObj12': refset_gimmick_object,
+                     'hideObj13': refset_gimmick_object,
+                     'hideObj14': refset_gimmick_object,
+                     'hideObj15': refset_gimmick_object,
+                     'hideObj16': refset_gimmick_object},
     'EVT_listEv': {'linkID': refset_event,
                    'linkCondition': 'FLD_ConditionList'},
     'EVT_listFev': {'linkID': refset_event,
@@ -9619,6 +9699,7 @@ table_xrefs = {
 
 def add_xref(table, row, field_idx, value, target_table, target_row):
     """Add a cross-reference from table[row][field_idx] to target_table[row]."""
+    old_value=value
     if value is None:
         if target_table.name in row_name_fields:
             name_idx = target_table.field_index(row_name_fields[target_table.name])
@@ -9675,6 +9756,12 @@ def resolve_field_xrefs(tables, table, field_idx, target, add_link):
                                     'Collepedia', 'Gimmick', 'Follow', 'Condition')[type]
                         test_table = tables[f'QST_Task{typename}']
                         test_row = test_table.id_to_row(id)
+                    elif target[2] == 'gimmick_object':
+                        hash = murmur32(id)
+                        test_table = tables['SYS_GimmickLocation']
+                        idx_GimmickID = test_table.field_index('GimmickID')
+                        test_row = test_table.id_to_row(f'<{hash:08X}>',
+                                                        idx_GimmickID)
                     else:
                         raise Exception(f'Unhandled special case: {target[2]}')
                 elif name == 'SYS_GimmickLocation.GimmickID':
@@ -9745,7 +9832,8 @@ def resolve_field_xrefs(tables, table, field_idx, target, add_link):
                         target_table = tables['msg_player_name']
                         target_row -= 7
                         value = target_table.get(target_row, target_field)
-                elif target[2] in ('condition_quest', 'qst_task'):
+                elif target[2] in ('condition_quest', 'qst_task',
+                                   'gimmick_object'):
                     pass  # No additional logic
                 else:
                     raise Exception(f'Unhandled special case: {target[2]}')
