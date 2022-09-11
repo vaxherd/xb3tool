@@ -6682,7 +6682,7 @@ hashes = {
     0xF44E371E: "SetItem9",
     0x6FE92D9C: "SetItem10",
     0xA703DDB8: "SetName",
-    0x3FF0695D: "SetUpType", # FIXME: SetUpType and SetUpUI both found in BTL_Arts_PC, seem to have correlated values
+    0x3FF0695D: "SetUpType",
     0x7E5326A3: "SetUpUI",
     0xCDA0F15A: "SevEvent",
     0xFDE509B1: "Sex",
@@ -7823,6 +7823,7 @@ def unhash(hash, default=None):
     value = hashes.get(hash, default)
     return value if value is not None else default
 
+
 ########################################################################
 # Basic script data constants/structures
 
@@ -8192,7 +8193,7 @@ class Bdat(object):
     """Class wrapping a BDAT file."""
 
     def __init__(self, path, verbose=0):
-        """Initialize a Bdat isntance.
+        """Initialize a Bdat instance.
 
         Parameters:
             path: Pathname of the BDAT file.
@@ -8200,6 +8201,7 @@ class Bdat(object):
 
         Raises:
             OSError: Raised if the file cannot be read.
+            ValueError: Raised if a parsing error is encountered.
         """
         self.path = path  # For external reference.
         self.name = os.path.basename(path)  # For external reference.
@@ -8615,6 +8617,7 @@ def resolve_labels(tables):
         if id in gmknames:
             gmkloc.set(row, idx_GimmickID, gmknames[id])
 
+
 ########################################################################
 # Table cross-reference resolution
 # (note: these apply only to XC3 tables)
@@ -8632,6 +8635,7 @@ row_name_fields = {
     'BTL_EnhanceEff': 'Name',
     'BTL_MotionState': 'StateName',
     'BTL_Reaction': 'Name',
+    'BTL_SetUp': 'Name',
     'BTL_Skill_PC': 'Name',
     'BTL_Stance': 'Name',
     'BTL_Talent': 'Name',
@@ -8695,6 +8699,7 @@ text_xrefs = {
     'BTL_Enhance': {'Caption': ('msg_btl_enhance_cap', 'name', 'enhance')},
     'BTL_EnhanceEff': {'Name': ('msg_btl_enhance_name', 'name')},
     'BTL_Reaction': {'Name': ('msg_btl_combo_name', 'name')},
+    'BTL_SetUp': {'Name': ('msg_btl_buffdebuff_name', 'name')},
     'BTL_Skill_PC': {'Name': ('msg_btl_skill_name', 'name')},
     'BTL_Stance': {'Name': ('msg_btl_stance_name', 'name')},
     'BTL_Talent': {'Name': ('msg_btl_talent_name', 'name'),
@@ -9151,10 +9156,13 @@ table_xrefs = {
     'BTL_Arts_En': {'StateName': 'BTL_MotionState',
                     'StateName2': 'BTL_MotionState',
                     'ArtsBuffDebuff': 'BTL_BuffDeBuff',
+                    'SetUpType': 'BTL_SetUp',
                     'SummonData': 'BTL_EnSummon'},
     'BTL_Arts_PC': {'StateName': 'BTL_MotionState',
                     'StateName2': 'BTL_MotionState',
                     'ArtsBuffDebuff': 'BTL_BuffDeBuff',
+                    'SetUpType': 'BTL_SetUp',
+                    'SetUpUI': 'BTL_SetUp',
                     'EnArtsAchieve': 'BTL_Achievement'},
     'BTL_AutoSetAccessory': {'Talent01': refset_item,
                              'Talent02': refset_item,
@@ -9308,6 +9316,9 @@ table_xrefs = {
                   'EnhanceSlot1': refset_enhance,
                   'EnhanceSlot2': refset_enhance,
                   'RageStance': refset_stance},
+    'BTL_SetUp': {'BulletID': 'BTL_Bullet',
+                  'BulletEffID': 'BTL_BulletEffect',
+                  'VanishParam1': (None, None, 'field_vanish')},
     'BTL_Skill_PC': {'UseTalent': refset_talent,
                      'UseChr': refset_pc,
                      'EnSkillAchieve': 'BTL_Achievement'},
@@ -9762,6 +9773,15 @@ def resolve_field_xrefs(tables, table, field_idx, target, add_link):
                         idx_GimmickID = test_table.field_index('GimmickID')
                         test_row = test_table.id_to_row(f'<{hash:08X}>',
                                                         idx_GimmickID)
+                    elif target[2] == 'field_vanish':
+                        type_idx = field_idx-1
+                        type = table.get(row, type_idx)
+                        if type == 1 or type == 2:
+                            test_table = tables['BTL_BuffDeBuff']
+                            test_row = test_table.id_to_row(value)
+                        else:
+                            test_table = None
+                            test_row = None
                     else:
                         raise Exception(f'Unhandled special case: {target[2]}')
                 elif name == 'SYS_GimmickLocation.GimmickID':
@@ -9833,7 +9853,7 @@ def resolve_field_xrefs(tables, table, field_idx, target, add_link):
                         target_row -= 7
                         value = target_table.get(target_row, target_field)
                 elif target[2] in ('condition_quest', 'qst_task',
-                                   'gimmick_object'):
+                                   'gimmick_object', 'field_vanish'):
                     pass  # No additional logic
                 else:
                     raise Exception(f'Unhandled special case: {target[2]}')
@@ -9948,6 +9968,7 @@ def resolve_xrefs(tables):
                             target = m.group(1)
                     if target in tables:
                         table.set(row, field, value, target, None)
+
 
 ########################################################################
 # Program entry point
