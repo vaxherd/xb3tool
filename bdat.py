@@ -9316,6 +9316,7 @@ table_xrefs = {
                   'EnhanceSlot1': refset_enhance,
                   'EnhanceSlot2': refset_enhance,
                   'RageStance': refset_stance},
+    'BTL_EnemyDrop_Material': {'EnFamily': 'BTL_EnFamily'},
     'BTL_SetUp': {'BulletID': 'BTL_Bullet',
                   'BulletEffID': 'BTL_BulletEffect',
                   'VanishParam1': (None, None, 'field_vanish')},
