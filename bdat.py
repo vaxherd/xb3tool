@@ -8965,6 +8965,7 @@ field_xrefs = {
     'IgnoreCondition': refset_condition,
     'NameCondition': refset_condition,
     'PriceCondition': refset_condition,
+    'field_EF32E8B1': refset_condition,  # Added in 1.1.1, used to prevent Ryuho exploit
 
     'CookRecipe': 'FLD_CookRecipe',
 
