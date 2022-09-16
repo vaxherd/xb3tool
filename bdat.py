@@ -6001,6 +6001,7 @@ hashes = {
     0x89CE063B: "NameCondition",
     0x602870A8: "NameMsg",
     0xAFCE416E: "NamedFlag",
+    0xEF32E8B1: "NamedSpCond",
     0xC6D66AC7: "Navi",
     0xDB45AA0C: "NcNum",
     0x3499D0C9: "NcType",
@@ -8964,8 +8965,8 @@ field_xrefs = {
     'Conditon8': refset_condition,
     'IgnoreCondition': refset_condition,
     'NameCondition': refset_condition,
+    'NamedSpCond': refset_condition,
     'PriceCondition': refset_condition,
-    'field_EF32E8B1': refset_condition,  # Added in 1.1.1, used to prevent Ryuho exploit
 
     'CookRecipe': 'FLD_CookRecipe',
 
