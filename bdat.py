@@ -8913,6 +8913,7 @@ refset_condition = ('FLD_ConditionList', )
 refset_enemy = ('FLD_EnemyData', )
 refset_enhance = ('BTL_Enhance', )
 refset_event = (('EVT_listEv', 'EVT_listFev', 'EVT_listQst', 'EVT_listTlk'), )
+refset_event_name = (('EVT_listEv', 'EVT_listFev', 'EVT_listQst', 'EVT_listTlk'), None, 'event_name')
 refset_gimmick = ('SYS_GimmickLocation.GimmickID', )
 refset_gimmick_object = (None, None, 'gimmick_object')
 refset_item = (('ITM_Accessory', 'ITM_Collection', 'ITM_Collepedia', 'ITM_Cylinder', 'ITM_Gem', 'ITM_Info', 'ITM_Precious'), )
@@ -9442,6 +9443,20 @@ table_xrefs = {
                                'Text3': '621C6EF4',
                                'Text4': '621C6EF4',
                                'Text5': '621C6EF4'},
+    'FLD_InterestEventReaction': {'Character': 'CHR_PC',
+                                  'Text': '621C6EF4'},
+    'FLD_InterestEventTable': {'StartEvent1': 'FLD_InterestEventStart',
+                               'StartEvent2': 'FLD_InterestEventStart',
+                               'StartEvent3': 'FLD_InterestEventStart',
+                               'StartEvent4': 'FLD_InterestEventStart',
+                               'StartEvent5': 'FLD_InterestEventStart',
+                               'StartEvent6': 'FLD_InterestEventStart',
+                               'ReactionEvent1': 'FLD_InterestEventReaction',
+                               'ReactionEvent2': 'FLD_InterestEventReaction',
+                               'ReactionEvent3': 'FLD_InterestEventReaction',
+                               'ReactionEvent4': 'FLD_InterestEventReaction',
+                               'ReactionEvent5': 'FLD_InterestEventReaction',
+                               'ReactionEvent6': 'FLD_InterestEventReaction'},
     'FLD_KizunaChangeFlag': {'EventID': refset_event,
                              'NpcIconFlag': '2BBE255B',
                              'ColonyIconFlag': 'E1C78647',
@@ -9466,6 +9481,17 @@ table_xrefs = {
                         'TalkID3': 'FLD_NpcTalkResource',
                         'TalkID4': 'FLD_NpcTalkResource',
                         'TalkID5': 'FLD_NpcTalkResource'},
+    'FLD_NpcTalkResource': {'BaseEventName': refset_event_name,
+                            'EventName1': refset_event_name,
+                            'EventName2': refset_event_name,
+                            'EventName3': refset_event_name,
+                            'EventName4': refset_event_name,
+                            'EventName5': refset_event_name,
+                            'EventName6': refset_event_name,
+                            'EventName7': refset_event_name,
+                            'EventName8': refset_event_name,
+                            'EventName9': refset_event_name,
+                            'EventName10': refset_event_name},
     'FLD_RelationColony': {'field_6E741E84': 'FLD_ColonyList',
                            'field_32A30DD7': 'FLD_ColonyList'},
     'FLD_UMonsterList': {'Zone': refset_map},
@@ -9795,6 +9821,10 @@ def resolve_field_xrefs(tables, table, field_idx, target, add_link):
                     test_table = tables['SYS_GimmickLocation']
                     idx_GimmickID = test_table.field_index('GimmickID')
                     test_row = test_table.id_to_row(id, idx_GimmickID)
+                elif len(target) > 2 and target[2] == 'event_name':
+                    test_table = tables[name]
+                    hash = murmur32(id)
+                    test_row = test_table.id_to_row(f'<{hash:08X}>')
                 else:
                     test_table = tables[name]
                     test_row = test_table.id_to_row(id)
@@ -9859,6 +9889,8 @@ def resolve_field_xrefs(tables, table, field_idx, target, add_link):
                         target_table = tables['msg_player_name']
                         target_row -= 7
                         value = target_table.get(target_row, target_field)
+                elif target[2] == 'event_name':
+                    value = table.get(row, field_idx)
                 elif target[2] in ('condition_quest', 'qst_task',
                                    'gimmick_object', 'field_vanish'):
                     pass  # No additional logic
