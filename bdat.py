@@ -1,8 +1,8 @@
 #!/usr/bin/python3
 #
-# Parse tables from Xenoblade BDAT files into per-table HTML files.
-# Works with BDATs from Xenoblade 2 or later (Xenoblade X should also work
-# if support for big-endian data is added).
+# Parse tables from Xenoblade 3 BDAT files into per-table HTML files.
+# The core logic can be used for BDATs from Xenoblade X or later
+# (Xenoblade X requires adding support for big-endian data).
 #
 # Requires Python 3.6 or later.
 #
@@ -11,6 +11,7 @@
 
 import argparse
 import enum
+import glob
 import os
 import re
 import struct
@@ -10077,20 +10078,36 @@ def main(argv):
                               'Use multiple times for more verbosity.'))
     parser.add_argument('-o', '--outdir', metavar='OUTDIR', required=True,
                         help='Path of output directory for table HTML files.')
-    parser.add_argument('files', metavar='FILE', nargs='+',
-                        help='Paths of BDAT files to read.')
+    parser.add_argument('bdatdir',
+                        help='Path of Xenoblade 3 "bdat" directory.')
+    parser.add_argument('language',
+                        help='Language code for text files, one of: cn fr gb ge it jp kr sp tw')
     args = parser.parse_args()
     verbose = args.verbose if args.verbose is not None else 0
 
+    if not os.path.exists(args.bdatdir):
+        print(f'BDAT directory {args.bdatdir} does not exist', file=sys.stderr)
+        sys.exit(1)
+    if not os.path.exists(os.path.join(args.bdatdir, 'sys.bdat')):
+        print(f'{args.bdatdir} does not look like a BDAT directory',
+              file=sys.stderr)
+        sys.exit(1)
+    if not os.path.exists(os.path.join(args.bdatdir, args.language)):
+        print(f'Language directory not found: {args.language}',
+              file=sys.stderr)
+        sys.exit(1)
+
     tables = {}
-    for file in args.files:
+    files = (glob.glob(os.path.join(args.bdatdir, '*.bdat'))
+             + glob.glob(os.path.join(args.bdatdir, args.language, '*/*.bdat'))
+             + glob.glob(os.path.join(args.bdatdir, args.language, '*/*/*.bdat')))
+    for file in files:
         bdat = Bdat(file, verbose)
         for table in bdat.tables():
             tables[table.name] = table
 
-    if 'BTL_LvRev' in tables:  # XC3 only
-        resolve_labels(tables)
-        resolve_xrefs(tables)
+    resolve_labels(tables)  # XC3 specific
+    resolve_xrefs(tables)
 
     if not os.path.exists(args.outdir):
         os.mkdir(args.outdir)
