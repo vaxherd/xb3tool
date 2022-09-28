@@ -5333,6 +5333,7 @@ hashes = {
     0x7318D357: "EnemyID02",
     0x3F1ED434: "EnemyID03",
     0x516AAE38: "EnemyInfo",
+    0x6974615F: "EnemyNoPopRate",
     0x6D94961B: "EnemyOffsetX",
     0x736D57B6: "EnemyOffsetY",
     0x76532DD6: "EnemyOffsetZ",
