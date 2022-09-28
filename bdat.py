@@ -8016,7 +8016,7 @@ class BdatTable(object):
     def get(self, row, field, raw=False):
         """Return the content of the given cell.
 
-        [Parameters]
+        Parameters:
             row: Row index.
             field: Field index.
             raw: If True, return the original value of the cell (before
@@ -8033,7 +8033,7 @@ class BdatTable(object):
         """Set the content of the given cell to the given value and optional
         table link.
 
-        [Parameters]
+        Parameters:
             row: Row index.
             field: Field index.
             value: Value to set.
@@ -8057,7 +8057,7 @@ class BdatTable(object):
     def addref(self, row, ref_name, ref_row, ref_value):
         """Add a reference to the given row from the named table and row.
         
-        [Parameters]
+        Parameters:
             row: Row in this table which is referenced.
             ref_name: Name of the referencing table.
             ref_row: ID of the referencing row in the referencing table.
@@ -8071,7 +8071,7 @@ class BdatTable(object):
     # Styling/scripting adapted from https://github.com/Thealexbarney/XbTool
     _HTML_HEADER = """<?xml version="1.0" encoding="UTF-8" ?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="ja">
+<html xmlns="http://www.w3.org/1999/xhtml" {lang}>
 <head>
   <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
   <meta http-equiv="Content-Style-Type" content="text/css" />
@@ -8113,9 +8113,17 @@ class BdatTable(object):
 </html>
 """
 
-    def print(self):
-        """Return a string containing this table in HTML format."""
+    def print(self, language=None):
+        """Return a string containing this table in HTML format.
+
+        Parameters:
+            language: ISO language code for HTML header, or None if not known.
+        """
         s = self._HTML_HEADER.replace('{title}', self.name)
+        if language is not None:
+            s = s.replace('{lang}', f'lang="{language}" xml:lang="{language}"')
+        else:
+            s = s.replace('{lang}', '')
         s += '    <tr id="header">\n'
         s += '      <th class="side dir-d ">ID</th>\n'
         s += '      <th>Referenced By</th>\n'
@@ -10109,11 +10117,20 @@ def main(argv):
     resolve_labels(tables)  # XC3 specific
     resolve_xrefs(tables)
 
+    langcodes = {'cn': 'zh-Hans',
+                 'fr': 'fr',
+                 'gb': 'en',
+                 'ge': 'de',
+                 'it': 'it',
+                 'jp': 'ja',
+                 'kr': 'ko',
+                 'sp': 'es',
+                 'tw': 'zh-Hant'}
     if not os.path.exists(args.outdir):
         os.mkdir(args.outdir)
     for name, table in tables.items():
         fname = re.sub('[^ -.0-~]', '_', name) + '.html'
-        s = table.print()
+        s = table.print(langcodes.get(args.language))
         with open(os.path.join(args.outdir, fname), 'wb') as f:
             f.write(s.encode('utf-8'))
 # end def
