@@ -9139,6 +9139,10 @@ field_xrefs = {
 
     'Reaction': 'BTL_Reaction',
 
+    'AgnusReward': 'ITM_RewardDroppedSupplies',
+    'KevesReward': 'ITM_RewardDroppedSupplies',
+    'FirstReward': 'ITM_RewardDroppedSupplies',
+
     'DebScenarioFlag': 'SYS_ScenarioFlag',
     'ScenarioFlag': 'SYS_ScenarioFlag',
 
