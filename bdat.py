@@ -9884,6 +9884,7 @@ def resolve_field_xrefs(tables, table, field_idx, target, add_link):
                         else:
                             test_table = None
                             test_row = None
+                            target_table = 'None'  # Suppress no-match warning
                     else:
                         raise Exception(f'Unhandled special case: {target[2]}')
                 elif name == 'SYS_GimmickLocation.GimmickID':
@@ -9905,7 +9906,9 @@ def resolve_field_xrefs(tables, table, field_idx, target, add_link):
                         raise ValueError(f'Duplicate ID {id} in table {target_table_name} (reference from {table.name}#{table.get(row, 0)})')
             if target_row is None:
                 # Suppress intentionally unmatching cases
-                if table.name == 'QST_Purpose' and table.field(field_idx).name.startswith('NextPurpose') and (id == 30000 or id == 30001):
+                if target_table == 'None':
+                    pass
+                elif table.name == 'QST_Purpose' and table.field(field_idx).name.startswith('NextPurpose') and (id == 30000 or id == 30001):
                     pass
                 elif table.name == 'QST_TaskTalk' and table.field(field_idx).name == 'TargetID' and re.match(r'^[0-9]+$', id):
                     pass
