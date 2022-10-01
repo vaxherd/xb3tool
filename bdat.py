@@ -346,7 +346,7 @@ hashes = {
     0x1432D8A7: "MNU_dialog",
     0xCD3B3FC3: "MNU_action_hud",
     0xC29E28FD: None,  # Has fields: MenuCategory, Object1, ObjPoint1
-    0x02913D16: None,  # Has fields: CaseNoah, CaseMio, CaseEunie, CaseTaion, CaseLanz, CaseSena, HideWeapon
+    0x02913D16: "RSC_PcTalentParts",
     0x20992C15: "SYS_Mount",
     0xEC6F90EE: "FLD_ObjList",
     0xB1963CFD: "MNU_ShopList",
@@ -468,7 +468,7 @@ hashes = {
     0x9BF7EEDC: "FLD_EnemyAff",
     0xD147C68F: "SYS_TutorialSummary",
     0x7D70A887: "SYS_TutorialArrow",
-    0x39D667D1: None,  # (Possibly: RSC_PcCostumeOpen) Has fields: Talent, Flag1-6, Name1-6, DLC
+    0x39D667D1: "RSC_PcCostumeOpen",
     0xCF66EB21: "QST_QuestImageList",
     0xB971C420: None,  # Has fields: Talent, ArtsID, Special
     0x5F654D94: None,  # Has fields: Talent, SkillID
@@ -4573,6 +4573,7 @@ hashes = {
     0x4CF1C296: "MNU_TextLink_Mstxt",
     0xE1E61948: "MNU_Text_IdList",
     0x686FDFDB: "MNU_filter",
+    0x44F0EA5A: "MNU_option_brightness",
     0x85C68AD1: "MNU_option_camera",
     0x54D69CFB: "MNU_option_display",
     0x09F8A812: "MNU_option_formation",
@@ -4581,6 +4582,14 @@ hashes = {
     0x12110072: "MNU_option_notice",
     0x9CFC5B3B: "MNU_option_sound",
     0xD4D03C1E: "MNU_sort",
+    0xD00ADE37: None,  # Amiibo rewards (overall table)
+    0xC3802B6C: None,  # Amiibo rewards (???)
+    0xC36820B1: None,  # Amiibo rewards (???)
+    0xF58766B8: None,  # Amiibo rewards (???)
+    0x95351164: None,  # Amiibo rewards (cooking ingredient sets)
+    0x1CAFF87D: None,  # Amiibo rewards (???)
+    0xC810A4F3: None,  # Amiibo rewards (Shulk weapon skin)
+    0x7E6184E0: None,  # Amiibo rewards (???)
 
     0x9416AC93: "1",
     0x0129E217: "2",
@@ -7262,6 +7271,7 @@ hashes = {
     0x5B6EAFC0: "affName",
     0x4C213412: "affType",
     0x12499476: "align_h",
+    0x30A4F4D8: "areamap",
     0x9E9E52F3: "arts01",
     0x62060484: "arts02",
     0x8517E9BC: "arts03",
@@ -7294,6 +7304,7 @@ hashes = {
     0x574B5FBE: "category",
     0xE06B8B51: "category_type",
     0xC9299D94: "chapter",
+    0x0C6CCAA6: "character",
     0x304AA2DE: "clockHour",
     0xEB14AC98: "clockMinute",
     0x1E25EA3C: "clockStop",
@@ -7569,6 +7580,7 @@ hashes = {
     0x4F74D178: "opFadeWait",
     0x6873A20E: "opt_1",
     0x8ED568B1: "opt_2",
+    0xC1400C90: "option",
     0xB3254010: "option_id",
     0xD3309DD9: "outsiderEnable",
     0xFFCB5A95: "outsiderOpt",
@@ -7645,6 +7657,7 @@ hashes = {
     0xAEFAEA7E: "push_type",  # FIXME: unclear if correct
 
     0x3F28C38D: "quads",
+    0xA15348EE: "quest",
 
     0x4B0658EA: "r_ofs_x",
     0xE7BDC674: "r_ofs_y",
@@ -7708,6 +7721,7 @@ hashes = {
     0x7B2C09DB: "starthour",  # FIXME: unclear if correct
     0x0AAFDDB0: "strength",
     0x554EE944: "style",
+    0x7CEA9974: "system",
 
     0x9EE99B1E: "talkattr",
     0xACF3531A: "talker",
@@ -7724,6 +7738,7 @@ hashes = {
     0xE4ED1C77: "title",
     0x58C4B2E6: "toneMap",
     0xD62E5B05: "top_id",
+    0xB99DD8F7: "trad_rate",  # FIXME: unclear if correct
     0x79F23513: "type",
     0xC08A263F: "type1",
     0x2FB8DE0B: "type2",
@@ -7830,10 +7845,11 @@ uint_hashes = {
 }
 
 # Sanity check on unhash table
-if False:
+# (enabled by default since it doesn't take very long to run)
+if True:
     for hash, word in hashes.items():
         if word is not None and murmur32(word) != hash:
-            raise Exception(f'murmur32({word}) != 0x{hash:8X} (should be 0x{murmur32(word):8X})')
+            raise Exception(f'murmur32({word}) != 0x{hash:08X} (should be 0x{murmur32(word):08X})')
 
 def unhash(hash, default=None):
     """Return the string corresponding to a hash, or the default if unknown."""
@@ -8789,19 +8805,26 @@ text_xrefs = {
     'MNU_PatchInfo': {'PatchNameText': ('msg_mnu_patch_info', 'name'),
                       'field_2AF7F370': ('msg_mnu_patch_info', 'name')},
     'MNU_ShopList': {'Name': ('msg_shop_name', 'name')},
+    'MNU_TipsList': {'Title': ('msg_mnu_tutorial_tips', 'name'),
+                     'Comment1': ('msg_mnu_tutorial_tips', 'name'),
+                     'Comment2': ('msg_mnu_tutorial_tips', 'name'),
+                     'Comment3': ('msg_mnu_tutorial_tips', 'name'),
+                     'Comment4': ('msg_mnu_tutorial_tips', 'name'),
+                     'Comment5': ('msg_mnu_tutorial_tips', 'name'),
+                     'Comment6': ('msg_mnu_tutorial_tips', 'name')},
     'MNU_game_option_category': {'name': ('msg_mnu_option', 'name'),
                                  'help': ('msg_mnu_option', 'name')},
-    '44F0EA5A': {'name': ('msg_mnu_option', 'name'),
-                 'help': ('msg_mnu_option', 'name'),
-                 'help1': ('msg_mnu_option', 'name'),
-                 'help2': ('msg_mnu_option', 'name'),
-                 'help3': ('msg_mnu_option', 'name'),
-                 'help4': ('msg_mnu_option', 'name'),
-                 'field_5925DC4C': ('msg_mnu_option', 'name'),
-                 'field_7D13B44A': ('msg_mnu_option', 'name'),
-                 'field_B6E3A0D7': ('msg_mnu_option', 'name'),
-                 'field_D8225635': ('msg_mnu_option', 'name'),
-                 'field_6FBE92E0': ('msg_mnu_option', 'name')},
+    'MNU_option_brightness': {'name': ('msg_mnu_option', 'name'),
+                              'help': ('msg_mnu_option', 'name'),
+                              'help1': ('msg_mnu_option', 'name'),
+                              'help2': ('msg_mnu_option', 'name'),
+                              'help3': ('msg_mnu_option', 'name'),
+                              'help4': ('msg_mnu_option', 'name'),
+                              'field_5925DC4C': ('msg_mnu_option', 'name'),
+                              'field_7D13B44A': ('msg_mnu_option', 'name'),
+                              'field_B6E3A0D7': ('msg_mnu_option', 'name'),
+                              'field_D8225635': ('msg_mnu_option', 'name'),
+                              'field_6FBE92E0': ('msg_mnu_option', 'name')},
     'MNU_option_camera': {'name': ('msg_mnu_option', 'name'),
                           'help': ('msg_mnu_option', 'name'),
                           'help1': ('msg_mnu_option', 'name'),
@@ -8930,6 +8953,12 @@ text_xrefs = {
     'ma20a_GMK_Location': {'LocationName': ('msg_location_name', 'name')},
     'ma22a_GMK_Location': {'LocationName': ('msg_location_name', 'name')},
     'ma90a_GMK_Location': {'LocationName': ('msg_location_name', 'name')},
+    '39D667D1': {'UIName1': ('msg_mnu_char_ms', 'name'),
+                 'UIName2': ('msg_mnu_char_ms', 'name'),
+                 'UIName3': ('msg_mnu_char_ms', 'name'),
+                 'UIName4': ('msg_mnu_char_ms', 'name'),
+                 'UIName5': ('msg_mnu_char_ms', 'name'),
+                 'UIName6': ('msg_mnu_char_ms', 'name')},
     '5A744A5C': {'name': ('msg_mnu_mainmenu', 'name'),
                  'hint': ('msg_mnu_mainmenu', 'name')},
     '70810224': {'Text1': ('msg_autotalk', 'name'),
@@ -8941,9 +8970,11 @@ text_xrefs = {
     '7A6735C6': {'Text1': ('msg_autotalk', 'name'),
                  'Text2': ('msg_autotalk', 'name'),
                  'Text3': ('msg_autotalk', 'name')},
+    '7E6F5DCC': {'name': ('msg_mnu_mainmenu', 'name')},
     '808F8A04': {'Text1': ('msg_autotalk', 'name'),
                  'Text2': ('msg_autotalk', 'name'),
                  'Text3': ('msg_autotalk', 'name')},
+    '95351164': {'SetName': ('msg_mnu_amiibo', 'name')},
     '9AE9C010': {'Text1': ('msg_autotalk', 'name'),
                  'Text2': ('msg_autotalk', 'name'),
                  'Text3': ('msg_autotalk', 'name')},
@@ -8953,6 +8984,8 @@ text_xrefs = {
     'B30AE3F7': {'name': ('msg_mnu_mainmenu', 'name'),
                  'hint': ('msg_mnu_mainmenu', 'name')},
     'BB82DEE6': {'Name': ('F6E689C3', 'name')},
+    'C810A4F3': {'RewordName': ('msg_mnu_amiibo', 'name'),
+                 'RewordText': ('msg_mnu_amiibo', 'name')},
     'D4A3534F': {'Text1': ('msg_autotalk', 'name'),
                  'Text2': ('msg_autotalk', 'name'),
                  'Text3': ('msg_autotalk', 'name')},
@@ -9356,7 +9389,8 @@ table_xrefs = {
                          'Talent30': refset_skill,
                          'Talent31': refset_skill},
     'BTL_Combo': {'PreCombo': 'BTL_Combo'},
-    'BTL_Element': {'ImpactEnhance': refset_enhance, 'KeepEnhance': refset_enhance },
+    'BTL_Element': {'ImpactEnhance': refset_enhance,
+                    'KeepEnhance': refset_enhance},
     'BTL_EnFamily': {'field_6C2A5517': refset_item,
                      'field_AB489C01': refset_item,
                      'field_FD843EC5': refset_item,
@@ -9801,6 +9835,7 @@ table_xrefs = {
                  'RelationID8': 'FLD_RelationNpc',
                  'RelationID9': 'FLD_RelationNpc',
                  'RelationID10': 'FLD_RelationNpc'},
+    '95351164': {'RewordID': 'ITM_RewardAssort'},
     '9ED5F02A': {'EventID': refset_event_name},
     'A24771FC': {'Contents1': '9AE9C010',
                  'Contents2': '9AE9C010',
