@@ -7288,6 +7288,7 @@ hashes = {
     0x65DCA094: "bgmStart",
     0xBCEA9336: "blend",
     0x950ED819: "bone_name",
+    0xD5C70F2B: "bonus_exp_rate",
 
     0x42146B30: "cache",
     0x95D1518E: "cam_angle",
@@ -7305,6 +7306,7 @@ hashes = {
     0xE06B8B51: "category_type",
     0xC9299D94: "chapter",
     0x0C6CCAA6: "character",
+    0x4185DC6B: "class_exp_rate",
     0x304AA2DE: "clockHour",
     0xEB14AC98: "clockMinute",
     0x1E25EA3C: "clockStop",
@@ -7433,6 +7435,7 @@ hashes = {
     0xF21B5BEF: "gainLow",
     0x34CC74A5: "getflag",
     0xF0666ADD: "gold",
+    0x5BE1976D: "gold_coin_rate",
     0x3CDE1626: "group",
 
     0xF591F3D9: "hair_change",
