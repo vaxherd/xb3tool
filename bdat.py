@@ -4452,6 +4452,14 @@ hashes = {
     0x074D17D6: "msg_tq012615t",
 
     # Other tables:
+    0xD00ADE37: "AMB_BasicLot",
+    0xC3802B6C: "AMB_BonusExpLot",
+    0xC36820B1: "AMB_ClassExpLot",
+    0xF58766B8: "AMB_CoinLot",
+    0x95351164: "AMB_CollectionLot",
+    0x1CAFF87D: "AMB_GoldCoinLot",
+    0xC810A4F3: "AMB_SpecialAmiibo",
+    0x7E6184E0: "AMB_TradValueLot",
     0xDB3F6A13: "BTL_Ai",
     0xB5B61435: "BTL_FA_Prm01",
     0xF350A3E5: "BTL_FA_Prm02",
@@ -4582,14 +4590,6 @@ hashes = {
     0x12110072: "MNU_option_notice",
     0x9CFC5B3B: "MNU_option_sound",
     0xD4D03C1E: "MNU_sort",
-    0xD00ADE37: None,  # Amiibo rewards (overall table)
-    0xC3802B6C: None,  # Amiibo rewards (???)
-    0xC36820B1: None,  # Amiibo rewards (???)
-    0xF58766B8: None,  # Amiibo rewards (???)
-    0x95351164: None,  # Amiibo rewards (cooking ingredient sets)
-    0x1CAFF87D: None,  # Amiibo rewards (???)
-    0xC810A4F3: None,  # Amiibo rewards (Shulk weapon skin)
-    0x7E6184E0: None,  # Amiibo rewards (???)
 
     0x9416AC93: "1",
     0x0129E217: "2",
@@ -7741,7 +7741,7 @@ hashes = {
     0xE4ED1C77: "title",
     0x58C4B2E6: "toneMap",
     0xD62E5B05: "top_id",
-    0xB99DD8F7: "trad_rate",  # FIXME: unclear if correct
+    0xB99DD8F7: "trad_rate",
     0x79F23513: "type",
     0xC08A263F: "type1",
     0x2FB8DE0B: "type2",
