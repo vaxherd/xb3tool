@@ -602,7 +602,9 @@ hashes = {
     0x3BEB99D8: "msg_system_popup",
     0x1BBC9E6B: "msg_tutorial_ui",
     0x8EF4CF86: "msg_weather_name",
-    0x331C38A9: None,  # All these tables are not present in the data
+    # All these tables are not present in the 1.1.0 data and may be
+    # reserved for future updates or DLC releases.
+    0x331C38A9: None,  # Flag documentation (design doc? seen in DLC 2 data)
     0xA942668F: None,
     0x3F3EBDB4: None,
     0xFD25F733: None,
@@ -5487,8 +5489,10 @@ hashes = {
     0xA8D0C912: "FlagMin",
     0x09446249: "FlagNoLimit",  # FIXME: unclear if correct
     0xD8391710: "FlagNoReward",
+    0x68E37709: "FlagNum",
     0x9D810ADA: "FlagPrt",  # FIXME: unclear if correct
     0x8FFC0AC6: "FlagSetArts",
+    0x9B7A34D1: "FlagStart",
     0xE5CC8125: "FlagType",
     0x33CAEB2F: "FldCond",
     0xFFA9A196: "FlgColiOff",
@@ -7151,6 +7155,7 @@ hashes = {
     0x3CEEE1F1: "Value18",
     0x1436F7D8: "Value19",
     0xF9AADF26: "Value20",
+    0x0DA651FA: "ValueMax",
     0xA3115C7A: "ValueOffset",
     0xB1BEA30C: "VanishEffectID",
     0x1BF4A556: "VanishParam1",
