@@ -7942,7 +7942,7 @@ hashes = {
 uint_hashes = {
     '8F29BCAF': ['LocationBdat', 'field_5177BA21'],
     'C5C5F70E': ['FormationTopWindow', 'FormationCooking', 'field_07F1CB46',
-                 'field_F1D020CF', 'field_E27F23C7', 'FormationCookingAction', 
+                 'field_F1D020CF', 'field_E27F23C7', 'FormationCookingAction',
                  'FormationTraining'],
     'SYS_GimmickLocation': ['field_6C50B44E', 'Option1'],
     '4CECED20': ['field_6C50B44E', 'Option1']  # Same structure as SYS_GimmickLocation but with DLC content
@@ -8190,7 +8190,7 @@ class BdatTable(object):
 
     def addref(self, row, ref_name, ref_row, ref_value):
         """Add a reference to the given row from the named table and row.
-        
+
         Parameters:
             row: Row in this table which is referenced.
             ref_name: Name of the referencing table.
