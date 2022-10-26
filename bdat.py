@@ -10168,9 +10168,9 @@ def resolve_xrefs(tables):
             for row in range(table.num_rows):
                 type = table.get(row, idx_type)
                 param1 = table.get(row, idx_param1)
-                if type in (9,12):
+                if type in (12,):
                     target_table = tables['FLD_EnemyData']
-                elif type in (10,11):
+                elif type in (9,10,11):
                     target_table = tables['BTL_Arts_PC']
                 elif type >= 13 and type <= 17:
                     target_table = tables['BTL_Skill_PC']
