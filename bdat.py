@@ -632,6 +632,7 @@ hashes = {
     0xB7FACD23: "ma01a_GMK_EnemyPop",
     0x3A8DB47D: "ma01a_GMK_EnemyWave",
     0x66BE92FC: "ma01a_GMK_EtherPoint",
+    0xABE6D9C7: "ma01a_GMK_EtherSphere",
     0xFBA1D750: "ma01a_GMK_Event",
     0xEDEB8455: "ma01a_GMK_EyepatchArea",
     0x9F3B5150: "ma01a_GMK_FieldLock",
@@ -663,6 +664,7 @@ hashes = {
     0x778E3103: "ma04a_GMK_EnemyPop",
     0x067B90BA: "ma04a_GMK_EnemyWave",
     0x33FE07E9: "ma04a_GMK_EtherPoint",
+    0x44D5C7AE: "ma04a_GMK_EtherSphere",
     0xB3221521: "ma04a_GMK_Event",
     0x0256635F: "ma04a_GMK_FieldLock",
     0x18BC09D6: "ma04a_GMK_FixedMob",
@@ -698,6 +700,7 @@ hashes = {
     0x0277EA4F: "ma07a_GMK_EnemyPop",
     0x292F9EC8: "ma07a_GMK_EnemyWave",
     0x45F18C57: "ma07a_GMK_EtherPoint",
+    0x9B4061D7: "ma07a_GMK_EtherSphere",
     0x451F5A17: "ma07a_GMK_Event",
     0x0814D855: "ma07a_GMK_FieldLock",
     0x7DAE8D43: "ma07a_GMK_FixedMob",
@@ -733,6 +736,7 @@ hashes = {
     0x7BECF394: "ma09a_GMK_EnemyPop",
     0x83386BFE: "ma09a_GMK_EnemyWave",
     0x3E87DC6F: "ma09a_GMK_EtherPoint",
+    0x27255BE5: "ma09a_GMK_EtherSphere",
     0x87E28CBB: "ma09a_GMK_Event",
     0x94120285: "ma09a_GMK_EyepatchArea",
     0xFA756D39: "ma09a_GMK_FieldLock",
@@ -767,6 +771,7 @@ hashes = {
     0xC76401A3: "ma11a_GMK_EnemyPop",
     0xD1D0C6DF: "ma11a_GMK_EnemyWave",
     0x0C540EDB: "ma11a_GMK_EtherPoint",
+    0xEF9BAE89: "ma11a_GMK_EtherSphere",
     0xEC512E0E: "ma11a_GMK_Event",
     0x38986FE6: "ma11a_GMK_EyepatchArea",
     0xF491C81A: "ma11a_GMK_FieldLock",
@@ -5422,7 +5427,7 @@ hashes = {
     0x82C7C669: "Enemy",
     0xD3897F4C: "EnemyAiHead",
     0xAA60B6DF: "EnemyAiTail",
-    0x3BBE76C9: "EnemyDead", 
+    0x3BBE76C9: "EnemyDead",
     0x611E819D: "EnemyExp",
     0xAAEA8654: "EnemyFamily",
     0x9053E074: "EnemyGold",
@@ -5495,6 +5500,7 @@ hashes = {
     0x51954738: "EquipType",
     0x5623FEE0: "EtherPatternFlag",
     0xEF0DD561: "EtherPoint",
+    0x88AE2F7A: "EtherSphere",
     0x98B5A07E: "Event",
     0x5104C2B6: "EventID",
     0xEE4909E8: "EventName",
@@ -7938,7 +7944,8 @@ uint_hashes = {
     'C5C5F70E': ['FormationTopWindow', 'FormationCooking', 'field_07F1CB46',
                  'field_F1D020CF', 'field_E27F23C7', 'FormationCookingAction', 
                  'FormationTraining'],
-    'SYS_GimmickLocation': ['field_6C50B44E', 'Option1']
+    'SYS_GimmickLocation': ['field_6C50B44E', 'Option1'],
+    '4CECED20': ['field_6C50B44E', 'Option1']  # Same structure as SYS_GimmickLocation but with DLC content
 }
 
 # Sanity check on unhash table
@@ -8850,6 +8857,7 @@ text_xrefs = {
                        'Caption': ('msg_colony_text', 'name')},
     'FLD_CookRecipe': {'Name': ('8B7D949B', 'name')},
     'FLD_EnemyData': {'MsgName': ('msg_enemy_name', 'name')},
+    'FLD_InfoList': {'Name': ('CA2198EC', 'name')},
     'FLD_MealRecipe': {'Name': ('0103F5B8', 'name')},
     'FLD_NpcList': {'field_7F0A3296': ('FLD_NpcResource', 'Name')},
     'FLD_NpcResource': {'Name': ('msg_npc_name', 'name'),
@@ -8859,7 +8867,7 @@ text_xrefs = {
     'FLD_PerkTemporary': {'Name1': ('msg_fld_perk_name', 'name'),
                           'Name2': ('msg_fld_perk_name', 'name'),
                           'Name3': ('msg_fld_perk_name', 'name'),
-                          'Caption1': ('msg_fld_perk_name', 'name'), 
+                          'Caption1': ('msg_fld_perk_name', 'name'),
                           'Caption2': ('msg_fld_perk_name', 'name'),
                           'Caption3': ('msg_fld_perk_name', 'name')},
     'FLD_RelationColony': {'Text1': ('msg_kizuna_name', 'name'),
@@ -9139,6 +9147,26 @@ field_xrefs = {
     'ColonyID3': 'FLD_ColonyList',
 
     'AccessCondition': refset_condition,
+    'AddCondition1': refset_condition,
+    'AddCondition2': refset_condition,
+    'AddCondition3': refset_condition,
+    'AddCondition4': refset_condition,
+    'AddCondition5': refset_condition,
+    'AddCondition6': refset_condition,
+    'AddCondition7': refset_condition,
+    'AddCondition8': refset_condition,
+    'AddCondition9': refset_condition,
+    'AddCondition10': refset_condition,
+    'AddCondition11': refset_condition,
+    'AddCondition12': refset_condition,
+    'AddCondition13': refset_condition,
+    'AddCondition14': refset_condition,
+    'AddCondition15': refset_condition,
+    'AddCondition16': refset_condition,
+    'AddCondition17': refset_condition,
+    'AddCondition18': refset_condition,
+    'AddCondition19': refset_condition,
+    'AddCondition20': refset_condition,
     'ChangeStatusCondition': refset_condition,
     'Condition': refset_condition,  # Excluding FLD_ConditionList (special-cased below)
     'Condition1': refset_condition,
@@ -10168,9 +10196,9 @@ def resolve_xrefs(tables):
             for row in range(table.num_rows):
                 type = table.get(row, idx_type)
                 param1 = table.get(row, idx_param1)
-                if type in (9,12):
+                if type in (12,):
                     target_table = tables['FLD_EnemyData']
-                elif type in (10,11):
+                elif type in (9,10,11):
                     target_table = tables['BTL_Arts_PC']
                 elif type >= 13 and type <= 17:
                     target_table = tables['BTL_Skill_PC']
