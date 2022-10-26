@@ -10143,6 +10143,13 @@ def resolve_field_xrefs(tables, table, field_idx, target, add_link):
                     param2 = table.get(row, idx_param2)
                     if type <= 7:
                         value += f' ({param1})'
+                    elif type == 12:
+                        t_EnemyData = tables['FLD_EnemyData']
+                        f_MsgName = t_EnemyData.field_index('MsgName')
+                        enemy_row = t_EnemyData.id_to_row(param1)
+                        enemy_name = (t_EnemyData.get(enemy_row, f_MsgName)
+                                      if enemy_row else str(param1))
+                        value += f' ({enemy_name}, {param2})'
                     elif type != 255:
                         value += f' ({param2})'
                 elif target[2] == 'scn_category':
@@ -10174,20 +10181,24 @@ def resolve_field_xrefs(tables, table, field_idx, target, add_link):
 def resolve_xrefs(tables):
     """Resolve all cross-references in the given list of tables."""
 
+    # Quick hack to deal with recursive text refs.
+    recursive_text_tables = ('FLD_NpcList',  # must be after FLD_NpcResource
+                             'BTL_Achievement',  # must be after FLD_EnemyData
+                             )
     for table_name, fields in text_xrefs.items():
-        if table_name == 'FLD_NpcList':
-            continue  # force after FLD_NpcResource
         if not table_name in tables:
-          continue  # force skip missing tables
+            continue  # skip missing tables
+        if table_name in recursive_text_tables:
+            continue  # postpone until after this loop
         table = tables[table_name]
         for field, target in fields.items():
             resolve_field_xrefs(tables, table, table.field_index(field),
                                 target, False)
-
-    for field, target in text_xrefs['FLD_NpcList'].items():
-        resolve_field_xrefs(tables, tables['FLD_NpcList'],
-                            tables['FLD_NpcList'].field_index(field), target,
-                            False)
+    for table_name in recursive_text_tables:
+        for field, target in text_xrefs[table_name].items():
+            resolve_field_xrefs(tables, tables[table_name],
+                                tables[table_name].field_index(field), target,
+                                False)
 
     for name, table in tables.items():
         if name == 'BTL_Achievement':  # Special case for value-dependent refs
@@ -10196,10 +10207,10 @@ def resolve_xrefs(tables):
             for row in range(table.num_rows):
                 type = table.get(row, idx_type)
                 param1 = table.get(row, idx_param1)
-                if type in (12,):
-                    target_table = tables['FLD_EnemyData']
-                elif type in (9,10,11):
+                if type in (9,10,11):
                     target_table = tables['BTL_Arts_PC']
+                elif type == 12:
+                    target_table = tables['FLD_EnemyData']
                 elif type >= 13 and type <= 17:
                     target_table = tables['BTL_Skill_PC']
                 else:
