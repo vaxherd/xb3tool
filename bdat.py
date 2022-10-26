@@ -5422,7 +5422,7 @@ hashes = {
     0x82C7C669: "Enemy",
     0xD3897F4C: "EnemyAiHead",
     0xAA60B6DF: "EnemyAiTail",
-    0x3BBE76C9: "EnemyDead", 
+    0x3BBE76C9: "EnemyDead",
     0x611E819D: "EnemyExp",
     0xAAEA8654: "EnemyFamily",
     0x9053E074: "EnemyGold",
@@ -7938,7 +7938,8 @@ uint_hashes = {
     'C5C5F70E': ['FormationTopWindow', 'FormationCooking', 'field_07F1CB46',
                  'field_F1D020CF', 'field_E27F23C7', 'FormationCookingAction', 
                  'FormationTraining'],
-    'SYS_GimmickLocation': ['field_6C50B44E', 'Option1']
+    'SYS_GimmickLocation': ['field_6C50B44E', 'Option1'],
+    '4CECED20': ['field_6C50B44E', 'Option1']  # Same structure as SYS_GimmickLocation but with DLC content
 }
 
 # Sanity check on unhash table
@@ -8850,6 +8851,7 @@ text_xrefs = {
                        'Caption': ('msg_colony_text', 'name')},
     'FLD_CookRecipe': {'Name': ('8B7D949B', 'name')},
     'FLD_EnemyData': {'MsgName': ('msg_enemy_name', 'name')},
+    'FLD_InfoList': {'Name': ('CA2198EC', 'name')},
     'FLD_MealRecipe': {'Name': ('0103F5B8', 'name')},
     'FLD_NpcList': {'field_7F0A3296': ('FLD_NpcResource', 'Name')},
     'FLD_NpcResource': {'Name': ('msg_npc_name', 'name'),
@@ -8859,7 +8861,7 @@ text_xrefs = {
     'FLD_PerkTemporary': {'Name1': ('msg_fld_perk_name', 'name'),
                           'Name2': ('msg_fld_perk_name', 'name'),
                           'Name3': ('msg_fld_perk_name', 'name'),
-                          'Caption1': ('msg_fld_perk_name', 'name'), 
+                          'Caption1': ('msg_fld_perk_name', 'name'),
                           'Caption2': ('msg_fld_perk_name', 'name'),
                           'Caption3': ('msg_fld_perk_name', 'name')},
     'FLD_RelationColony': {'Text1': ('msg_kizuna_name', 'name'),
@@ -9139,6 +9141,26 @@ field_xrefs = {
     'ColonyID3': 'FLD_ColonyList',
 
     'AccessCondition': refset_condition,
+    'AddCondition1': refset_condition,
+    'AddCondition2': refset_condition,
+    'AddCondition3': refset_condition,
+    'AddCondition4': refset_condition,
+    'AddCondition5': refset_condition,
+    'AddCondition6': refset_condition,
+    'AddCondition7': refset_condition,
+    'AddCondition8': refset_condition,
+    'AddCondition9': refset_condition,
+    'AddCondition10': refset_condition,
+    'AddCondition11': refset_condition,
+    'AddCondition12': refset_condition,
+    'AddCondition13': refset_condition,
+    'AddCondition14': refset_condition,
+    'AddCondition15': refset_condition,
+    'AddCondition16': refset_condition,
+    'AddCondition17': refset_condition,
+    'AddCondition18': refset_condition,
+    'AddCondition19': refset_condition,
+    'AddCondition20': refset_condition,
     'ChangeStatusCondition': refset_condition,
     'Condition': refset_condition,  # Excluding FLD_ConditionList (special-cased below)
     'Condition1': refset_condition,
