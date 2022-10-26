@@ -9130,6 +9130,8 @@ refset_talent = ('BTL_Talent', )
 #         in resolve_field_xrefs()).
 # A zero ID is always converted to an empty cell.
 field_xrefs = {
+    'ChainOrder': 'D9B88F26',
+
     'Colony': 'FLD_ColonyList',
     'ColonyID': 'FLD_ColonyList',
     'ColonyID1': 'FLD_ColonyList',
@@ -9571,8 +9573,16 @@ table_xrefs = {
                'TalentNPCSkillCond4': refset_condition,
                'TalentNPCSkillCond5': refset_condition,
                'TalentNPCSkillCond6': refset_condition,
-               'ChainOrder': 'D9B88F26',
                'HeroChainEff': refset_enhance},
+    'CHR_UroBody': {'Arts1': refset_arts_pc,
+                    'Arts2': refset_arts_pc,
+                    'Arts3': refset_arts_pc,
+                    'Arts4': refset_arts_pc,
+                    'Arts5': refset_arts_pc,
+                    'Arts6': refset_arts_pc,
+                    'TalentArts1': refset_arts_pc,
+                    'TalentArts2': refset_arts_pc,
+                    'TalentArts3': refset_arts_pc},
     'EVT_HeroEquip': {'pc': refset_pc},
     'EVT_HideList': {'hideObj01': refset_gimmick_object,
                      'hideObj02': refset_gimmick_object,
