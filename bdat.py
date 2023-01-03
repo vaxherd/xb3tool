@@ -72,7 +72,10 @@ def murmur32(s):
 
 
 ########################################################################
-# Mapping from hashed strings to their original values
+# Alphabet used to bruteforce labels
+# Note: As of the time of writing this code it doesn't appear that labels
+# are going past 'c'. Additional values here are just serving as future-proofing measure.
+bruteforce_alphabet = ['','a','b','c','d','e','f']
 
 hashes = {
     0x00000000: "",
@@ -8727,13 +8730,20 @@ def resolve_labels(tables):
                         print(f'Warning: failed to match some row labels in {table.name}',
                           file=sys.stderr)
                         break
-                label = f'{cur_prefix}{id:04d}'
-                hash_str = f'<{murmur32(label):08X}>'
-                row = labels.get(hash_str)
-                if row is not None:
-                    table.set(row, 1, label)
-                    del labels[hash_str]
-                id += 1
+                detected_letter = ''
+                for letter in bruteforce_alphabet:
+                    label = f'{cur_prefix}{id:04d}{letter}'
+                    hash_str = f'<{murmur32(label):08X}>'
+                    row = labels.get(hash_str)
+                    if row is not None:
+                        table.set(row, 1, label)
+                        del labels[hash_str]
+                        detected_letter = letter
+                        break
+                #Only advance the counter if we haven't found a label with letter.
+                #Otherwise next label is highly likely to have the same id with different letter
+                if detected_letter == '':
+                    id += 1
 
         elif re.match(r'ma..a_GMK_Object', table.name):
             labels = dict()
