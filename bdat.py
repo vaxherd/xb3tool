@@ -72,10 +72,7 @@ def murmur32(s):
 
 
 ########################################################################
-# Alphabet used to bruteforce labels
-# Note: As of the time of writing this code it doesn't appear that labels
-# are going past 'c'. Additional values here are just serving as future-proofing measure.
-bruteforce_alphabet = ['','a','b','c','d','e','f']
+# Mapping from hashed strings to their original values
 
 hashes = {
     0x00000000: "",
@@ -7941,16 +7938,6 @@ hashes = {
     0x8B8A1BF1: "z16",
 }
 
-# UINT fields that should be parsed as HSTRINGs
-uint_hashes = {
-    '8F29BCAF': ['LocationBdat', 'field_5177BA21'],
-    'C5C5F70E': ['FormationTopWindow', 'FormationCooking', 'field_07F1CB46',
-                 'field_F1D020CF', 'field_E27F23C7', 'FormationCookingAction',
-                 'FormationTraining'],
-    'SYS_GimmickLocation': ['field_6C50B44E', 'Option1'],
-    '4CECED20': ['field_6C50B44E', 'Option1']  # Same structure as SYS_GimmickLocation but with DLC content
-}
-
 # Sanity check on unhash table
 # (enabled by default since it doesn't take very long to run)
 if True:
@@ -7962,6 +7949,26 @@ def unhash(hash, default=None):
     """Return the string corresponding to a hash, or the default if unknown."""
     value = hashes.get(hash, default)
     return value if value is not None else default
+
+
+########################################################################
+# Miscellaneous data tables
+
+# UINT fields that should be parsed as HSTRINGs
+uint_hashes = {
+    '8F29BCAF': ['LocationBdat', 'field_5177BA21'],
+    'C5C5F70E': ['FormationTopWindow', 'FormationCooking', 'field_07F1CB46',
+                 'field_F1D020CF', 'field_E27F23C7', 'FormationCookingAction',
+                 'FormationTraining'],
+    'SYS_GimmickLocation': ['field_6C50B44E', 'Option1'],
+    '4CECED20': ['field_6C50B44E', 'Option1']  # Same structure as SYS_GimmickLocation but with DLC content
+}
+
+# Alphabet used to bruteforce event message labels
+# Note: As of the time of writing this code it doesn't appear that labels
+# are going past 'c'. Additional values here are just serving as a
+# future-proofing measure.
+bruteforce_alphabet = ['','a','b','c','d','e','f']
 
 
 ########################################################################
@@ -8573,7 +8580,7 @@ class Bdat(object):
             else:
                 name = u32(tdata, strings_ofs + name_ofs)
                 name = unhash(name, f'field_{name:08X}')
-            # This field is encoded as UINT32 but it's actually a reference
+            # Some fields are encoded as UINT32 but are actually references
             # to row IDs in other tables.
             uint_table = uint_hashes.get(table_name)
             if uint_table is not None and name in uint_table:
@@ -8709,8 +8716,9 @@ def resolve_labels(tables):
         if table.name.startswith('msg_cq') or table.name.startswith('msg_ev') or table.name.startswith('msg_tq') or table.name.startswith('msg_nq') or table.name.startswith('msg_sq') or table.name.startswith('msg_tlk'):
             prefix = f'{table.name[4:]}_'
             alt_prefix = None
-            #fev cutscene files also follow the same format as tq, nq, sq
-            #but we don't have table names bruteforced for those yet, so they are ignored
+            # fev cutscene files also follow the same format as tq, nq, sq
+            # but we don't have table names bruteforced for those yet, so
+            # they are ignored
             if table.name.startswith('msg_tq') or table.name.startswith('msg_nq') or table.name.startswith('msg_sq') or table.name.startswith('msg_tlk'):
                 if(table.name[-1].isdigit()):
                     prefix += 'msg'
@@ -8740,8 +8748,9 @@ def resolve_labels(tables):
                         del labels[hash_str]
                         detected_letter = letter
                         break
-                #Only advance the counter if we haven't found a label with letter.
-                #Otherwise next label is highly likely to have the same id with different letter
+                # Only advance the counter if we haven't found a label with
+                # a letter.  Otherwise the next label is highly likely to
+                # have the same id with different letter
                 if detected_letter == '':
                     id += 1
 
