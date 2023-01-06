@@ -10158,10 +10158,17 @@ def resolve_field_xrefs(tables, table, field_idx, target, add_link):
                 if target[2] == 'enhance':
                     value = str(value)
                     for n in (1,2,3):
-                        param_idx = table.field_index(f'Param{n}', True)
+                        param_idx, param_table, param_row = table.field_index(f'Param{n}', True), \
+                            table, row
+                        if n == 3:
+                            # Param: 3 refers to Param in BTL_EnhanceEff
+                            enhance_eff_table = tables['BTL_EnhanceEff']
+                            param_table = enhance_eff_table
+                            param_row = table.get(row, table.field_index('EnhanceEffect', True)) - 1
+                            param_idx = enhance_eff_table.field_index('Param', True)
                         if param_idx is not None:
-                            param = table.get(row, param_idx)
-                            if isinstance(param, float):
+                            param = param_table.get(param_row, param_idx)
+                            if isinstance(param, float) or isinstance(param, int):
                                 param = f'{param:g}'
                             value = value.replace(f'[ML:EnhanceParam paramtype={n} ]', param)
                 elif target[2] == 'urobody_name':
