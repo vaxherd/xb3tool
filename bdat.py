@@ -8623,6 +8623,7 @@ class Bdat(object):
                     unpack = 'b'
                     size = 1
                 elif field.value_type == BdatValueType.UNK_11:
+                    # another string pointer, generally empty
                     unpack = 'I'
                     size = 4
                 elif field.value_type == BdatValueType.UNK_12:
@@ -8639,7 +8640,7 @@ class Bdat(object):
                     print(f'   (+{value_ofs - rows_ofs}) {field.name}: {typename}')
                 value = struct.unpack('<'+unpack, tdata[value_ofs:value_ofs+size])[0]
                 value_ofs += size
-                if field.value_type == BdatValueType.STRING:
+                if field.value_type == BdatValueType.STRING or field.value_type == BdatValueType.UNK_11:
                     value = self._stringz(tdata, strings_ofs + value)
                 elif field.value_type == BdatValueType.HSTRING:
                     value = unhash(value, f'<{value:08X}>')
