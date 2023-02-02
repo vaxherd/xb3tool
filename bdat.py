@@ -17,6 +17,9 @@ import re
 import struct
 import sys
 
+# Whether to load more hashes from an external file.
+# The file should be in the working directory and its name must be "hashes.txt"
+load_hashes_from_file = True
 
 ########################################################################
 # Utility functions
@@ -4788,6 +4791,7 @@ hashes = {
     0x0126A47B: "AddValue6",
     0x3795FA41: "AddValue7",
     0xD62FA1AE: "AddValue8",
+    0x275A212B: "Affordance",
     0xDACD2796: "After",
     0x57B5DD7C: "Age",
     0xC206D2B1: "AgilityBase",
@@ -5451,6 +5455,7 @@ hashes = {
     0x187ADE0F: "EnemyPopRate3",
     0x4216C90C: "EnemyPopRate4",
     0x2F54A6B8: "EnemyPopType",
+    0xA1A748BB: "EnemySolders", # sic
     0x0C149953: "EnemyTalentExp",
     0x0C961F78: "EnemyUseArts01",
     0xFA909155: "EnemyUseArts02",
@@ -5604,6 +5609,7 @@ hashes = {
     0x89355BFE: "FlgNoVanish",
     0xE06BCC5C: "FlgSerious",
     0xA94FB2E1: "FlgSpDead",
+    0x9F9BE3E9: "FlowEvent",
     0x71808F7B: "FlowEventID",
     0x58DF450A: "FlyHeight",
     0x8D21284B: "Focus",
@@ -6024,6 +6030,7 @@ hashes = {
     0xD33A871F: "MinLength",
     0x50617ECF: "MinScale",
     0x74427D74: "Mist",
+    0xBD686480: "MobVisibleArea",
     0x3B1C6214: "Model",
     0x3F4ADAAC: "ModelName",
     0x3688BE7D: "ModelName1",
@@ -7945,6 +7952,16 @@ if True:
         if word is not None and murmur32(word) != hash:
             raise Exception(f'murmur32({word}) != 0x{hash:08X} (should be 0x{murmur32(word):08X})')
 
+if load_hashes_from_file:
+    print("Reading hashes from file...")
+    read = 0
+    with open("hashes.txt", encoding="utf-8") as file:
+        for line in file.read().splitlines():
+            if line:
+                hashes[murmur32(line)] = line
+                read += 1
+    print(f"Read {read} hashes from file.")
+
 def unhash(hash, default=None):
     """Return the string corresponding to a hash, or the default if unknown."""
     value = hashes.get(hash, default)
@@ -8760,7 +8777,8 @@ def resolve_labels(tables):
             for row in range(table.num_rows):
                 value = table.get(row, 1)
                 m = hash_matcher.match(value)
-                assert m
+                if not m:
+                    continue
                 hash = int(m.group(1), base=16)
                 name = objnames.get(hash)
                 if name:
@@ -8789,12 +8807,13 @@ def resolve_labels(tables):
 
     # SYS_GimmickLocation.GimmickID comes last because we need the dict
     # of gimmick IDs from per-map tables.
-    gmkloc = tables['SYS_GimmickLocation']
-    idx_GimmickID = gmkloc.field_index('GimmickID')
-    for row in range(gmkloc.num_rows):
-        id = gmkloc.get(row, idx_GimmickID)
-        if id in gmknames:
-            gmkloc.set(row, idx_GimmickID, gmknames[id])
+    gmk_loc_tables = [tables['SYS_GimmickLocation'], tables['4CECED20']]
+    for gmkloc in gmk_loc_tables:
+        idx_GimmickID = gmkloc.field_index('GimmickID')
+        for row in range(gmkloc.num_rows):
+            id = gmkloc.get(row, idx_GimmickID)
+            if id in gmknames:
+                gmkloc.set(row, idx_GimmickID, gmknames[id])
 
 
 ########################################################################
@@ -9150,7 +9169,7 @@ refset_enemy = ('FLD_EnemyData', )
 refset_enhance = ('BTL_Enhance', )
 refset_event = (('EVT_listEv', 'EVT_listFev', 'EVT_listQst', 'EVT_listTlk'), )
 refset_event_name = (('EVT_listEv', 'EVT_listFev', 'EVT_listQst', 'EVT_listTlk'), None, 'event_name')
-refset_gimmick = ('SYS_GimmickLocation.GimmickID', )
+refset_gimmick = ('SYS_GimmickLocation.GimmickID',)
 refset_gimmick_object = (None, None, 'gimmick_object')
 refset_item = (('ITM_Accessory', 'ITM_Collection', 'ITM_Collepedia', 'ITM_Cylinder', 'ITM_Gem', 'ITM_Info', 'ITM_Precious'), )
 refset_map = (('SYS_MapList'), )
@@ -10128,6 +10147,10 @@ def resolve_field_xrefs(tables, table, field_idx, target, add_link):
                     test_table = tables['SYS_GimmickLocation']
                     idx_GimmickID = test_table.field_index('GimmickID')
                     test_row = test_table.id_to_row(id, idx_GimmickID)
+                elif name == '4CECED20.GimmickID':
+                    test_table = tables['4CECED20']
+                    idx_GimmickID = test_table.field_index('GimmickID')
+                    test_row = test_table.id_to_row(id, idx_GimmickID)
                 elif len(target) > 2 and target[2] == 'event_name':
                     test_table = tables[name]
                     hash = murmur32(id)
@@ -10300,19 +10323,19 @@ def resolve_xrefs(tables):
         hash_re = re.compile(r'<([0-9A-F]{8})>$')
         for field_idx in range(2, table.num_fields):
             field = table.field(field_idx)
-            if table.name == 'SYS_GimmickLocation' and field.name == 'GimmickID':
+            if field.name == 'GimmickID' and (table.name == 'SYS_GimmickLocation' or table.name == '4CECED20'):
                 pass  # This is a key field, so any matches are hash collisions
             elif field.value_type == BdatValueType.HSTRING:
                 for row in range(table.num_rows):
                     value = table.get(row, field_idx)
                     if isinstance(value, str):
                         m = hash_re.match(value)
-                        if m:
-                            target_table_name, target_row = BdatTable.global_id_lookup(m.group(0))
-                            if target_table_name:
-                                target_table = tables[target_table_name]
-                                add_xref(table, row, field_idx, None,
-                                         target_table, target_row)
+                        row_hash = m.group(0) if m else value
+                        target_table_name, target_row = BdatTable.global_id_lookup(row_hash)
+                        if target_table_name:
+                            target_table = tables[target_table_name]
+                            add_xref(table, row, field_idx, None,
+                                target_table, target_row)
 
     # Special links from table names to tables
     for name, table in tables.items():
