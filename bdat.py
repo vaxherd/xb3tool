@@ -78,7 +78,7 @@ hashes = {
     0x00000000: "",
 
     # List of tables from program initialization (in init array order):
-    0x1D9A5B2B: None,  # Has fields: Condition (likely a gimmick table, lexically before gimmickBGM)
+    0x1D9A5B2B: "gimmickAffordance",
     0x22556A12: "gimmickEnemyAff",
     0x33975AC6: "gimmickMob",
     0x5D8D6C4E: "gimmickFixedMob",
@@ -103,7 +103,7 @@ hashes = {
     0xCEAA3005: "gimmickFootPrint",
     0x03397BD7: "gimmickWeather",
     0xF941E5C0: "gimmickEtherPoint",
-    0x2B7999C5: None,  # Has fields: Condition, EventID, Priority (likely a gimmick table, lexically between gimmickPrecious and gimmickPuzzle)
+    0x2B7999C5: "gimmickPreload",
     0x063C76AB: "gimmickCorpse",
     0x6B40A33C: "gimmickInterest",
     0x04842934: "gimmickSE",
@@ -114,7 +114,7 @@ hashes = {
     0x815F9DEF: "gimmickIconLocator",
     0x41CBF846: "gimmickPuzzle",
     0x5E93DEC1: "gimmickBlackMist",
-    0x9BDB275E: None,  # Has fields: Condition (likely a gimmick table, lexically between gimmickFootPrint and gimmickGrave)
+    0x9BDB275E: "gimmickGas",
     0x05112AA4: None,  # Has fields: affType
     0x95F00CDF: None,  # Has fields: Condition, affType
     0xF0A0A1B1: None,  # Has Fields: {TargetMob,Text,DispTime}1-3
@@ -621,7 +621,7 @@ hashes = {
     0xBF147F74: None,
 
     # Per-map gimmick tables:
-    0x0685D826: None,  # Gimmick table 1D9A5B2B for ma01a
+    0x0685D826: "ma01a_GMK_Affordance",
     0x04A1DCB1: "ma01a_GMK_BGM",
     0x85EC3F24: "ma01a_GMK_BlackMist",
     0x484E2D46: "ma01a_GMK_Collection",
@@ -647,13 +647,13 @@ hashes = {
     0x042D6C87: "ma01a_GMK_Mob",
     0x94084666: "ma01a_GMK_Object",
     0x2897B486: "ma01a_GMK_Precious",
-    0xF0D5C3B6: None,  # Gimmick table 2B7999C5 for ma01a
+    0xF0D5C3B6: "ma01a_GMK_Preload",
     0xABD3FA12: "ma01a_GMK_SDropping",
     0x7A6BAA0F: "ma01a_GMK_SE",
     0xCA3A550C: "ma01a_GMK_Schedule",
     0xD3CA0EAC: "ma01a_GMK_TreasureBox",
     0x98D399DD: "ma01a_GMK_Weather",
-    0xA528E95A: None,  # Gimmick table 1D9A5B2B for ma04a
+    0xA528E95A: "ma04a_GMK_Affordance",
     0xBF7E7932: "ma04a_GMK_BGM",
     0x5329F692: "ma04a_GMK_BlackMist",
     0xFF93F580: "ma04a_GMK_Collection",
@@ -678,14 +678,14 @@ hashes = {
     0x8DB9C573: "ma04a_GMK_Mob",
     0x6AE57581: "ma04a_GMK_Object",
     0xB6B2C14B: "ma04a_GMK_Precious",
-    0x9ED5F02A: None,  # Gimmick table 2B7999C5 for ma04a
+    0x9ED5F02A: "ma04a_GMK_Preload",
     0x58115357: "ma04a_GMK_Puzzle",
     0x8D25BEAB: "ma04a_GMK_SDropping",
     0xCFBD8F67: "ma04a_GMK_SE",
     0x5EE882F4: "ma04a_GMK_Schedule",
     0x11575C39: "ma04a_GMK_TreasureBox",
     0x08EB258E: "ma04a_GMK_Weather",
-    0xA5532EDB: None,  # Gimmick table 1D9A5B2B for ma07a
+    0xA5532EDB: "ma07a_GMK_Affordance",
     0xDACBF97D: "ma07a_GMK_BGM",
     0x7D77D9D9: "ma07a_GMK_BlackMist",
     0xF52DD204: "ma07a_GMK_Collection",
@@ -714,14 +714,14 @@ hashes = {
     0xD2B6A86A: "ma07a_GMK_Mob",
     0xE7939CB2: "ma07a_GMK_Object",
     0xF193906C: "ma07a_GMK_Precious",
-    0xFD4384CB: None,  # Gimmick table 2B7999C5 for ma07a
+    0xFD4384CB: "ma07a_GMK_Preload",
     0x6683B96B: "ma07a_GMK_Puzzle",
     0x82937F70: "ma07a_GMK_SDropping",
     0xA068C2AC: "ma07a_GMK_SE",
     0x7A89211E: "ma07a_GMK_Schedule",
     0x4DD862B4: "ma07a_GMK_TreasureBox",
     0xE13AE2C3: "ma07a_GMK_Weather",
-    0x3ADA937D: None,  # Gimmick table 1D9A5B2B for ma09a
+    0x3ADA937D: "ma09a_GMK_Affordance",
     0x5FCF31FF: "ma09a_GMK_BGM",
     0x89A99E06: "ma09a_GMK_BlackMist",
     0x2A743DDE: "ma09a_GMK_Collection",
@@ -751,12 +751,12 @@ hashes = {
     0x5803D22C: "ma09a_GMK_Mob",
     0x67A747F3: "ma09a_GMK_Object",
     0x30C9DAD1: "ma09a_GMK_Precious",
-    0x7F26B64B: None,  # Gimmick table 2B7999C5 for ma09a
+    0x7F26B64B: "ma09a_GMK_Preload",
     0x07C86B78: "ma09a_GMK_SDropping",
     0x7035C808: "ma09a_GMK_SE",
     0x325EFCF7: "ma09a_GMK_Schedule",
     0x982DFD15: "ma09a_GMK_TreasureBox",
-    0xB56054E1: None,  # Gimmick table 1D9A5B2B for ma11a
+    0xB56054E1: "ma11a_GMK_Affordance",
     0xCB1B986F: "ma11a_GMK_BGM",
     0x6CF533BE: "ma11a_GMK_BlackMist",
     0x320FBEE9: "ma11a_GMK_Collection",
@@ -786,14 +786,14 @@ hashes = {
     0xE72501AC: "ma11a_GMK_Mob",
     0xAE60B64B: "ma11a_GMK_Object",
     0x78D1E214: "ma11a_GMK_Precious",
-    0x92738207: None,  # Gimmick table 2B7999C5 for ma11a
+    0x92738207: "ma11a_GMK_Preload", 
     0x3FE2E815: "ma11a_GMK_Puzzle",
     0x5970FDF6: "ma11a_GMK_SDropping",
     0x4968C64D: "ma11a_GMK_SE",
     0x73660EB3: "ma11a_GMK_Schedule",
     0xEBA530C2: "ma11a_GMK_TreasureBox",
     0x0750E780: "ma11a_GMK_Weather",
-    0x705D2D04: None,  # Gimmick table 1D9A5B2B for ma14a
+    0x705D2D04: "ma14a_GMK_Affordance",
     0x4E40AEEB: "ma14a_GMK_EnemyDead",
     0x232003CA: "ma14a_GMK_EnemyPop",
     0x801E851E: "ma14a_GMK_Event",
@@ -804,11 +804,11 @@ hashes = {
     0xB77EF7D3: "ma14a_GMK_MapJumpList",
     0x99D4E0C8: "ma14a_GMK_Mob",
     0xE9BE9D87: "ma14a_GMK_Object",
-    0x1E19833D: None,  # Gimmick table 2B7999C5 for ma14a
+    0x1E19833D: "ma14a_GMK_Preload",
     0x2E91445C: "ma14a_GMK_SE",
     0x7E10FCE2: "ma14a_GMK_Schedule",
     0x05BF69D7: "ma14a_GMK_TreasureBox",
-    0xF9DECA62: None,  # Gimmick table 1D9A5B2B for ma15a
+    0xF9DECA62: "ma15a_GMK_Affordance",
     0xA4246CAE: "ma15a_GMK_BGM",
     0x5138D4F3: "ma15a_GMK_Collection",
     0x00B64CCA: "ma15a_GMK_Door",
@@ -833,7 +833,7 @@ hashes = {
     0x3C8E3EEF: "ma15a_GMK_Mob",
     0x7185B927: "ma15a_GMK_Object",
     0xDBD5150D: "ma15a_GMK_Precious",
-    0x296A9010: None,  # Gimmick table 2B7999C5 for ma15a
+    0x296A9010: "ma15a_GMK_Preload",
     0xBA0E6DBC: "ma15a_GMK_SE",
     0xC1EE0D8F: "ma15a_GMK_Schedule",
     0x4098C72D: "ma15a_GMK_TreasureBox",
@@ -856,7 +856,7 @@ hashes = {
     0x6FABC0A3: "ma17a_GMK_MapJumpList",
     0xA5E3C704: "ma17a_GMK_Object",
     0x6A79E665: "ma17a_GMK_Precious",
-    0x0CD9C2AE: None,  # Gimmick table 2B7999C5 for ma17a
+    0x0CD9C2AE: "ma17a_GMK_Preload",
     0x7C9F69DC: "ma17a_GMK_SE",
     0x2475C723: "ma17a_GMK_TreasureBox",
     0x13613F65: "ma17a_GMK_Weather",
@@ -864,7 +864,7 @@ hashes = {
     0x87D440CB: "ma20a_GMK_Event",
     0x79C5B81C: "ma20a_GMK_FlowEvent",
     0xA3C362AD: "ma20a_GMK_Location",
-    0x5D68EF5C: None,  # Gimmick table 2B7999C5 for ma20a
+    0x5D68EF5C: "ma20a_GMK_Preload",
     0x7A54A077: "ma20a_GMK_SE",
     0x8186EE86: "ma21a_GMK_MapJumpList",
     0xD80B9EAE: "ma21a_GMK_SE",
@@ -886,7 +886,7 @@ hashes = {
     0xB6FE0BE7: "ma22a_GMK_MapJumpList",
     0xA86F352B: "ma22a_GMK_Object",
     0x893F6918: "ma22a_GMK_Precious",
-    0xEC13CCD6: None,  # Gimmick table 2B7999C5 for ma22a
+    0xEC13CCD6: "ma22a_GMK_Preload",
     0x1C28797B: "ma22a_GMK_SE",
     0x8E71D160: "ma22a_GMK_TreasureBox",
     0x6BD005A9: "ma90a_GMK_BGM",
@@ -903,7 +903,7 @@ hashes = {
     0x2F52EAA9: "ma90a_GMK_Location",
     0x803EFBB0: "ma90a_GMK_Object",
     0xD3ADCF9B: "ma90a_GMK_Precious",
-    0x4A868241: None,  # Gimmick table 2B7999C5 for ma90a
+    0x4A868241: "ma90a_GMK_Preload", 
     0xFC8B2F17: "ma90a_GMK_SDropping",
     0x70EB4338: "ma90a_GMK_SE",
     0x56902927: "ma90a_GMK_TreasureBox",
@@ -9138,6 +9138,9 @@ text_xrefs = {
                  'Text2': ('msg_autotalk', 'name'),
                  'Text3': ('msg_autotalk', 'name')},
     'F936594B': {'SpotName': ('msg_comspot_name', 'name')},
+    '9D907E07': {'Name': ('192F6292', 'name'), 'Caption1': ('18D9E310', 'name'),
+                 'Caption2': ('2BA64A98', 'name'), 'Caption3': ('2BA64A98', 'name'),
+                 'field_0085193A': ('EE23CB30', 'name')}
 }
 
 refset_arts_en = ('BTL_Arts_En', )
@@ -10039,6 +10042,9 @@ table_xrefs = {
                  'RelationID4': 'FLD_RelationColony'},
     'FD4384CB': {'EventID': refset_event_name},
     'FEF315B6': {'EventID': refset_event_name},
+    '9D907E07': {'OrderCondition': refset_condition, 'field_DDB9C6C6': refset_condition,
+                 'Reward': '0DBCD5D6'},
+    '0DBCD5D6': {'FirstReward': refset_item},
 }
 
 def add_xref(table, row, field_idx, value, target_table, target_row):
