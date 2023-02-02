@@ -70,8 +70,6 @@ ethersphere_ma01a_011/enemy_ma01a_sphere_011
 ethersphere_ma01a_011/enemy_ma01a_sphere_011/Member-10
 ethersphere_ma01a_011/enemy_ma01a_sphere_011/Member-10/EnemyMemberLocator-25
 ethersphere_ma01a_011/enemy_ma01a_sphere_011/Member-10/EnemyMemberLocator-26
-
-Z1iZa 
 BTL_ma04_TQ0027_001
 MA04AGMK_MAPOBJ_TQ0027_01
 MA04AGMK_MAPOBJ_TQ0027_02
@@ -319,9 +317,6 @@ ethersphere_ma04a_011/enemy_ma04a_sphere_011/Member-10
 ethersphere_ma04a_011/enemy_ma04a_sphere_011/Member-10/EnemyMemberLocator-23
 ethersphere_ma04a_011/enemy_ma04a_sphere_011/Member-10/EnemyMemberLocator-24
 ma04a_GJPotal_01
-
-XDJt7C
-
 BTL_MA07A_TQ0027_001
 MA07A_FUKI_001_259_02_84
 MA07A_FUKI_005_259_02_94
@@ -460,7 +455,6 @@ ethersphere_ma07a_011/enemy_ma07a_spaidp_c2_01_tq0027_es_001/Member-10
 ethersphere_ma07a_011/enemy_ma07a_spaidp_c2_01_tq0027_es_001/Member-10/EnemyMemberLocator-23
 ethersphere_ma07a_011/enemy_ma07a_spaidp_c2_01_tq0027_es_001/Member-10/EnemyMemberLocator-24
 ethersphere_ma07a_011/enemy_ma07a_spaidp_c2_01_tq0027_es_001/Member-10/EnemyMemberLocator-25
-
 MA09A_INT_001_259_01_19_13
 MA09A_INT_001_259_01_19_13/Reaction
 MA09A_INT_001_259_01_19_13/Starting
@@ -485,8 +479,6 @@ ethersphere_ma09a_004/enemy_ma09a_ekidona_01_tq0027_es_001
 ethersphere_ma09a_004/enemy_ma09a_ekidona_01_tq0027_es_001/Member-3
 ethersphere_ma09a_004/enemy_ma09a_ekidona_01_tq0027_es_001/Member-3/EnemyMemberLocator-6
 ethersphere_ma09a_004/enemy_ma09a_ekidona_01_tq0027_es_001/Member-3/EnemyMemberLocator-8
-
-"MOBV0
 BTL_MA11A_TQ0027_001
 MA11A_INT_001_259_01_19_14
 MA11A_INT_001_259_01_19_14/Reaction
@@ -611,8 +603,6 @@ ethersphere_ma11a_013/enemy_ma11a_iguuna_DS_01_tq0027_es_002
 ethersphere_ma11a_013/enemy_ma11a_iguuna_DS_01_tq0027_es_002/Member-12
 ethersphere_ma11a_013/enemy_ma11a_iguuna_DS_01_tq0027_es_002/Member-12/EnemyMemberLocator-31
 ethersphere_ma11a_013/enemy_ma11a_iguuna_DS_01_tq0027_es_002/Member-12/EnemyMemberLocator-32
-XFRM #
-
 first_dir
 lookat
 action
@@ -757,10 +747,6 @@ ma14a_GMK_61_AFF_TALK_NQ3406_02
 ma14a_GMK_61_AFF_TALK_NQ3406_02/ma14a_GMK_61_AFF_TALK_NQ3406_02_LOCATOR
 ma14a_GMK_61_AFF_TALK_NQ3406_03
 ma14a_GMK_61_AFF_TALK_NQ3406_03/ma14a_GMK_61_AFF_TALK_NQ3406_03_LOCATOR
-
-0|&Sq)
-
-AFFLp0
 action
 action_dir
 lookat
@@ -1909,8 +1895,6 @@ ma15a_GMK_71_AFF_WORK_001_01_ALL-5/action-105
 ma15a_GMK_71_AFF_WORK_001_01_ALL-6
 ma15a_GMK_71_AFF_WORK_001_01_ALL-6/action-106
 ma15a_GMK_71_AFF_WORK_001_01_ALL/action-35
-
-mYCNTPP
 MA17A_AREA_BGM_11
 MA17A_AREA_BGM_11-1
 MA17A_AREA_BGM_11-1/ControlPoint-10
@@ -1926,7 +1910,6 @@ MA17A_AREA_BGM_NONE/ControlPoint-4
 MA17A_AREA_BGM_NONE/ControlPoint-5
 MA17A_AREA_BGM_NONE/ControlPoint-6
 MA17A_AREA_BGM_NONE/ControlPoint-7
-
 ma20a_BlackMist_01
 ma20a_BlackMist_01/ControlPoint
 ma20a_BlackMist_01/ControlPoint-1
@@ -1944,8 +1927,6 @@ ma20a_BlackMist_01/ma20a_Blackmist_Volume_03
 ma20a_BlackMist_01/ma20a_Blackmist_Volume_03_RadialBlur
 ma20a_BlackMist_01/ma20a_Blackmist_Volume_04
 ma20a_BlackMist_01/ma20a_Blackmist_Volume_04_RadialBlur
-
-eCNTP0
 MA22A_AREA_BGM_01
 MA22A_AREA_BGM_01/ControlPoint
 MA22A_AREA_BGM_01/ControlPoint-1
@@ -2003,7 +1984,6 @@ MAPJUMP_POS_MA25A_02_CHBTL/Locator5
 MAPJUMP_POS_MA25A_02_CHBTL/Locator6
 MAPJUMP_POS_MA25A_02_CHBTL/Locator7
 MAPJUMP_POS_MA25A_02_CHBTL/Locator8
-
 BTL_CH03
 EnemyWave
 EnemyWave/wave1
@@ -2077,7 +2057,6 @@ enemy_ma25a_mob_04
 enemy_ma25a_mob_05
 enemy_ma25a_mob_06
 enemy_ma25a_mob_07
-
 BTL_CH05
 EnemyWave
 EnemyWave/wave1
@@ -2110,7 +2089,6 @@ MAPJUMP_POS_MA25A_05_CHBTL/Locator5
 MAPJUMP_POS_MA25A_05_CHBTL/Locator6
 MAPJUMP_POS_MA25A_05_CHBTL/Locator7
 MAPJUMP_POS_MA25A_05_CHBTL/Locator8
-
 BTL_CH06
 EnemyWave
 EnemyWave/wave1
@@ -2144,9 +2122,6 @@ MAPJUMP_POS_MA25A_06_CHBTL/Locator5
 MAPJUMP_POS_MA25A_06_CHBTL/Locator6
 MAPJUMP_POS_MA25A_06_CHBTL/Locator7
 MAPJUMP_POS_MA25A_06_CHBTL/Locator8
-
-XFRM 	
-
 BTL_CH07
 EnemyWave
 EnemyWave/wave1
@@ -2221,7 +2196,6 @@ MAPJUMP_POS_MA25A_08_CHBTL/Locator5
 MAPJUMP_POS_MA25A_08_CHBTL/Locator6
 MAPJUMP_POS_MA25A_08_CHBTL/Locator7
 MAPJUMP_POS_MA25A_08_CHBTL/Locator8
-
 BTL_CH09
 EnemyWave
 EnemyWave/wave1
@@ -2259,7 +2233,6 @@ MAPJUMP_POS_MA25A_09_CHBTL/Locator5
 MAPJUMP_POS_MA25A_09_CHBTL/Locator6
 MAPJUMP_POS_MA25A_09_CHBTL/Locator7
 MAPJUMP_POS_MA25A_09_CHBTL/Locator8
-
 BTL_CH10
 EnemyWave
 EnemyWave/wave1
@@ -2276,7 +2249,6 @@ MAPJUMP_POS_MA25A_10_CHBTL/Locator5
 MAPJUMP_POS_MA25A_10_CHBTL/Locator6
 MAPJUMP_POS_MA25A_10_CHBTL/Locator7
 MAPJUMP_POS_MA25A_10_CHBTL/Locator8
-
 BTL_CH11
 EnemyWave
 EnemyWave/wave1
@@ -2326,9 +2298,6 @@ MAPJUMP_POS_MA25A_12_CHBTL/Locator6
 MAPJUMP_POS_MA25A_12_CHBTL/Locator7
 MAPJUMP_POS_MA25A_12_CHBTL/Locator8
 enemy_ma25a_Screen
-="0MM0/x
-="0MJ&
-hOENMY
 BTL_CH13
 EnemyWave
 EnemyWave/wave1
@@ -2371,7 +2340,6 @@ MAPJUMP_POS_MA25A_13_CHBTL/Locator5
 MAPJUMP_POS_MA25A_13_CHBTL/Locator6
 MAPJUMP_POS_MA25A_13_CHBTL/Locator7
 MAPJUMP_POS_MA25A_13_CHBTL/Locator8
-
 BTL_CH14
 EnemyWave
 EnemyWave/wave1
@@ -2411,9 +2379,6 @@ MAPJUMP_POS_MA25A_14_CHBTL/Locator5
 MAPJUMP_POS_MA25A_14_CHBTL/Locator6
 MAPJUMP_POS_MA25A_14_CHBTL/Locator7
 MAPJUMP_POS_MA25A_14_CHBTL/Locator8
-wupM0/x
-
-~ENMYP
 BTL_CH15
 EnemyWave
 EnemyWave/wave1
@@ -2430,9 +2395,6 @@ MAPJUMP_POS_MA25A_15_CHBTL/Locator5
 MAPJUMP_POS_MA25A_15_CHBTL/Locator6
 MAPJUMP_POS_MA25A_15_CHBTL/Locator7
 MAPJUMP_POS_MA25A_15_CHBTL/Locator8
-~wn,o9
-
-sMOBV0
 BTL_CH16
 EnemyWave
 EnemyWave/wave1
@@ -2472,10 +2434,6 @@ MAPJUMP_POS_MA25A_16_CHBTL/Locator6
 MAPJUMP_POS_MA25A_16_CHBTL/Locator7
 MAPJUMP_POS_MA25A_16_CHBTL/Locator8
 MobVisibleArea
-984=984=
-
-I2b''"
-TrdENMY
 BTL_CH17
 EnemyWave
 EnemyWave/wave1
@@ -2509,7 +2467,6 @@ MAPJUMP_POS_MA25A_17_CHBTL/Locator5
 MAPJUMP_POS_MA25A_17_CHBTL/Locator6
 MAPJUMP_POS_MA25A_17_CHBTL/Locator7
 MAPJUMP_POS_MA25A_17_CHBTL/Locator8
-
 BTL_CH18
 MAPJUMP_POS_MA25A_18_CHBTL
 MAPJUMP_POS_MA25A_18_CHBTL/Locator1
@@ -2537,10 +2494,6 @@ TA18_EnemyWave_1Less/wave4
 TA18_EnemyWave_1Less/wave4/enemy_ma25a_18_004
 TA18_EnemyWave_1Less/wave4/enemy_ma25a_18_004/Member-4
 TA18_EnemyWave_1Less/wave4/enemy_ma25a_18_004/Member-4/EnemyMemberLocator-12
-
-Z	k,hX
-0g&,hX
-STRGp	
 MA025A_AREA_BGM_01
 MA025A_AREA_BGM_01/ControlPoint
 MA025A_AREA_BGM_01/ControlPoint-1
@@ -2616,7 +2569,6 @@ sea of cloud
 sea of cloud/ControlPoint-1
 windwhisper
 windwhisper/ControlPoint
-
 AreaBgm_Test
 AreaBgm_Test/ControlPoint
 AreaBgm_Test/ControlPoint-1
