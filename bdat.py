@@ -89,7 +89,7 @@ map_names = [e for l in [
     "ma04a_demo", "ma09a_demo", "ma15a_demo",
     "ma90agmk", "ma90a_ai_test", "ma90a_pl_test",
     "ma90a_ts_test", "ma90a_ok_test", "ma90a_sz_test",
-    "ma90a_kn_test", "ma0000"]
+    "ma90a_kn_test", "ma0000", "mob_gmk_test", "debug_map"]
 ] for e in l]
 gimmick_types = [
     "Affordance",
@@ -8509,6 +8509,7 @@ def resolve_labels(tables):
                 value = table.get(row, 1)
                 m = hash_matcher.match(value)
                 if not m:
+                    # already unhashed
                     continue
                 hash = int(m.group(1), base=16)
                 name = objnames.get(hash)
@@ -8538,8 +8539,10 @@ def resolve_labels(tables):
 
     # SYS_GimmickLocation.GimmickID comes last because we need the dict
     # of gimmick IDs from per-map tables.
-    gmk_loc_tables = [tables['SYS_GimmickLocation'], tables['4CECED20']]
+    gmk_loc_tables = [tables['SYS_GimmickLocation'], tables.get('4CECED20')]
     for gmkloc in gmk_loc_tables:
+        if not gmkloc:
+            continue
         idx_GimmickID = gmkloc.field_index('GimmickID')
         for row in range(gmkloc.num_rows):
             id = gmkloc.get(row, idx_GimmickID)
