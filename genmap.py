@@ -510,12 +510,13 @@ class Wilay(object):
 class SegInfo(object):
     """Class wrapping a minimap segment info (*.seg) data file."""
 
-    def __init__(self, path, seg_base_path, verbose):
+    def __init__(self, path, seg_base_paths, verbose):
         """Initialize a MapInfo instance.
 
         Parameters:
             path: Pathname of segment info file.
-            seg_base_path: Base pathname for segment images.
+            seg_base_paths: Base pathnames for segment images.
+                            These will be checked in order.
             verbose: Verbosity level for parse status messages.
 
         Raises:
@@ -523,7 +524,7 @@ class SegInfo(object):
             ValueError: Raised if a parsing error is encountered.
         """
         self._path = path
-        self._seg_base_path = seg_base_path
+        self._seg_base_paths = seg_base_paths
         self._verbose = verbose
         with open(self._path, 'rb') as f:
             self._parse(f.read(), verbose)
@@ -598,8 +599,8 @@ class SegInfo(object):
         # currently support those.
 
     def _seg_path(self, x, y):
-        """Return the pathname of the given segment image file."""
-        return self._seg_base_path + f'{x:02d}{y:02d}.wilay'
+        """Return the pathname of the first eligible segment image file."""
+        return next(filter(os.path.exists, map(lambda p: p + f'{x:02d}{y:02d}.wilay', self._seg_base_paths)))
 
 
 class MapInfo(object):
@@ -608,12 +609,13 @@ class MapInfo(object):
     # Structure for data of a single minimap layer.
     MapLayer = namedtuple('MapLayer', 'segmaps xmin ymin zmin xmax ymax zmax')
 
-    def __init__(self, path, verbose):
+    def __init__(self, path, verbose, expansions):
         """Initialize a MapInfo instance.
 
         Parameters:
             path: Pathname of minimap info file.
             verbose: Verbosity level for parse status messages.
+            expansions: Expansions to use.
 
         Raises:
             OSError: Raised if the file cannot be read.
@@ -621,7 +623,7 @@ class MapInfo(object):
         """
         self._path = path
         with open(self._path, 'rb') as f:
-            self._parse(f.read(), verbose)
+            self._parse(f.read(), verbose, expansions)
 
     @property
     def num_layers(self):
@@ -661,7 +663,7 @@ class MapInfo(object):
                                             seg.seg_height * seg.num_rows),
                                    bytes(data), 'raw', 'RGBA', 0, 1)
 
-    def _parse(self, data, verbose):
+    def _parse(self, data, verbose, expansions):
         """Parse a *.mi file."""
         if len(data) < 8:
             raise ValueError(f'{self._path}: File is too short')
@@ -692,13 +694,18 @@ class MapInfo(object):
                 else:
                     segname = name
                 seg_info_path = os.path.join(segdir, f'{segname}_map.seg')
-                seg_image_path = os.path.join(os.path.dirname(segdir),
-                                              f'image/{segname}_map_')
-                if scale == 1 or os.path.exists(seg_info_path):
+                seg_image_paths = [
+                    os.path.join(os.path.dirname(segdir), 
+                                 f'image/{f"{name}_{ex}_s{scale}" if scale != 1 else f"{name}_{ex}"}_map_')
+                    for ex in expansions
+                ]
+                seg_image_paths.append(os.path.join(os.path.dirname(segdir), 
+                                                    f'image/{segname}_map_'))
+                if os.path.exists(seg_info_path):
                     if verbose:
                         print(f'    Scale {scale}:')
                     segmaps.append(
-                        SegInfo(seg_info_path, seg_image_path, verbose))
+                        SegInfo(seg_info_path, seg_image_paths, verbose))
             self._layers[i] = MapInfo.MapLayer(segmaps, xmin, ymin, zmin,
                                                xmax, ymax, zmax)
 
@@ -714,6 +721,7 @@ def main(argv):
                         help='Output status messages during parsing.')
     parser.add_argument('-s', '--scale', type=int,
                         help=('Map scale to render (1 = highest resolution, 2 = 1/2 scale, 3 = 1/4 scale). Defaults to the highest scale (smallest image) available for the selected map and layer.'))
+    parser.add_argument('-e', '--expansions', help=('Expansions to use, these replace specific map portions based on story progress. Use a comma-separated list of suffixes. (Example: "-e ex,ex02,ex03" for ma07a)'))
     parser.add_argument('datadir', metavar='DATADIR',
                         help='Pathname of directory containing Xenoblade 3 data.')
     parser.add_argument('map_id', metavar='MAP-ID',
@@ -727,12 +735,13 @@ def main(argv):
     args = parser.parse_args()
     verbose = args.verbose if args.verbose is not None else 0
     scale = args.scale if args.scale is not None else 0
+    expansions = args.expansions.split(',') if args.expansions is not None else []
 
     if not os.path.exists(os.path.join(args.datadir, 'menu')):
         raise Exception(f'Xenoblade 3 data not found at {args.datadir}')
 
     mi = MapInfo(os.path.join(args.datadir, f'menu/minimap/{args.map_id}.mi'),
-                 verbose)
+                 verbose, expansions)
     image = mi.image(args.layer, scale)
     image.save(sys.stdout.buffer if args.output == '-' else args.output,
                format='png')
