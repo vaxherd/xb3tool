@@ -10248,15 +10248,24 @@ def unhash(hash, default=None):
 ########################################################################
 # Miscellaneous data tables
 
-# UINT fields that should be parsed as HSTRINGs
+# UINT fields that should be parsed as HSTRINGs (dict of table: [fields])
 uint_hashes = {
+    'SYS_GimmickLocation': ['field_6C50B44E', 'Option1'],
+    '4CECED20': ['field_6C50B44E', 'Option1'],  # Same structure as SYS_GimmickLocation but with DLC content
     '8F29BCAF': ['LocationBdat', 'field_5177BA21'],
     'C5C5F70E': ['FormationTopWindow', 'FormationCooking', 'field_07F1CB46',
                  'field_F1D020CF', 'field_E27F23C7', 'FormationCookingAction',
                  'FormationTraining'],
-    'SYS_GimmickLocation': ['field_6C50B44E', 'Option1'],
-    '4CECED20': ['field_6C50B44E', 'Option1']  # Same structure as SYS_GimmickLocation but with DLC content
 }
+
+# Integer fields that should be printed in hexadecimal (set of fields,
+# applied to all tables)
+hex_fields = set([
+    # Event text table fields
+    'talkattr',
+    'field_2B51649C',
+    'field_C1A03E98',
+])
 
 # Alphabet used to bruteforce event message labels
 # Note: As of the time of writing this code it doesn't appear that labels
@@ -10603,6 +10612,8 @@ class BdatTable(object):
                     else:
                         if isinstance(value, tuple):
                             value = value[1]
+                        if self._fields[i].name in hex_fields:
+                            value = f'0x{value:X}'
                         value_str = self._print_value(value, self._fields[i])
                     s += f'      <td>{value_str}</td>\n'
             # end for
