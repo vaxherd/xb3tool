@@ -80,6 +80,9 @@ map_names = [e for l in [
     # Challenge battle maps
     [f"ma25a_{i:02}" for i in range(1, 18 + 1)], # one for each challenge
     
+    # Challenge gauntlet maps
+    [f"ma25a_{i:02}" for i in range(50, 50 + 10 + 1)], # one for each challenge
+    
     # Debug/cutscene/unused/unknown maps
     ["gmk_test", "ma40a", "ma0101", "ma90a",
     "ma04a_demo", "ma09a_demo", "ma15a_demo",
@@ -12589,12 +12592,18 @@ def resolve_xrefs(tables):
                         type = table.get(row, type_idx)
                         cond = table.get(row, field_idx)
                         assert type > 0
+                        # TODO: add missing DLC3 condition table IDs
                         typename = ('List', 'Scenario', 'Quest', 'Env',
                                     'Flag', 'Item', 'PT', 'MapGimmick',
-                                    'UMonster', 'Tutorial', 'PcLv', 'ClassLv')[type-1]
+                                    'UMonster', 'Tutorial', 'PcLv', 'ClassLv', None)[type-1]
+                        if typename is None:
+                            continue
                         target_table = tables[f'FLD_Condition{typename}']
+                        id = target_table.id_to_row(cond)
+                        if id is None:
+                            continue
                         add_xref(table, row, field_idx, None,
-                                 target_table, target_table.id_to_row(cond))
+                                 target_table, id)
                 else:
                     resolve_field_xrefs(tables, table, field_idx, target, True)
         hash_re = re.compile(r'<([0-9A-F]{8})>$')
