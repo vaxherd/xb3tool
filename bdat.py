@@ -10338,6 +10338,9 @@ class BdatField(object):
         """The length of this array field.  None if not an array field."""
         return self._array_size
 
+    def is_id(self):
+        """Whether this field can be interpreted as a row ID"""
+        return self.name in ('ID', 'label') and self.value_type == BdatValueType.HSTRING
 
 _global_hashmap = {}
 
@@ -10346,6 +10349,7 @@ class BdatTable(object):
     """Class wrapping a single table from a BDAT file."""
 
     _global_hashmap = {}
+    KEEP_COLLISIONS = False
 
     @staticmethod
     def global_id_lookup(id):
@@ -10376,11 +10380,11 @@ class BdatTable(object):
         self._hashid_map = {}
         self._hashid_field_map = [None] * len(fields)
         try:
-            if self._fields[1].name in ('ID', 'label') and self._fields[1].value_type == BdatValueType.HSTRING:
+            if self._fields[1].is_id():
                 for row in range(len(self._rows)):
                     id = self._rows[row][1]
                     self._hashid_map[id] = row
-                    if id in _global_hashmap:
+                    if not BdatTable.KEEP_COLLISIONS and id in _global_hashmap:
                         # Don't bother warning about these because
                         # murmur3 generates Very Many of them
                         #print(f'Global ID collision: {id}', file=sys.stderr)
@@ -11056,8 +11060,7 @@ def resolve_labels(tables):
 
     # Sort table list for sensible warning output order.
     for table in sorted(tables.values(), key=lambda t: t.name):
-        assert table.field(1).name in ('ID', 'label')
-        assert table.field(1).value_type == BdatValueType.HSTRING
+        assert table.field(1).is_id()
         if table.name.startswith('msg_cq') or table.name.startswith('msg_ev') or table.name.startswith('msg_tq') or table.name.startswith('msg_nq') or table.name.startswith('msg_sq') or table.name.startswith('msg_tlk'):
             prefix = f'{table.name[4:]}_'
             alt_prefix = None
@@ -12403,6 +12406,9 @@ def add_xref(table, row, field_idx, value, target_table, target_row):
         if target_table.name in row_name_fields:
             name_idx = target_table.field_index(row_name_fields[target_table.name])
             value = target_table.get(target_row, name_idx)
+        elif target_table.field(1).is_id():
+            id = target_table.get(target_row, 1)
+            value = '' if id.startswith('<') else id
         else:
             value = ''
         if value == '':
@@ -12413,6 +12419,9 @@ def add_xref(table, row, field_idx, value, target_table, target_row):
     if table.name in row_name_fields:
         name_idx = table.field_index(row_name_fields[table.name])
         row_value = table.get(row, name_idx)
+    elif table.field(1).is_id():
+        id = table.get(row, 1)
+        row_value = '' if id.startswith('<') else id
     else:
         row_value = ''
     if row_value == '':
@@ -12730,10 +12739,12 @@ def main(argv):
     files = (glob.glob(os.path.join(args.bdatdir, '*.bdat'))
              + glob.glob(os.path.join(args.bdatdir, args.language, '*/*.bdat'))
              + glob.glob(os.path.join(args.bdatdir, args.language, '*/*/*.bdat')))
-    for file in files:
-        bdat = Bdat(file, verbose)
-        for table in bdat.tables():
-            tables[table.name] = table
+    for i in range(0,2):
+        BdatTable.KEEP_COLLISIONS = i > 0; 
+        for file in files:
+            bdat = Bdat(file, verbose)
+            for table in bdat.tables():
+                tables[table.name] = table
 
     resolve_labels(tables)  # XC3 specific
     resolve_xrefs(tables)
