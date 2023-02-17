@@ -6192,6 +6192,10 @@ hashes = {
     0x0345ECE2: "PriceCondition",
     0x170127D3: "Priority",
     0x216735E5: "PriorityUI",
+    0x8D62C952: "Prob1",
+    0x8DB43AC8: "Prob2",
+    0xBCA4AF61: "Prob3",
+    0x0FBC07B2: "Prob4",
     0x17276C8D: "Probability01",
     0xAE0EBFAC: "Probability02",
     0x27DC69B6: "Probability03",
@@ -10866,6 +10870,10 @@ class Bdat(object):
         if len(data) < end_ofs:
             raise ValueError(f'Table at 0x{offset:X}: Truncated data')
         tdata = bytearray(data[offset:end_ofs])
+        
+        if fields_ofs != 0x30:
+            # Found data before columns, should be unhashed strings table
+            add_hashes_from_bdat(tdata[0x30:fields_ofs])
 
         table_name = u32(tdata, strings_ofs+1)
         if table_name != 0:
@@ -10994,6 +11002,37 @@ class Bdat(object):
 
 ########################################################################
 # XC3 label unhashing
+
+def add_hashes_from_bdat(strings_table):
+    """Some debug BDATs have an embedded unhashed strings table."""
+    if len(strings_table) < 8:
+        return
+    tables = []
+    type = u32(strings_table, 0)
+    size = u32(strings_table, 4)
+    tables.append(parse_unhashed_table(type, strings_table[8:size]))
+    if len(strings_table) <= size:
+        return
+    type = u32(strings_table, size)
+    new_size = u32(strings_table, size + 4)
+    tables.append(parse_unhashed_table(type, strings_table[size+8:size+new_size]))
+    
+    assert len(strings_table) == size + new_size
+    
+    for table in tables:
+        for s in table:
+            hashes[murmur32(s)] = s
+    
+def parse_unhashed_table(type, table):
+    if type == 1:
+        # Row hashes
+        string_ptr = u32(table, 0)
+    elif type == 2:
+        # Column hashes
+        string_ptr = 0
+    else:
+        raise Exception(f"Unknown unhashed table type {type}")
+    return [b.decode('utf-8') for b in table[string_ptr:].split(b'\0') if b]
 
 def resolve_labels(tables):
     """Unhash row labels (string IDs) in XC3 tables."""
