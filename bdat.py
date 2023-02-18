@@ -4414,7 +4414,7 @@ hashes = {
     0x9CFC5B3B: "MNU_option_sound",
     0xD4D03C1E: "MNU_sort",
 	
-	# Brute forced DLC table names:
+    # Brute forced DLC table names:
     0x3E1DD0F4: "BTL_EnemyDrop_Material_dlc04",
     0x5EBC721E: "BTL_EnemyDrop_Normal_dlc04",
     0x4CECED20: "SYS_GimmickLocation_dlc02",
