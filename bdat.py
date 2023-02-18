@@ -76,13 +76,13 @@ def murmur32(s):
 map_names = [e for l in [
     # Regular maps
     [f"ma{i:02}a" for i in range(1, 80 + 1)], # not all numbers are used though
-    
+
     # Challenge battle maps
     [f"ma25a_{i:02}" for i in range(1, 18 + 1)], # one for each challenge
-    
+
     # Challenge gauntlet maps
     [f"ma25a_{i:02}" for i in range(50, 50 + 10 + 1)], # one for each challenge
-    
+
     # Debug/cutscene/unused/unknown maps
     ["gmk_test", "ma40a", "ma0101", "ma90a",
     "ma04a_demo", "ma09a_demo", "ma15a_demo",
@@ -323,8 +323,8 @@ hashes = {
     0x09D17C70: "SYS_FlowEventArtsStatus",
     0xF01E66DE: "SYS_FlowEventSkillStatus",
     0xD0253D11: "SYS_FlowEventArtsSet",
-    0x8D9A36B7: None,  # Has fields: FlagBit
-    0xA263E178: None,  # No known fields
+    0x8D9A36B7: "SYS_NewGamePlusFlag",
+    0xA263E178: "SYS_NewGamePlusSysOpen",
     0x23EE284B: "EVT_listEv",
     0x25B62687: "EVT_listFev",
     0xBB0F57A4: "EVT_listQst",
@@ -378,7 +378,7 @@ hashes = {
     0x1FAD393A: None,  # Has fields: ActionType, Anim, SetAnim, AnimTime, MountObj
     0x76D0D7D9: None,  # Has fields: affType, affName
     0x278B4C72: "RSC_MapObjList",
-    0xCA6DB16C: None,  # Has fields: ControlA, ControlB, Visible
+    0xCA6DB16C: "SYS_MapObjPartsVisibility",
     0xFA046DED: None,
     0x3ABF1825: None,
     0xCC1BEC20: "FLD_NpcList",
@@ -390,8 +390,8 @@ hashes = {
     0x965A3DBE: "FLD_MobResource",
     0x7D0E36E4: None,  # Has fields: Physical, Sex, Influence, Job, Race, Unique
     0x3B776F1F: "FLD_InfoList",
-    0xBFF821BE: "SYS_OffsetList",  # FIXME: unclear if correct
-    0x0B368E78: None,  # Has fields: PartsId, Locations, EffectCondition, EffectStatus, SeName, SeCondition, Offset[XYZ]
+    0xBFF821BE: "SYS_OffsetList",
+    0x0B368E78: "SYS_OrnamentMapParts",
     0x0D81DAF8: None,  # Has fields: IconOffset, Interval{Min,Max}
     0xA1AE831D: "SYS_AccessRange",
     0x121A92C9: "RSC_IK",
@@ -428,7 +428,7 @@ hashes = {
     0x32DBEBED: None,
     0xAA2FA6DE: "MNU_EquipDetail",
     0xEF81AE52: None,  # Has fields: DetailText1-6
-    0xF185DC10: "RSC_Story",  # FIXME: unclear if correct
+    0xF185DC10: "RSC_Story",
     0x92D8F17B: "FLD_RelationNpc",
     0x938A4DD1: "FLD_RelationColony",
     0x4B91D8C8: "FLD_KizunaChangeFlag",
@@ -452,14 +452,15 @@ hashes = {
     0x1FCFB323: "SYS_BGMCondition",
     0x2CFCAF13: "SYS_FlowEventAddFlag",
     0x65ACA8AC: "SYS_SystemOpen",
+    0xC0680B9E: "SYS_TargetIconStatus",
     0x5611DDA6: "MNU_GuestIconList",
     0x7C8EEF72: None,  # Has fields: eff_col
-    0x90A6221A: None,  # Has fields: Interval, Priority, EndCheckType
-    0xE6E60A3E: None,  # (Voice replacement list?) Has fields: TargetFile, Condition, ChangeFile
-    0xF95843F9: None,  # Has fields: Group, ChrType, ChrID, UroID, Change, Cond1-2, LotRate, Reply, ReplyGroup, Voice1-4, RandPC, RandHero, Param1-2, TimeZone
-    0x6707EF65: None,  # Has fields: Group, ChrType, ChrID, UroID, Change, Cond1-2, LotRate, Reply, ReplyGroup, Voice1-4, RandPC, RandHero, Param1-2, TimeZone
-    0x8F85EC10: None,  # Has fields: Group, ChrType, ChrID, UroID, Change, Cond1-2, LotRate, Reply, ReplyGroup, Voice1-4, RandPC, RandHero, Param1-2, TimeZone
-    0x52898612: None,  # Has fields: {MotionState,Motionf,Voice}1-8
+    0x90A6221A: "VO_Group",
+    0xE6E60A3E: "VO_Change",
+    0xF95843F9: "VO_Field",
+    0x6707EF65: "VO_BattlePC",
+    0x8F85EC10: "VO_BattleEN",
+    0x52898612: "VO_BattleSP",
     0xBCB34762: "MNU_TipsList",
     0xF1E32CAF: "MNU_QuestTask",
     0x96ECF5BF: "MNU_InputAct",
@@ -512,7 +513,7 @@ hashes = {
     0xDE695AF0: "MNU_form_cam",
     0xCA4DD4C0: "SYS_SpAttack",
     0x72C56041: None,  # Has fields: {PC,Motion,Object}1-2
-    0xD327B2BC: None,  # Has fields: QuestID, TaskID, Comment
+    0xD327B2BC: "QST_OverWrite",
     0xC672E6FC: "SYS_Vibration",
     0x7147D811: "FLD_MobScale",
     0xB52CB42D: "FLD_ObjConvert",
@@ -521,8 +522,8 @@ hashes = {
     0xF5EB8697: "BTL_SpUnique",
     0xE6D8A7AE: "MNU_EventTheater_scn",
     0xD52EFD79: "MNU_FlagParam",
-    0x09D4E3FD: None,  # Has fields: name ("fade_past_memory_short", "ma09a_gim_thunder" etc), comment
-    0x4DA4962C: None,  # Has fields: NPC, InfoPiece
+    0x09D4E3FD: "SYS_FlowEventPlaySE",
+    0x4DA4962C: "SYS_FlowEventDropInfoPiece",
     0xF9828127: "SYS_PopupAnnounce",
     0x9BF7EEDC: "FLD_EnemyAff",
     0xD147C68F: "SYS_TutorialSummary",
@@ -546,7 +547,7 @@ hashes = {
     0x139348CC: "BTL_AutoSetGem",
     0x13DED235: "BTL_AutoSetSkill",
     0x1D96E424: "MNU_QuestNotSell",
-    0x7A066663: None,  # Has fields: TaskID, MapID, Comment
+    0x7A066663: "QST_OverWriteMap",
     0xE7251BBB: "MNU_MapSlide",  # FIXME: unclear if correct
     0x3D608A6E: "MNU_QuestFollow",
     0xA6AAF689: None,  # Has fields: PcID, ArtsID
@@ -630,7 +631,7 @@ hashes = {
     0xBBF540E7: "msg_mnu_tutorial_tips",
     0xA1A111AE: "msg_mnu_update_ms",
     0xEA19B333: "msg_qst_RequestItemSet",
-    0x45A2D5AD: "msg_qst_overwrite",  # FIXME: unclear if correct
+    0x45A2D5AD: "msg_qst_overwrite",
     0xAD40857C: "msg_qst_task",
     0xC617D216: "msg_colony_name",
     0x9B911635: "msg_colony_text",
@@ -4514,6 +4515,7 @@ hashes = {
     0x0126A47B: "AddValue6",
     0x3795FA41: "AddValue7",
     0xD62FA1AE: "AddValue8",
+    0x87E9119B: "AdditiveInterTime",
     0x275A212B: "Affordance",
     0xDACD2796: "After",
     0x57B5DD7C: "Age",
@@ -4559,6 +4561,7 @@ hashes = {
     0xC56E0A4E: "AngleFront",
     0x09CE7D35: "Anim",
     0x38F5029C: "AnimTime",
+    0x8BB71B79: "AnimationLoadingPlay",
     0x55D02483: "Annotation",
     0xB688209A: "AnnotationName",
     0x9EE7227C: "Any",
@@ -4671,7 +4674,8 @@ hashes = {
     0x19539F40: "AttackerProb3",
     0x944D4D65: "Attenuation",
     0xEEB398A0: "AttenuationScale",  # FIXME: unclear if correct
-    0xCBA8067E: "AttrAnim",  # FIXME: unclear if correct
+    0xCBA8067E: "AttrAnim",
+    0x5BB50E83: "AttrAnimContinue",
     0x530C9455: "AuraAwakeLev",
     0xD8B07410: "AutoAttack1",
     0x8DC7FEE3: "AutoAttack2",
@@ -4689,6 +4693,8 @@ hashes = {
     0x904CDF05: "BGM2",
     0xDAE723DC: "BGM3",
     0xC5101EA7: "BGM4",
+    0x86142964: "BankVelocityMax",
+    0x442962EB: "BankVelocityMin",
     0xC32883FD: "BaseEnemy",
     0x5F712FFA: "BaseEventName",
     0x36A5C0B6: "BaseImageNo",
@@ -4834,6 +4840,7 @@ hashes = {
     0x144A602C: "ColonyID3",
     0xAEDF6338: "ColonyIconFlag",
     0x77F25C30: "ColonyRelationID",
+    0x65069E24: "Colonyflagvalue",
     0xCC59D227: "Color",
     0x3566BD5E: "ColorB",
     0x352A786D: "ColorEye",
@@ -4860,6 +4867,12 @@ hashes = {
     0x8252B02B: "CompBonus4",
     0xFA2713A5: "CompBonus5",
     0xD20A0557: "Cond1",
+    0x154CAAC7: "Cond1BdatPrefix",
+    0xB2C40564: "Cond1Resource",
+    0x7F42D86D: "Cond1WorldOffsetX",
+    0x0901FD18: "Cond1WorldOffsetY",
+    0x163CC34B: "Cond1WorldOffsetZ",
+    0xC401B7E5: "Cond1gimmickID",
     0x35329DDF: "Cond2",
     0xD29F8471: "CondParam1",
     0x591E3B51: "Condition",
@@ -4889,6 +4902,8 @@ hashes = {
     0xD9929143: "ContinueEvent",
     0xE7288A69: "ControlA",
     0x74CF9CDA: "ControlB",
+    0xED244868: "CookAssistMountObj",
+    0x06DC4FCD: "CookMainMountObj",
     0xE57B8F53: "CookName",
     0x7E92414E: "CookRecipe",  # FIXME: unclear if correct
     0x2EC51EFC: "CookSnap",
@@ -4939,6 +4954,8 @@ hashes = {
     0x17D57A57: "DebugName7",
     0x85998715: "DebugName8",
     0x911A2A26: "DebugName9",
+    0x236744DE: "Debug_name",
+    0xD7D372C2: "DecidedReward",  # FIXME: what is this a link to?
     0xD4AF7D5E: "Decimal",
     0xA928A956: "Deduct",
     0xC2D519F1: "DefAcce1",
@@ -4958,8 +4975,12 @@ hashes = {
     0x48DB8265: "Default",
     0x87569094: "DefaultBdatPrefix",
     0x976E2908: "DefaultMotion",
-    0xA0CCBA9A: "DefaultOn",  # FIXME: unclear if correct
+    0xA0CCBA9A: "DefaultOn",
     0x555B7A5A: "DefaultResource",
+    0x2DECB173: "DefaultWorldOffsetX",
+    0xC0AF99D1: "DefaultWorldOffsetY",
+    0xA74BF19B: "DefaultWorldOffsetZ",
+    0x4507F33A: "DefaultgimmickID",
     0xB50D9D10: "DescText",
     0xC3F5A67C: "Detail1",
     0x07C915FD: "Detail2",
@@ -5012,7 +5033,6 @@ hashes = {
     0x49C0DEBA: "DmgMgn4",
     0xCA65D2CD: "DmgMgn5",
     0x0213C69E: "DmgRange",
-    0x1A8501F1: "DmgRegionField", # FIXME: unclear if correct
     0xC23E7D15: "DmgRt01",
     0x6CE83942: "DmgRt02",
     0x5C6420B9: "DmgRt03",
@@ -5073,6 +5093,10 @@ hashes = {
     0xBB08DA4F: "EffType",
     0xE9B268D6: "EffValType",
     0xECFF4F2A: "Effect",
+    0xBE9042BD: "EffectAnimationEnd",
+    0xBC511E79: "EffectAnimationPlay",
+    0xBED6BEEC: "EffectAnimationReverse",
+    0x17A0D56D: "EffectAnimationWait",
     0x9CEA86B5: "EffectCondition",
     0xBB44C6DD: "EffectID",
     0x025B58F7: "EffectName",
@@ -5113,6 +5137,7 @@ hashes = {
     0x5DC76866: "EfpT15",
     0x2FE6AA46: "EfpT16",
     0x6592A95A: "EfpType",
+    0xF16431AF: "Eisen",
     0xE4CE82C2: "Elevator",
     0xCF3CD7A7: "ElevatorDoor",
     0xEE783527: "ElevatorSwitch",
@@ -5225,6 +5250,8 @@ hashes = {
     0x84113B2C: "EnhanceSlot0",
     0x3E948624: "EnhanceSlot1",
     0xC9738403: "EnhanceSlot2",
+    0xF19097EE: "EnvRayFootDown",
+    0x9D7F389B: "EnvRayFootTruncateHeight",
     0x51954738: "EquipType",
     0x5623FEE0: "EtherPatternFlag",
     0xEF0DD561: "EtherPoint",
@@ -5313,10 +5340,30 @@ hashes = {
     0x09446249: "FlagNoLimit",  # FIXME: unclear if correct
     0xD8391710: "FlagNoReward",
     0x68E37709: "FlagNum",
-    0x9D810ADA: "FlagPrt",  # FIXME: unclear if correct
+    0x9D810ADA: "FlagPrt",
     0x8FFC0AC6: "FlagSetArts",
     0x9B7A34D1: "FlagStart",
     0xE5CC8125: "FlagType",
+    0x0896B444: "Flag_Chara",
+    0xE9BE1C4F: "Flag_Dead",
+    0xD3694FB8: "Flag_Hide",
+    0xA5A3F047: "Flag_NoBattle",
+    0x285A5212: "Flag_NoChain",
+    0x83307011: "Flag_NoDir",
+    0x0790168B: "Flag_NoField",
+    0x8966F75E: "Flag_NoOverwrite",
+    0x9A9DB3EC: "Flag_NoPlay",
+    0x8EFA8C11: "Flag_NoReplyOK",
+    0x4E59E448: "Flag_NoRoom",
+    0x45942C9A: "Flag_Once",
+    0xC4CEE84D: "Flag_RecAttacker",
+    0x664847EA: "Flag_RecHealer",
+    0xD3F97209: "Flag_RecTank",
+    0x4020A985: "Flag_Serious",
+    0x1A8501F1: "Flag_SeriousOff",
+    0x6E25F359: "Flag_ShareSlot",
+    0x62FDCABA: "Flag_WpnReinforced",
+    0xE54B6507: "Flagld",
     0x33CAEB2F: "FldCond",
     0xFFA9A196: "FlgColiOff",
     0xDE3DD97D: "FlgColonyReleased",
@@ -5343,6 +5390,7 @@ hashes = {
     0x394E89F7: "FootL01",
     0x98ECD62B: "FootL02",
     0xF3FA6A3D: "FootPrint",
+    0x4DD0B982: "FootPrintDetection",
     0x0E91931F: "FootR00",
     0x32DD318D: "FootR01",
     0x8A3C534C: "FootR02",
@@ -5494,12 +5542,18 @@ hashes = {
     0x1574263C: "IKEndF",
     0x54F99027: "IKStartF",
     0x7FDAC4D9: "Icon",
+    0x81E97AF5: "IconDispRangeOff",
+    0x663A256D: "IconDispRangeOn",
     0x746F48F7: "IconFlag",
     0x846CE59D: "IconIndex",
     0x6ECE0D42: "IconIndex2",
     0x89335014: "IconLocator",
     0xFC719450: "IconNo",
+    0xF84E6A37: "IconOffs_x",
+    0xDD876352: "IconOffs_y",
+    0x404FE450: "IconOffs_z",
     0x91274C4E: "IconOffset",
+    0xA8222C7F: "IconPop",
     0x17ABEC63: "IconType",
     0xC1781370: "IdBattleEnemy",
     0xA660D3E2: "IdBgm",
@@ -5507,6 +5561,8 @@ hashes = {
     0x6C228F62: "IdMove",
     0xB3C31799: "IgnoreCondition",
     0x88FA752C: "IkName",
+    0x12E4AC44: "IkRayFootDown",
+    0xC963F1C2: "IkToeThreshold",
     0x5623AF41: "IllustNum",
     0x76156B2E: "ImageID",
     0x45882560: "ImageNo",
@@ -5530,6 +5586,8 @@ hashes = {
     0xCDB74611: "Info",
     0x01C46CBE: "InfoCondition",
     0xC6A4EBC9: "InfoDisp",
+    0xED5A7BE1: "InfoDispRangeOff",
+    0x92288B17: "InfoDispRangeOn",
     0xFE37ECCA: "InfoImage",
     0x2CF1A8E3: "InfoPiece",
     0xB4B2825F: "InfoPiece1",
@@ -5539,6 +5597,8 @@ hashes = {
     0xAD0BA31D: "InsideAlpha",
     0x6BEEE09A: "InsideScale",
     0xBA4427A4: "Intensity",
+    0xC8387F50: "InterFrameIn",
+    0x5FE06621: "InterFrameOut",
     0xB750C04A: "InterestPoint",
     0xD53F9B44: "Interval",
     0xEA13F14F: "IntervalAT",
@@ -5669,8 +5729,13 @@ hashes = {
     0x097B63F4: "LevelHero",
     0x0355C603: "Life",
     0xA0541F59: "LifeFireNum",
+    0x0DB2E2EA: "LimitAngleDownIK",
+    0x586D1A47: "LimitAngleLeftIK",
+    0x37B5E9A6: "LimitAngleRightIK",
+    0x0009B0BF: "LimitAngleUpIK",
     0x91DAE7FF: "LimitPitch",
     0xA33037CE: "LimitRoll",
+    0xE339EEDE: "LineOfSight",
     0x499D339B: "Link1",
     0x03B04BD5: "Link2",
     0xB1AB7B41: "Link3",
@@ -5720,6 +5785,15 @@ hashes = {
     0x8D5D1243: "MapJumpID",
     0x3B810178: "MapJumpIn",
     0x36A5860E: "MapJumpOut",
+    0x34D87478: "MapMA01A",
+    0x80BC549D: "MapMA04A",
+    0x8E179CE4: "MapMA07A",
+    0x768799DF: "MapMA09A",
+    0xC2BB2CA1: "MapMA11A",
+    0xF140DB36: "MapMA14A",
+    0x6C09FA68: "MapMA15A",
+    0x3F1869D6: "MapMA21A",
+    0x071E13E9: "MapMA22A",
     0x4CB4073F: "MapPartsID",
     0xE9206287: "Marking1",
     0x7A10F206: "Marking2",
@@ -5735,6 +5809,7 @@ hashes = {
     0x337DB4A7: "MaterialDropNumMax",
     0x9F2DF785: "MaterialDropNumMin",
     0xA71DE7C9: "MaterialDropProb",
+    0x29A0D7C2: "MaxAnkleHeight",
     0x009B610D: "MaxDelay",
     0xDF998797: "MaxHeight",
     0x2C1A0BDB: "MaxLength",
@@ -5745,11 +5820,14 @@ hashes = {
     0xE71EA282: "MaxShake",
     0x0588B770: "MaxTimeRate",
     0x7DEF5DA6: "MaxValue",
+    0x5EC3A691: "MealMountObj",
+    0x7071DCD3: "MeatType",
     0xB1985607: "MenuCategory",  # FIXME: unclear if correct
     0x2DCB5F5B: "MenuGroup",
     0x9D56F17E: "MenuIcon",
     0xB72A26B5: "MenuMapImage",
     0xF6837482: "MenuPriority",
+    0xAC12843B: "MinAnkleHeightLimit",
     0xD33A871F: "MinLength",
     0x50617ECF: "MinScale",
     0x74427D74: "Mist",
@@ -6021,6 +6099,7 @@ hashes = {
     0xA966D9D2: "Object1",
     0x8DF017B2: "Object2",
     0x1774D63B: "Object3",
+    0x7C5A5FB6: "OceanOneShot",
     0xD983DF25: "OffsetID",
     0x0EE249FF: "OffsetId",
     0x1F519DCB: "OffsetX",
@@ -6035,6 +6114,8 @@ hashes = {
     0x712324D3: "OtherRole",
     0xD2D55B46: "OutsideAlpha",
     0x09ADE838: "OutsideScale",
+    0xF32B11B9: "OverWriteIcon",
+    0x2CBFD9E8: "OverWriteText",
     0x941E504A: "OverwriteOffset",
 
     0x529B2FE3: "PArmor",
@@ -6055,6 +6136,7 @@ hashes = {
     0x433AB8D4: "PCID3",
     0x6C172A8F: "PCMountOut",
     0xD08AF415: "PCPosition",
+    0xEC1BAF77: "PT_OutTiming",
     0xFA05A914: "PageTitle1",
     0x9A442CDC: "PageTitle2",
     0xBB40321A: "PageTitle3",
@@ -6146,6 +6228,10 @@ hashes = {
     0x82F1EBE5: "PieceValue",
     0xD1D96BA9: "Place",
     0xCA2E0979: "Placement",
+    0xA15199E1: "PlacementDownDeltaDown",
+    0xB152B624: "PlacementDownDeltaUp",
+    0x323B0AC6: "PlacementUpDeltaDown",
+    0x9E75D641: "PlacementUpDeltaUp",
     0xBCA71842: "Point",
     0x1F0C9E4E: "Point1",
     0xB0DF3D93: "Point2",
@@ -6281,6 +6367,7 @@ hashes = {
     0x9D6EC3C4: "ReactionEvent4",
     0x843028AD: "ReactionEvent5",
     0xA04C1F8B: "ReactionEvent6",
+    0x7B2199A5: "RecOffLv",
     0xF8CC7B2F: "Recast1",
     0x43E51C2D: "Recast2",
     0xD690DA2D: "Recast3",
@@ -6347,6 +6434,7 @@ hashes = {
     0x04DDBD06: "RevExpLevel",
     0xEBF9CF26: "RevExpTalent",
     0xD9E8B7F5: "RevGold",
+    0xC2C16311: "ReverseVelocity",
     0x7FD874AD: "Reward",
     0xBEBE21A6: "Reward1",
     0x82DE85ED: "Reward1Num",
@@ -6402,6 +6490,11 @@ hashes = {
     0x189340C2: "RewordID",
     0x1FE3CF92: "RewordName",
     0x3BA43A7F: "RewordText",
+    0xD9B27FF5: "RiseOffset",
+    0x154C5FF8: "RiseOffset1",
+    0xA17825E7: "RiseOffset2",
+    0x6A2F82C7: "RiseOffset3",
+    0xE1A4C2AD: "RiseOffset4",
     0x0651F8B8: "Role",
     0x05F54B3F: "Role1",
     0x5B5CEBE7: "Role2",
@@ -6429,6 +6522,7 @@ hashes = {
     0x50A4664B: "RoleParam1",
     0x1F2865DB: "RoleParam2",
     0xF5C790AA: "RoleTag",
+    0xE7C08F2D: "RopeSlideEnd",
     0xEB12D0C5: "RotX",
     0x62DE4328: "RotY",
     0xF8E985AE: "RotZ",
@@ -6516,9 +6610,15 @@ hashes = {
     0x859DC111: "ScenarioMin",
     0x7877BAA8: "Script",
     0x6BB6B20E: "Se",
+    0xC95EE551: "SeAnimationEnd",
+    0x5F1494A1: "SeAnimationPlay",
+    0xEB674F6D: "SeAnimationReverse",
+    0x8B16FCB8: "SeAnimationWait",
     0x392AE7B6: "SeCondition",
     0x064F807E: "SeName",
     0x97D8A256: "SeRange",
+    0x86F9E864: "SeVolumeMaxRange",
+    0x64C568B7: "SeVolumeMinRange",
     0xFD6A9CE6: "SelectDownCat1",
     0x7C8A56FD: "SelectDownCat2",
     0xED896E40: "SelectUpCat1",
@@ -6571,6 +6671,7 @@ hashes = {
     0xD07C6A2B: "ShopItem20",
     0x791D87C4: "ShopType",
     0xB4A58247: "Size",
+    0xCCE05C25: "SkelLabel",
     0x3AB04412: "Skill1",
     0x4B2A54B0: "Skill2",
     0x5CC9E462: "Skill3",
@@ -6601,6 +6702,7 @@ hashes = {
     0x632C239C: "SortID",
     0x3ACA445C: "SortNo",
     0x55914E09: "SortParam",
+    0x48F7200C: "Sortkey",
     0x07003D62: "Sound",
     0xF87E01F8: "Soup",
     0xFADD8F74: "SpBattle",
@@ -6664,6 +6766,7 @@ hashes = {
     0x8B06CB0B: "Startf1",
     0x00F45CBA: "Startf2",
     0x70C10A38: "Startf3",
+    0x63D4C45A: "StateAnimation",
     0x3FE9856C: "StateLoopNum",
     0x95CAA187: "StateName",
     0x35BA8008: "StateName1",
@@ -6682,6 +6785,7 @@ hashes = {
     0x7FEB0F45: "Still",
     0xB1297C59: "StopDelayTime",  # FIXME: unclear if correct
     0xAED00E22: "StopSeID",
+    0x453701E7: "StopUnMount",
     0xF2FA453F: "StoryID",
     0x866B049F: "StoryRsc",
     0x42D40247: "StoryTitle",
@@ -6712,6 +6816,8 @@ hashes = {
     0x1FFEE16E: "SysOpenID",
     0x43EBCECD: "SysWeatherID",
 
+    0x376F334F: "TP_Min",
+    0x20180905: "TP_Max",
     0x168F9AFE: "TableID",
     0xFC21A92C: "Talent",
     0xD326AFD0: "Talent01",
@@ -6868,6 +6974,7 @@ hashes = {
     0x43080996: "Title",
     0x8D21DDD0: "TitleText",
     0x4B10B0AE: "Toe",
+    0x6EB4DBC6: "ToeThreshold",
     0xCDFE0FFF: "ToonID",  # FIXME: unclear if correct
     0x94A6A72E: "TotalTP",
     0x0AEDDE59: "TreasureBox",
@@ -6991,6 +7098,9 @@ hashes = {
     0xE06543AD: "VanishParam2",
     0xFBB7BD7D: "VanishType",
     0x9ED38DD0: "Vibration",
+    0x5109B61A: "ViewOffs_x",
+    0x19C3449E: "ViewOffs_y",
+    0xCA5399C9: "ViewOffs_z",
     0x62249FF3: "Vignette01",
     0xBA29FC35: "Vignette02",
     0x26561182: "Visible",
@@ -7262,6 +7372,7 @@ hashes = {
     0x9302D2B4: "fixed_equip",
     0x26B65FC0: "fixed_time",
     0xB04EE1B4: "fixed_weather",
+    0x5232471E: "flagvalue",
     0x1087FA2B: "flowEventID",
     0x8DB4C2B0: "foMin",
 
@@ -7561,6 +7672,8 @@ hashes = {
     0x7CEA9974: "system",
 
     0x9EE99B1E: "talkattr",
+    0x2B51649C: "talkattr2",
+    0xC1A03E98: "talkattr3",
     0xACF3531A: "talker",
     0xC624AE24: "text",
     0x7E730326: "text2",
@@ -7670,7 +7783,7 @@ hashes = {
     0xC32C8198: "z14",
     0x39B9FFDA: "z15",
     0x8B8A1BF1: "z16",
-    
+
     # Dumped gimmick strings from DLC2
     0x747E7330: "MA01A_INT_001_259_01_19_01",
     0x6C6C94D1: "MA01A_INT_001_259_01_19_01/Reaction",
@@ -10234,7 +10347,7 @@ if True:
     for hash, word in hashes.items():
         if word is not None and murmur32(word) != hash:
             raise Exception(f'murmur32({word}) != 0x{hash:08X} (should be 0x{murmur32(word):08X})')
-    
+
 # Compile gimmick hashes
 for map in map_names:
     for gmk_type in gimmick_types:
@@ -10267,8 +10380,8 @@ uint_hashes = {
 hex_fields = set([
     # Event text table fields
     'talkattr',
-    'field_2B51649C',
-    'field_C1A03E98',
+    'talkattr2',
+    'talkattr3',
 ])
 
 # Alphabet used to bruteforce event message labels
@@ -10680,6 +10793,39 @@ class Bdat(object):
         """Return a list of tables contained in this BDAT file."""
         return list(self._tables)  # Make a copy.
 
+    @staticmethod
+    def load_debug_strings(path, verbose):
+        """Load debug strings embedded in version 2 (XC3) BDAT files and
+        add them to the global hashmap.
+
+        Parameters:
+            path: Path to BDAT file to read.
+            verbose: True to print messages for each table with debug strings.
+        """
+        name = os.path.basename(path)
+        with open(path, 'rb') as f:
+            data = f.read()
+        version, table_offsets = Bdat._parse_header(name, data)
+        if version != 2:
+            return  # Only supported for version 2 files.
+        for offset in table_offsets:
+            if len(data) < offset+48:
+                raise ValueError(f'{name}: Table at 0x{offset:X}: Truncated data or invalid offset')
+            if data[offset:offset+4] != b'BDAT' or u32(data, offset+4) != 0x3004:
+                raise ValueError(f'{name}: Table at 0x{offset:X}: Invalid header')
+            fields_ofs = u32(data, offset+0x18)
+            if fields_ofs != 0x30:
+                # Found data before columns, should be unhashed strings table
+                if verbose:
+                    strings_ofs = u32(data, offset+0x28)
+                    table_name = u32(data, offset+strings_ofs+1)
+                    if table_name != 0:
+                        table_name = unhash(table_name, f'{table_name:08X}')
+                    else:
+                        table_name = self.name.replace('.bdat', '')
+                    print(f'Found debug strings in {name}.{table_name}')
+                add_hashes_from_bdat(data[offset+0x30:offset+fields_ofs])
+
     def _parse(self, data, verbose):
         """Parse the given data as a BDAT file.
 
@@ -10693,27 +10839,47 @@ class Bdat(object):
         Raises:
             ValueError: Raised on a data format error.
         """
+        self._version, table_offsets = Bdat._parse_header(self.name, data)
+        return list(self._parse_table(data, offset, verbose)
+                    for offset in table_offsets)
+
+    @staticmethod
+    def _parse_header(name, data):
+        """Parse the header of a BDAT file and return a list of data ranges
+        for each table in the file.
+
+        Parameters:
+            name: File name (for error messages).
+            data: File data.
+
+        Return value:
+            A tuple containing [0] = BDAT file version, [1] = list of ints
+            giving the byte offset to each embedded table's data.
+
+        Raises:
+            ValueError: Raised if the file is not a valid BDAT file.
+        """
         if len(data) < 4:
-            raise ValueError('File is too short')
+            raise ValueError(f'{name}: File is too short')
         if data[0:4] == b'BDAT':
             if len(data) < 12:
-                raise ValueError('File is too short')
+                raise ValueError(f'{name}: File is too short')
             if u32(data, 4) != 0x01001004:
-                raise ValueError('Unexpected word 0x4')
-            self._version = 2
+                raise ValueError(f'{name}: Unexpected word 0x4')
+            version = 2
             offset = 8
         else:
-            self._version = 1
+            version = 1
             offset = 0
         num_tables = u32(data, offset)
         if num_tables <= 0:
-            raise ValueError(f'Invalid table count {num_tables}')
+            raise ValueError(f'{name}: Invalid table count {num_tables}')
         if len(data) < offset + 8 + 4*num_tables:
-            raise ValueError('File is too short')
-        return list(self._parseTable(data, u32(data, offset+8+4*i), verbose)
-                    for i in range(num_tables))
+            raise ValueError('{name}: File is too short')
+        return (version,
+                list(u32(data, offset+8+4*i) for i in range(num_tables)))
 
-    def _parseTable(self, data, offset, verbose):
+    def _parse_table(self, data, offset, verbose):
         """Parse a single table from a BDAT file.
 
         Parameters:
@@ -10728,11 +10894,11 @@ class Bdat(object):
             ValueError: Raised on a data format error.
         """
         if self._version == 2:
-            return self._parseTable2(data, offset, verbose)
+            return self._parse_table_2(data, offset, verbose)
         else:
-            return self._parseTable1(data, offset, verbose)
+            return self._parse_table_1(data, offset, verbose)
 
-    def _parseTable1(self, data, offset, verbose):
+    def _parse_table_1(self, data, offset, verbose):
         """Parse a single table from a version 1 (XCX/XC2/XCDE) BDAT file."""
         if len(data) < offset+36:
             raise ValueError(f'Table at 0x{offset:X}: Truncated data or invalid offset')
@@ -10856,7 +11022,7 @@ class Bdat(object):
 
         return BdatTable(table_name, list(f[0] for f in fields), rows)
 
-    def _parseTable2(self, data, offset, verbose):
+    def _parse_table_2(self, data, offset, verbose):
         """Parse a single table from a version 2 (XC3) BDAT file."""
         if len(data) < offset+48:
             raise ValueError(f'Table at 0x{offset:X}: Truncated data or invalid offset')
@@ -11008,7 +11174,9 @@ class Bdat(object):
 # XC3 label unhashing
 
 def add_hashes_from_bdat(strings_table):
-    """Some debug BDATs have an embedded unhashed strings table."""
+    """Add strings from the embedded unhashed strings table found in some
+    debug BDATs to the global hash list.
+    """
     if len(strings_table) < 8:
         return
     tables = []
@@ -11020,13 +11188,19 @@ def add_hashes_from_bdat(strings_table):
     type = u32(strings_table, size)
     new_size = u32(strings_table, size + 4)
     tables.append(parse_unhashed_table(type, strings_table[size+8:size+new_size]))
-    
+
     assert len(strings_table) == size + new_size
-    
+
     for table in tables:
         for s in table:
-            hashes[murmur32(s)] = s
-    
+            hash = murmur32(s)
+            if hash in hashes:
+                if hashes[hash] != s:
+                    raise ValueError(f'Hash collision on 0x{hash:08X}: {hashes[hash]} {s}')
+            else:
+                hashes[hash] = s
+
+
 def parse_unhashed_table(type, table):
     if type == 1:
         # Row hashes
@@ -11037,6 +11211,7 @@ def parse_unhashed_table(type, table):
     else:
         raise Exception(f"Unknown unhashed table type {type}")
     return [b.decode('utf-8') for b in table[string_ptr:].split(b'\0') if b]
+
 
 def resolve_labels(tables):
     """Unhash row labels (string IDs) in XC3 tables."""
@@ -11397,6 +11572,7 @@ text_xrefs = {
                  'Summary': ('msg_qst_task', 'name'),
                  'ResultA': ('msg_qst_task', 'name'),
                  'ResultB': ('msg_qst_task', 'name')},
+    'QST_OverWrite': {'OverWriteText': ('msg_qst_overwrite', 'name')},
     'QST_RequestItemSet': {'Name': ('msg_qst_RequestItemSet', 'name')},
     'QST_Task': {'TaskLog1': ('msg_qst_task', 'name'),
                  'TaskLog2': ('msg_qst_task', 'name')},
@@ -11557,6 +11733,7 @@ field_xrefs = {
     'AddCondition18': refset_condition,
     'AddCondition19': refset_condition,
     'AddCondition20': refset_condition,
+    'AnimationLoadingPlay': refset_condition,
     'ChangeStatusCondition': refset_condition,
     'Condition': refset_condition,  # Excluding FLD_ConditionList (special-cased below)
     'Condition1': refset_condition,
@@ -11760,7 +11937,7 @@ field_xrefs = {
 
     'SysWeatherID': 'SYS_WeatherList',
 
-    'field_E416DB96': '90A6221A',
+    'field_E416DB96': 'VO_Group',
 
     'setupID': 'CC55A8C8',
 }
@@ -12399,6 +12576,7 @@ table_xrefs = {
     '0DBCD5D6': {'FirstReward': refset_item},
 }
 
+
 def add_xref(table, row, field_idx, value, target_table, target_row):
     """Add a cross-reference from table[row][field_idx] to target_table[row]."""
     old_value=value
@@ -12735,16 +12913,17 @@ def main(argv):
               file=sys.stderr)
         sys.exit(1)
 
-    tables = {}
     files = (glob.glob(os.path.join(args.bdatdir, '*.bdat'))
              + glob.glob(os.path.join(args.bdatdir, args.language, '*/*.bdat'))
              + glob.glob(os.path.join(args.bdatdir, args.language, '*/*/*.bdat')))
-    for i in range(0,2):
-        BdatTable.KEEP_COLLISIONS = i > 0; 
-        for file in files:
-            bdat = Bdat(file, verbose)
-            for table in bdat.tables():
-                tables[table.name] = table
+    for file in files:
+        Bdat.load_debug_strings(file, verbose)
+
+    tables = {}
+    for file in files:
+        bdat = Bdat(file, verbose)
+        for table in bdat.tables():
+            tables[table.name] = table
 
     resolve_labels(tables)  # XC3 specific
     resolve_xrefs(tables)
