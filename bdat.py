@@ -4413,6 +4413,14 @@ hashes = {
     0x12110072: "MNU_option_notice",
     0x9CFC5B3B: "MNU_option_sound",
     0xD4D03C1E: "MNU_sort",
+	
+    # Brute forced DLC table names:
+    0x3E1DD0F4: "BTL_EnemyDrop_Material_dlc04",
+    0x5EBC721E: "BTL_EnemyDrop_Normal_dlc04",
+    0x4CECED20: "SYS_GimmickLocation_dlc02",
+    0x65CFAA3C: "SYS_GimmickLocation_dlc03",
+    0xCD94C662: "SYS_GimmickLocation_dlc04",
+    0x29D844F1: "MNU_EventTheater_scn_DLC04",
 
     0x9416AC93: "1",
     0x0129E217: "2",
