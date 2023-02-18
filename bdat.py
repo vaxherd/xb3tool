@@ -6192,6 +6192,10 @@ hashes = {
     0x0345ECE2: "PriceCondition",
     0x170127D3: "Priority",
     0x216735E5: "PriorityUI",
+    0x8D62C952: "Prob1",
+    0x8DB43AC8: "Prob2",
+    0xBCA4AF61: "Prob3",
+    0x0FBC07B2: "Prob4",
     0x17276C8D: "Probability01",
     0xAE0EBFAC: "Probability02",
     0x27DC69B6: "Probability03",
@@ -10334,6 +10338,9 @@ class BdatField(object):
         """The length of this array field.  None if not an array field."""
         return self._array_size
 
+    def is_id(self):
+        """Whether this field can be interpreted as a row ID"""
+        return self.name in ('ID', 'label') and self.value_type == BdatValueType.HSTRING
 
 _global_hashmap = {}
 
@@ -10342,6 +10349,7 @@ class BdatTable(object):
     """Class wrapping a single table from a BDAT file."""
 
     _global_hashmap = {}
+    KEEP_COLLISIONS = False
 
     @staticmethod
     def global_id_lookup(id):
@@ -10372,11 +10380,11 @@ class BdatTable(object):
         self._hashid_map = {}
         self._hashid_field_map = [None] * len(fields)
         try:
-            if self._fields[1].name in ('ID', 'label') and self._fields[1].value_type == BdatValueType.HSTRING:
+            if self._fields[1].is_id():
                 for row in range(len(self._rows)):
                     id = self._rows[row][1]
                     self._hashid_map[id] = row
-                    if id in _global_hashmap:
+                    if not BdatTable.KEEP_COLLISIONS and id in _global_hashmap:
                         # Don't bother warning about these because
                         # murmur3 generates Very Many of them
                         #print(f'Global ID collision: {id}', file=sys.stderr)
@@ -10866,6 +10874,10 @@ class Bdat(object):
         if len(data) < end_ofs:
             raise ValueError(f'Table at 0x{offset:X}: Truncated data')
         tdata = bytearray(data[offset:end_ofs])
+        
+        if fields_ofs != 0x30:
+            # Found data before columns, should be unhashed strings table
+            add_hashes_from_bdat(tdata[0x30:fields_ofs])
 
         table_name = u32(tdata, strings_ofs+1)
         if table_name != 0:
@@ -10995,6 +11007,37 @@ class Bdat(object):
 ########################################################################
 # XC3 label unhashing
 
+def add_hashes_from_bdat(strings_table):
+    """Some debug BDATs have an embedded unhashed strings table."""
+    if len(strings_table) < 8:
+        return
+    tables = []
+    type = u32(strings_table, 0)
+    size = u32(strings_table, 4)
+    tables.append(parse_unhashed_table(type, strings_table[8:size]))
+    if len(strings_table) <= size:
+        return
+    type = u32(strings_table, size)
+    new_size = u32(strings_table, size + 4)
+    tables.append(parse_unhashed_table(type, strings_table[size+8:size+new_size]))
+    
+    assert len(strings_table) == size + new_size
+    
+    for table in tables:
+        for s in table:
+            hashes[murmur32(s)] = s
+    
+def parse_unhashed_table(type, table):
+    if type == 1:
+        # Row hashes
+        string_ptr = u32(table, 0)
+    elif type == 2:
+        # Column hashes
+        string_ptr = 0
+    else:
+        raise Exception(f"Unknown unhashed table type {type}")
+    return [b.decode('utf-8') for b in table[string_ptr:].split(b'\0') if b]
+
 def resolve_labels(tables):
     """Unhash row labels (string IDs) in XC3 tables."""
     gmknames = dict()
@@ -11017,8 +11060,7 @@ def resolve_labels(tables):
 
     # Sort table list for sensible warning output order.
     for table in sorted(tables.values(), key=lambda t: t.name):
-        assert table.field(1).name in ('ID', 'label')
-        assert table.field(1).value_type == BdatValueType.HSTRING
+        assert table.field(1).is_id()
         if table.name.startswith('msg_cq') or table.name.startswith('msg_ev') or table.name.startswith('msg_tq') or table.name.startswith('msg_nq') or table.name.startswith('msg_sq') or table.name.startswith('msg_tlk'):
             prefix = f'{table.name[4:]}_'
             alt_prefix = None
@@ -12364,6 +12406,9 @@ def add_xref(table, row, field_idx, value, target_table, target_row):
         if target_table.name in row_name_fields:
             name_idx = target_table.field_index(row_name_fields[target_table.name])
             value = target_table.get(target_row, name_idx)
+        elif target_table.field(1).is_id():
+            id = target_table.get(target_row, 1)
+            value = '' if id.startswith('<') else id
         else:
             value = ''
         if value == '':
@@ -12374,6 +12419,9 @@ def add_xref(table, row, field_idx, value, target_table, target_row):
     if table.name in row_name_fields:
         name_idx = table.field_index(row_name_fields[table.name])
         row_value = table.get(row, name_idx)
+    elif table.field(1).is_id():
+        id = table.get(row, 1)
+        row_value = '' if id.startswith('<') else id
     else:
         row_value = ''
     if row_value == '':
@@ -12691,10 +12739,12 @@ def main(argv):
     files = (glob.glob(os.path.join(args.bdatdir, '*.bdat'))
              + glob.glob(os.path.join(args.bdatdir, args.language, '*/*.bdat'))
              + glob.glob(os.path.join(args.bdatdir, args.language, '*/*/*.bdat')))
-    for file in files:
-        bdat = Bdat(file, verbose)
-        for table in bdat.tables():
-            tables[table.name] = table
+    for i in range(0,2):
+        BdatTable.KEEP_COLLISIONS = i > 0; 
+        for file in files:
+            bdat = Bdat(file, verbose)
+            for table in bdat.tables():
+                tables[table.name] = table
 
     resolve_labels(tables)  # XC3 specific
     resolve_xrefs(tables)
