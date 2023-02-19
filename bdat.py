@@ -569,6 +569,7 @@ hashes = {
     0xD027C230: None, # gauntlet shop list
     0xA2626871: None, # gauntlet whimsy (gate/portal) list
     0x28AAFFB2: None, # gauntlet event list
+    0x27ED3222: "BTL_ChSU_ShopItem",
     0x5F2A841C: "msg_btl_ChSU_gate_message",
     0x471783F9: "msg_btl_ChSU_event_caption",
     0x8FB8F268: "msg_btl_ChSU_shop_caption",
@@ -11504,6 +11505,7 @@ row_name_fields = {
     'ma20a_GMK_Location': 'LocationName',
     'ma22a_GMK_Location': 'LocationName',
     'ma90a_GMK_Location': 'LocationName',
+    'BTL_ChSU_Emblem': 'Name',
 }
 
 # List of direct references from tables to text strings.
@@ -11786,8 +11788,8 @@ text_xrefs = {
                  'field_0085193A': ('EE23CB30', 'name')},
     'D027C230': {'Caption': ('msg_btl_ChSU_shop_caption', 'name')},
     'A2626871': {'Name': ('msg_btl_ChSU_gate_name', 'name'), 'Caption': ('msg_btl_ChSU_gate_caption', 'name')},
-    '28AAFFB2': {'Caption': ('msg_btl_ChSU_event_caption', 'name')}
-    
+    '28AAFFB2': {'Caption': ('msg_btl_ChSU_event_caption', 'name')},
+    'BTL_ChSU_Emblem': {'Name': ('msg_btl_ChSU_emblem_name', 'name')},
 }
 
 refset_arts_en = ('BTL_Arts_En', )
@@ -12756,6 +12758,7 @@ table_xrefs = {
     'FEF315B6': {'EventID': refset_event_name},
     '9D907E07': {'field_DDB9C6C6': refset_condition, 'Reward': '0DBCD5D6'},
     '0DBCD5D6': {'FirstReward': refset_item},
+    'BTL_ChSU_ShopItem': {'Item': (None, None, 'chsu_shopitem')},
 }
 
 
@@ -12840,6 +12843,12 @@ def resolve_field_xrefs(tables, table, field_idx, target, add_link):
                             test_table = None
                             test_row = None
                             target_table = 'None'  # Suppress no-match warning
+                    elif target[2] == 'chsu_shopitem':
+                        # This is either an emblem or a hero
+                        type_field = table.field_index('field_6CA7326E')
+                        type = table.get(row, type_field)
+                        test_table = tables["BTL_ChSU_Emblem"] if type == 0 else tables["CHR_PC"]
+                        test_row = test_table.id_to_row(value)
                     else:
                         raise Exception(f'Unhandled special case: {target[2]}')
                 elif name.split('.')[0].startswith('SYS_GimmickLocation'):
@@ -12933,7 +12942,7 @@ def resolve_field_xrefs(tables, table, field_idx, target, add_link):
                 elif target[2] == 'event_name':
                     value = table.get(row, field_idx)
                 elif target[2] in ('condition_quest', 'qst_task',
-                                   'gimmick_object', 'field_vanish'):
+                                   'gimmick_object', 'field_vanish', 'chsu_shopitem'):
                     pass  # No additional logic
                 else:
                     raise Exception(f'Unhandled special case: {target[2]}')
@@ -12967,6 +12976,7 @@ def resolve_xrefs(tables):
                                 False)
 
     for name, table in tables.items():
+        matched_fields = set()
         if name == 'BTL_Achievement':  # Special case for value-dependent refs
             idx_type = table.field_index('AchieveType')
             idx_param1 = table.field_index('Param1')
@@ -12993,9 +13003,10 @@ def resolve_xrefs(tables):
             for field, target in table_xrefs[name].items():
                 resolve_field_xrefs(tables, table, table.field_index(field),
                                     target, True)
+                matched_fields.add(table.field_index(field, True))
         for field, target in field_xrefs.items():
             field_idx = table.field_index(field, True)
-            if field_idx is not None:
+            if field_idx is not None and field_idx not in matched_fields:
                 if name == 'FLD_ConditionList' and field == 'Condition':
                     # This "Condition" field references a table selected by the
                     # ConditionType value of the row, so we need to handle that
