@@ -558,6 +558,26 @@ hashes = {
     0xCED21F4E: "MNU_PatchInfo",
     0xB150F956: "MNU_PatchDetailA",
     0xF8B54C2C: "MNU_PatchDetailB",
+
+    # Challenge gauntlet tables ("SU"rvival)
+    0x6FF3F9DB: "BTL_ChSU_List",
+    0x26B3AA38: "BTL_ChSU_Emblem",
+    0x628C37CD: "BTL_ChSU_RateEvent",
+    0x37CA6FBA: "BTL_ChSU_RateShop",
+    0xB913050A: "BTL_ChSU_RateGate",
+    0x8D16A002: "BTL_ChSU_EnemyTable",
+    0xD027C230: None, # gauntlet shop list
+    0xA2626871: None, # gauntlet whimsy (gate/portal) list
+    0x28AAFFB2: None, # gauntlet event list
+    0x27ED3222: "BTL_ChSU_ShopItem",
+    0x5F2A841C: "msg_btl_ChSU_gate_message",
+    0x471783F9: "msg_btl_ChSU_event_caption",
+    0x8FB8F268: "msg_btl_ChSU_shop_caption",
+    0x81D88860: "msg_btl_ChSU_gate_caption",
+    0xB85EEAE1: "msg_btl_ChSU_gate_name",
+    0xECE07266: "msg_btl_ChSU_emblem_name",
+    0xC20EDDF5: None, # emblem caption list
+
     0x19C1C36F: "msg_autotalk",
     0xC89242D1: "msg_autotalk_enemy",
     0x825EDC88: "msg_btl_achievement",
@@ -4790,6 +4810,7 @@ hashes = {
     0x8BD36E03: "ChainDirEf",
     0x3AF915B3: "ChainGaugeUp",
     0xA49EBFA0: "ChainOrder",
+    0xE36A122F: "ChainRate",
     0x5781C0FE: "ChainUp",
     0x57CF2FBE: "Change",
     0x3420D05D: "ChangeCollepediaID1",
@@ -4859,6 +4880,7 @@ hashes = {
     0x3F14D64E: "ColorSkin",
     0xFB976DA4: "ComSpotGmk",
     0xDA375209: "ComSpotLocation",
+    0x38910441: "Combo1",
     0x57A87F30: "ComboStage",
     0x7CC7F79F: "Command",
     0x890BD622: "Comment",
@@ -4949,6 +4971,10 @@ hashes = {
     0xD18FA281: "DeBuffType",
     0xE081C101: "DebScenarioFlag",
     0x85A8D5B5: "Debuff",
+    0xE48E6BF0: "Debuff1",
+    0xD69EE979: "Debuff2",
+    0x9D2804EF: "Debuff3",
+    0x338FE98B: "Debuff4",
     0xCC2A50A4: "DebugFlag1",
     0xB6BB1396: "DebugFlag2",
     0x8238A725: "DebugID",
@@ -5185,6 +5211,14 @@ hashes = {
     0x2665EB57: "Endf2",
     0x8AD2184D: "Endf3",
     0x82C7C669: "Enemy",
+    0x86208B29: "Enemy1",
+    0x8708D05F: "Enemy2",
+    0x726A7BC3: "Enemy3",
+    0x4059820A: "Enemy4",
+    0xD266E3D3: "Enemy5",
+    0x08A3A8E8: "Enemy6",
+    0x0F30CF3A: "Enemy7",
+    0xB6B45326: "Enemy8",
     0xD3897F4C: "EnemyAiHead",
     0xAA60B6DF: "EnemyAiTail",
     0x3BBE76C9: "EnemyDead",
@@ -5202,6 +5236,7 @@ hashes = {
     0x7318D357: "EnemyID02",
     0x3F1ED434: "EnemyID03",
     0x516AAE38: "EnemyInfo",
+    0x7A0E4C96: "EnemyMobius",
     0x6974615F: "EnemyNoPopRate",
     0x6D94961B: "EnemyOffsetX",
     0x736D57B6: "EnemyOffsetY",
@@ -5211,6 +5246,7 @@ hashes = {
     0x187ADE0F: "EnemyPopRate3",
     0x4216C90C: "EnemyPopRate4",
     0x2F54A6B8: "EnemyPopType",
+    0xC3306164: "EnemyRare",
     0xA1A748BB: "EnemySolders", # sic
     0x0C149953: "EnemyTalentExp",
     0x0C961F78: "EnemyUseArts01",
@@ -5387,6 +5423,7 @@ hashes = {
     0x89355BFE: "FlgNoVanish",
     0xE06BCC5C: "FlgSerious",
     0xA94FB2E1: "FlgSpDead",
+    0x6A2FB16E: "Floor",
     0x9F9BE3E9: "FlowEvent",
     0x71808F7B: "FlowEventID",
     0x58DF450A: "FlyHeight",
@@ -6346,6 +6383,69 @@ hashes = {
     0xDF726F13: "RangeRev",
     0xA48A19BE: "RangeType",
     0x2647E765: "Rarity",
+    0x25D2502B: "Rate1",
+    0x2A9695E2: "Rate2",
+    0x79BB0822: "Rate3",
+    0x0569E770: "Rate4",
+    0x2CFC6833: "Rate5",
+    0x8F1D70EB: "Rate6",
+    0x5E22C6F1: "Rate7",
+    0x0FF11E94: "Rate8",
+    0x66748AAD: "RateEmblem",
+    0x0001FF0C: "RateEvent01",
+    0xF110AC41: "RateEvent02",
+    0xCE6F43D7: "RateEvent03",
+    0x364AEACE: "RateEvent04",
+    0xC6C3AFF9: "RateEvent05",
+    0x070B7C8D: "RateEvent06",
+    0x86998DBB: "RateEvent07",
+    0x5FB57A4B: "RateEvent08",
+    0x8BB109C8: "RateEvent09",
+    0x4A7E4701: "RateEvent10",
+    0x68FAD4D1: "RateEvent11",
+    0x384486DE: "RateEvent12",
+    0x0F911F4D: "RateEvent13",
+    0x52B5C05E: "RateEvent14",
+    0xE59A2171: "RateGate01",
+    0x071A89CF: "RateGate02",
+    0xEDE755F6: "RateGate03",
+    0x55CBC748: "RateGate04",
+    0x3664BECD: "RateGate05",
+    0x944F0F66: "RateGate06",
+    0x1D908507: "RateGate07",
+    0xD932C5EC: "RateGate08",
+    0x511F99B6: "RateGate09",
+    0xB32514CC: "RateGate10",
+    0x5EEE79E4: "RateGate11",
+    0xFE5A1499: "RateGate12",
+    0x6937C9EA: "RateGate13",
+    0x3A3029F9: "RateGate14",
+    0xA7453D2D: "RateGate15",
+    0x17E1A582: "RateGate16",
+    0xDAB00711: "RateGate17",
+    0xF7C9E728: "RateGate18",
+    0x940A56DC: "RateGate19",
+    0x981606DE: "RateGate20",
+    0x4079A680: "RateGate21",
+    0x37B8672C: "RateHero",
+    0x0D5374EF: "RateShop01",
+    0x44275401: "RateShop02",
+    0xA4D4708F: "RateShop03",
+    0xE2018568: "RateShop04",
+    0xC7EC049E: "RateShop05",
+    0xA9071724: "RateShop06",
+    0xAD3A5C53: "RateShop07",
+    0xB9213E0F: "RateShop08",
+    0x0FE07E5F: "RateShop09",
+    0x9BFAE989: "RateShop10",
+    0x589749BD: "RateShop11",
+    0xA744DF3F: "RateShop12",
+    0xFEF8FBE6: "RateShop13",
+    0xA657365A: "RateShop14",
+    0xB6D4FFEA: "RateShop15",
+    0xA2529D2B: "RateShop16",
+    0x4C7A929F: "RateShop17",
+    0x372B8FCA: None, # Nopwatch rate (D027C230)
     0xA0EA3CD6: "ReAct01",
     0x1EA17DCD: "ReAct02",
     0xA102460E: "ReAct03",
@@ -6859,6 +6959,17 @@ hashes = {
     0x08A6C320: "Talent29",
     0x204F10FE: "Talent30",
     0xA6C392B9: "Talent31",
+    0x087A6D92: "Talent32",
+    0x4912CCB2: "Talent33",
+    0xFFF2296F: "Talent34",
+    0x90D5BDBD: "Talent35",
+    0x4D64B5BB: "Talent36",
+    0x4CD86DFE: "Talent37",
+    0x21F4FB29: "Talent38",
+    0x807E8F7F: "Talent39",
+    0x4F461BFF: "Talent40",
+    0xD1CD3BAB: "Talent41",
+    0xDDA1DA48: "Talent42",
     0xE9ABDF09: "TalentAptitude1",
     0x54828F99: "TalentAptitude2",
     0x6D7E8238: "TalentAptitude3",
@@ -7181,6 +7292,7 @@ hashes = {
     0x270E98C7: "WeatherTimeMin3",
     0x62A476ED: "WeatherTimeMin4",
     0xFF43DC29: "WeatheringRate",
+    0x2C81AD05: "Weight",
     0x36CEE6A8: "Weight1",
     0xFD2FBE01: "Weight2",
     0xCF28837A: "Weight3",
@@ -10376,7 +10488,8 @@ def unhash(hash, default=None):
 # UINT fields that should be parsed as HSTRINGs (dict of table: [fields])
 uint_hashes = {
     'SYS_GimmickLocation': ['field_6C50B44E', 'Option1'],
-    '4CECED20': ['field_6C50B44E', 'Option1'],  # Same structure as SYS_GimmickLocation but with DLC content
+    'SYS_GimmickLocation_dlc02': ['field_6C50B44E', 'Option1'],
+    'SYS_GimmickLocation_dlc03': ['field_6C50B44E', 'Option1'],
     '8F29BCAF': ['LocationBdat', 'field_5177BA21'],
     'C5C5F70E': ['FormationTopWindow', 'FormationCooking', 'field_07F1CB46',
                  'field_F1D020CF', 'field_E27F23C7', 'FormationCookingAction',
@@ -11321,7 +11434,8 @@ def resolve_labels(tables):
 
     # SYS_GimmickLocation.GimmickID comes last because we need the dict
     # of gimmick IDs from per-map tables.
-    gmk_loc_tables = [tables['SYS_GimmickLocation'], tables.get('4CECED20')]
+    gmk_loc_tables = [tables['SYS_GimmickLocation'], tables.get('SYS_GimmickLocation_dlc02'),
+                      tables.get('SYS_GimmickLocation_dlc03'), tables.get('SYS_GimmickLocation_dlc04')]
     for gmkloc in gmk_loc_tables:
         if not gmkloc:
             continue
@@ -11397,6 +11511,7 @@ row_name_fields = {
     'ma20a_GMK_Location': 'LocationName',
     'ma22a_GMK_Location': 'LocationName',
     'ma90a_GMK_Location': 'LocationName',
+    'BTL_ChSU_Emblem': 'Name',
 }
 
 # List of direct references from tables to text strings.
@@ -11676,7 +11791,11 @@ text_xrefs = {
     'F936594B': {'SpotName': ('msg_comspot_name', 'name')},
     '9D907E07': {'Name': ('192F6292', 'name'), 'Caption1': ('18D9E310', 'name'),
                  'Caption2': ('2BA64A98', 'name'), 'Caption3': ('2BA64A98', 'name'),
-                 'field_0085193A': ('EE23CB30', 'name')}
+                 'field_0085193A': ('EE23CB30', 'name')},
+    'D027C230': {'Caption': ('msg_btl_ChSU_shop_caption', 'name')},
+    'A2626871': {'Name': ('msg_btl_ChSU_gate_name', 'name'), 'Caption': ('msg_btl_ChSU_gate_caption', 'name')},
+    '28AAFFB2': {'Caption': ('msg_btl_ChSU_event_caption', 'name')},
+    'BTL_ChSU_Emblem': {'Name': ('msg_btl_ChSU_emblem_name', 'name')},
 }
 
 refset_arts_en = ('BTL_Arts_En', )
@@ -11743,6 +11862,7 @@ field_xrefs = {
     'AddCondition20': refset_condition,
     'AnimationLoadingPlay': refset_condition,
     'ChangeStatusCondition': refset_condition,
+    'Combo1': 'BTL_Combo',
     'Condition': refset_condition,  # Excluding FLD_ConditionList (special-cased below)
     'Condition1': refset_condition,
     'Condition2': refset_condition,
@@ -11759,6 +11879,10 @@ field_xrefs = {
     'Conditon6': refset_condition,
     'Conditon7': refset_condition,
     'Conditon8': refset_condition,
+    'Debuff1': 'BTL_BuffDeBuff',
+    'Debuff2': 'BTL_BuffDeBuff',
+    'Debuff3': 'BTL_BuffDeBuff',
+    'Debuff4': 'BTL_BuffDeBuff',
     'IgnoreCondition': refset_condition,
     'NameCondition': refset_condition,
     'NamedSpCond': refset_condition,
@@ -11782,6 +11906,16 @@ field_xrefs = {
     'MatchEnemy2': refset_enemy,
     'MatchEnemy3': refset_enemy,
     'MatchEnemy4': refset_enemy,
+    'Enemy1': refset_enemy,
+    'Enemy2': refset_enemy,
+    'Enemy3': refset_enemy,
+    'Enemy4': refset_enemy,
+    'Enemy5': refset_enemy,
+    'Enemy6': refset_enemy,
+    'Enemy7': refset_enemy,
+    'Enemy8': refset_enemy,
+    'EnemyMobius': refset_enemy,
+    'EnemyRare': refset_enemy,
 
     'Enhance': refset_enhance,
     'Enhance1': refset_enhance,
@@ -11865,6 +11999,7 @@ field_xrefs = {
     'NpType18': refset_item,
     'NpType19': refset_item,
     'NpType20': refset_item,
+    'OrderCondition': refset_condition,
     'SetItem1': refset_item,
     'SetItem2': refset_item,
     'SetItem3': refset_item,
@@ -11948,6 +12083,15 @@ field_xrefs = {
     'field_E416DB96': 'VO_Group',
 
     'setupID': 'CC55A8C8',
+    
+    # Challenge battle - gauntlet
+    'field_7EE21AA2': 'BTL_ChSU_EnemyTable',
+    'field_BDC9BBC2': 'BTL_ChSU_EnemyTable',
+    'field_E0975E89': 'BTL_ChSU_EnemyTable',
+    'field_B62754C4': 'BTL_ChSU_EnemyTable',
+    'field_223EFE81': 'BTL_ChSU_RateShop',
+    'field_BC6FBC62': 'BTL_ChSU_RateEvent',
+    'field_6D8A087C': 'BTL_ChSU_RateGate',
 }
 
 # List of table-specific fields which are ID references to other tables.
@@ -11996,7 +12140,18 @@ table_xrefs = {
                              'Talent28': refset_item,
                              'Talent29': refset_item,
                              'Talent30': refset_item,
-                             'Talent31': refset_item},
+                             'Talent31': refset_item,
+                             'Talent32': refset_item,
+                             'Talent33': refset_item,
+                             'Talent34': refset_item,
+                             'Talent35': refset_item,
+                             'Talent36': refset_item,
+                             'Talent37': refset_item,
+                             'Talent38': refset_item,
+                             'Talent39': refset_item,
+                             'Talent40': refset_item,
+                             'Talent41': refset_item,
+                             'Talent42': refset_item},
     'BTL_AutoSetArts': {'Talent01': refset_arts_pc,
                         'Talent02': refset_arts_pc,
                         'Talent03': refset_arts_pc,
@@ -12027,7 +12182,18 @@ table_xrefs = {
                         'Talent28': refset_arts_pc,
                         'Talent29': refset_arts_pc,
                         'Talent30': refset_arts_pc,
-                        'Talent31': refset_arts_pc},
+                        'Talent31': refset_arts_pc,
+                        'Talent32': refset_arts_pc,
+                        'Talent33': refset_arts_pc,
+                        'Talent34': refset_arts_pc,
+                        'Talent35': refset_arts_pc,
+                        'Talent36': refset_arts_pc,
+                        'Talent37': refset_arts_pc,
+                        'Talent38': refset_arts_pc,
+                        'Talent39': refset_arts_pc,
+                        'Talent40': refset_arts_pc,
+                        'Talent41': refset_arts_pc,
+                        'Talent42': refset_arts_pc},
     'BTL_AutoSetGem': {'Talent01': refset_item,
                        'Talent02': refset_item,
                        'Talent03': refset_item,
@@ -12058,7 +12224,18 @@ table_xrefs = {
                        'Talent28': refset_item,
                        'Talent29': refset_item,
                        'Talent30': refset_item,
-                       'Talent31': refset_item},
+                       'Talent31': refset_item,
+                       'Talent32': refset_item,
+                       'Talent33': refset_item,
+                       'Talent34': refset_item,
+                       'Talent35': refset_item,
+                       'Talent36': refset_item,
+                       'Talent37': refset_item,
+                       'Talent38': refset_item,
+                       'Talent39': refset_item,
+                       'Talent40': refset_item,
+                       'Talent41': refset_item,
+                       'Talent42': refset_item},
     'BTL_AutoSetSkill': {'Talent01': refset_skill,
                          'Talent02': refset_skill,
                          'Talent03': refset_skill,
@@ -12089,7 +12266,18 @@ table_xrefs = {
                          'Talent28': refset_skill,
                          'Talent29': refset_skill,
                          'Talent30': refset_skill,
-                         'Talent31': refset_skill},
+                         'Talent31': refset_skill,
+                         'Talent32': refset_skill,
+                         'Talent33': refset_skill,
+                         'Talent34': refset_skill,
+                         'Talent35': refset_skill,
+                         'Talent36': refset_skill,
+                         'Talent37': refset_skill,
+                         'Talent38': refset_skill,
+                         'Talent39': refset_skill,
+                         'Talent40': refset_skill,
+                         'Talent41': refset_skill,
+                         'Talent42': refset_skill},
     'BTL_Combo': {'PreCombo': 'BTL_Combo'},
     'BTL_Element': {'ImpactEnhance': refset_enhance,
                     'KeepEnhance': refset_enhance},
@@ -12579,9 +12767,9 @@ table_xrefs = {
                  'RelationID4': 'FLD_RelationColony'},
     'FD4384CB': {'EventID': refset_event_name},
     'FEF315B6': {'EventID': refset_event_name},
-    '9D907E07': {'OrderCondition': refset_condition, 'field_DDB9C6C6': refset_condition,
-                 'Reward': '0DBCD5D6'},
+    '9D907E07': {'field_DDB9C6C6': refset_condition, 'Reward': '0DBCD5D6'},
     '0DBCD5D6': {'FirstReward': refset_item},
+    'BTL_ChSU_ShopItem': {'Item': (None, None, 'chsu_shopitem')},
 }
 
 
@@ -12666,14 +12854,16 @@ def resolve_field_xrefs(tables, table, field_idx, target, add_link):
                             test_table = None
                             test_row = None
                             target_table = 'None'  # Suppress no-match warning
+                    elif target[2] == 'chsu_shopitem':
+                        # This is either an emblem or a hero
+                        type_field = table.field_index('field_6CA7326E')
+                        type = table.get(row, type_field)
+                        test_table = tables["BTL_ChSU_Emblem"] if type == 0 else tables["CHR_PC"]
+                        test_row = test_table.id_to_row(value)
                     else:
                         raise Exception(f'Unhandled special case: {target[2]}')
-                elif name == 'SYS_GimmickLocation.GimmickID':
-                    test_table = tables['SYS_GimmickLocation']
-                    idx_GimmickID = test_table.field_index('GimmickID')
-                    test_row = test_table.id_to_row(id, idx_GimmickID)
-                elif name == '4CECED20.GimmickID':
-                    test_table = tables['4CECED20']
+                elif name.split('.')[0].startswith('SYS_GimmickLocation'):
+                    test_table = tables[name.split('.')[0]]
                     idx_GimmickID = test_table.field_index('GimmickID')
                     test_row = test_table.id_to_row(id, idx_GimmickID)
                 elif len(target) > 2 and target[2] == 'event_name':
@@ -12763,7 +12953,7 @@ def resolve_field_xrefs(tables, table, field_idx, target, add_link):
                 elif target[2] == 'event_name':
                     value = table.get(row, field_idx)
                 elif target[2] in ('condition_quest', 'qst_task',
-                                   'gimmick_object', 'field_vanish'):
+                                   'gimmick_object', 'field_vanish', 'chsu_shopitem'):
                     pass  # No additional logic
                 else:
                     raise Exception(f'Unhandled special case: {target[2]}')
@@ -12797,6 +12987,7 @@ def resolve_xrefs(tables):
                                 False)
 
     for name, table in tables.items():
+        matched_fields = set()
         if name == 'BTL_Achievement':  # Special case for value-dependent refs
             idx_type = table.field_index('AchieveType')
             idx_param1 = table.field_index('Param1')
@@ -12823,9 +13014,10 @@ def resolve_xrefs(tables):
             for field, target in table_xrefs[name].items():
                 resolve_field_xrefs(tables, table, table.field_index(field),
                                     target, True)
+                matched_fields.add(table.field_index(field, True))
         for field, target in field_xrefs.items():
             field_idx = table.field_index(field, True)
-            if field_idx is not None:
+            if field_idx is not None and field_idx not in matched_fields:
                 if name == 'FLD_ConditionList' and field == 'Condition':
                     # This "Condition" field references a table selected by the
                     # ConditionType value of the row, so we need to handle that
@@ -12837,7 +13029,8 @@ def resolve_xrefs(tables):
                         type = table.get(row, type_idx)
                         cond = table.get(row, field_idx)
                         assert type > 0
-                        # TODO: add missing DLC3 condition table IDs
+                        # TODO: add missing DLC3 condition table ID (condition type 13)
+                        # its condition table is 0186E651 
                         typename = ('List', 'Scenario', 'Quest', 'Env',
                                     'Flag', 'Item', 'PT', 'MapGimmick',
                                     'UMonster', 'Tutorial', 'PcLv', 'ClassLv', None)[type-1]
@@ -12854,7 +13047,7 @@ def resolve_xrefs(tables):
         hash_re = re.compile(r'<([0-9A-F]{8})>$')
         for field_idx in range(2, table.num_fields):
             field = table.field(field_idx)
-            if field.name == 'GimmickID' and (table.name == 'SYS_GimmickLocation' or table.name == '4CECED20'):
+            if field.name == 'GimmickID' and table.name.startswith('SYS_GimmickLocation'):
                 pass  # This is a key field, so any matches are hash collisions
             elif field.value_type == BdatValueType.HSTRING:
                 for row in range(table.num_rows):
