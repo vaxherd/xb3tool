@@ -13035,8 +13035,9 @@ def resolve_xrefs(tables):
                              target_table, target_row)
         if name in table_xrefs:
             for field, target in table_xrefs[name].items():
-                resolve_field_xrefs(tables, table, table.field_index(field),
-                                    target, True)
+                field_idx = table.field_index(field, allow_missing=True)
+                if field_idx is not None:
+                  resolve_field_xrefs(tables, table, field_idx, target, True)
                 matched_fields.add(table.field_index(field, True))
         for field, target in field_xrefs.items():
             field_idx = table.field_index(field, True)
