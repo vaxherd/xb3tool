@@ -118,6 +118,7 @@ gimmick_types = [
     "IconLocator",
     "Interest",
     "Location",
+    "JumpPortal",
     "MapJumpList",
     "Mob",
     "Object",
@@ -174,6 +175,7 @@ hashes = {
     0x41CBF846: "gimmickPuzzle",
     0x5E93DEC1: "gimmickBlackMist",
     0x9BDB275E: "gimmickGas",
+    0x3510A3F8: "gimmickJumpPortal",
     0x05112AA4: None,  # Has fields: affType
     0x95F00CDF: None,  # Has fields: Condition, affType
     0xF0A0A1B1: None,  # Has Fields: {TargetMob,Text,DispTime}1-3
@@ -477,6 +479,7 @@ hashes = {
     0xF0F61B4E: "SYS_FootPrintOffset",
     0x06955984: "SYS_EffConvert",
     0x5AC778BE: "SYS_EffMaterial",
+    0x226C552C: "SYS_EnemyWave1Less",
     0xEE61112B: "FLD_LookAt",  # FIXME: unclear if correct
     0xFB616D5F: "SYS_CharacterDirection",
     0x6009A5C3: "SYS_CommonDirection",
@@ -558,6 +561,11 @@ hashes = {
     0xCED21F4E: "MNU_PatchInfo",
     0xB150F956: "MNU_PatchDetailA",
     0xF8B54C2C: "MNU_PatchDetailB",
+    
+    # Challenge time attack maps
+    0x9D907E07: "BTL_ChTA_List",
+    0x0DBCD5D6: "BTL_ChTA_Reward",
+    
 
     # Challenge gauntlet tables ("SU"rvival)
     0x6FF3F9DB: "BTL_ChSU_List",
@@ -566,6 +574,7 @@ hashes = {
     0x37CA6FBA: "BTL_ChSU_RateShop",
     0xB913050A: "BTL_ChSU_RateGate",
     0x8D16A002: "BTL_ChSU_EnemyTable",
+    0xE355D6C3: "BTL_ChSU_Reward",
     0xD027C230: None, # gauntlet shop list
     0xA2626871: None, # gauntlet whimsy (gate/portal) list
     0x28AAFFB2: None, # gauntlet event list
@@ -4743,6 +4752,7 @@ hashes = {
     0xE9E2E301: "BehaviorID",
     0xD9D73B99: "BgmCondition",
     0xF315D3C2: "BlackMist",
+    0x70644D77: "BlackMistVolume",
     0x40EB635C: "BlendMul",
     0xA57B7227: "BltMaxAng",
     0x36254CF7: "BoneCamera",
@@ -4940,6 +4950,7 @@ hashes = {
     0x9E7D98E8: "CoolDown",
     0xB2FA4A49: "CoreNum",
     0x04864592: "Corpse",
+    0x0A571EE5: "CostumeChr",
     0x8871B197: "Count",
     0x0EC9D148: "Count1",
     0x54C14948: "Count2",
@@ -5221,6 +5232,7 @@ hashes = {
     0xB6B45326: "Enemy8",
     0xD3897F4C: "EnemyAiHead",
     0xAA60B6DF: "EnemyAiTail",
+    0x4317C81D: "EnemyArea",
     0x3BBE76C9: "EnemyDead",
     0x611E819D: "EnemyExp",
     0xAAEA8654: "EnemyFamily",
@@ -5522,6 +5534,7 @@ hashes = {
     0x2B0F682A: "HealerProb1",
     0xB76A556E: "HealerProb2",
     0xA1E2BF1B: "HealerProb3",
+    0x797D6D0A: "HeatRate",
     0xD6A42E29: "HeroChainEff",
     0xA9F6CEEB: "HeroFlagNo",
     0x48935BCE: "HiddenItem",
@@ -5732,6 +5745,7 @@ hashes = {
     0xD4C96118: "ItmGemID",
 
     0xA492DCCC: "Job",
+    0x1136C98A: "JumpPortal",
 
     0x210B556E: "KeepEnhance",
     0xC253A756: "Keepf",
@@ -5791,6 +5805,7 @@ hashes = {
     0xE9EE0483: "LinkQuest",
     0xBD1B2F64: "LinkQuestTask",
     0x1E08C2CD: "LinkQuestTaskID",
+    0x6E744561: "ListNum",
     0xE4BC35A9: "Localize",
     0x78693E2C: "Localize1",
     0x86A5B309: "Localize2",
@@ -5827,6 +5842,7 @@ hashes = {
     0xAD11E3B6: "MapGimmickID",
     0xF96161CE: "MapID",
     0xDB253205: "MapInfoId",
+    0xBFF03A95: "MapJump",
     0x8D5D1243: "MapJumpID",
     0x3B810178: "MapJumpIn",
     0x36A5860E: "MapJumpOut",
@@ -5858,6 +5874,7 @@ hashes = {
     0x009B610D: "MaxDelay",
     0xDF998797: "MaxHeight",
     0x2C1A0BDB: "MaxLength",
+    0xD94A52F4: "MaxLevel",
     0x84192CF4: "MaxNumber",
     0xD6C0304D: "MaxPlacementDown",
     0x6A3874F2: "MaxPlacementUp",
@@ -6088,6 +6105,8 @@ hashes = {
     0x42DFEFDB: "NpcID5",
     0xFAF75E90: "NpcID6",
     0xF6970859: "NpcIconFlag",
+    0xA91C2464: "NpcQuestRoute",
+    0xB9E6627D: "NpcQuestRoutePoint",
     0x43473909: "Num01",
     0x7F13A069: "Num02",
     0xBD587404: "Num03",
@@ -6155,6 +6174,8 @@ hashes = {
     0x0982F22A: "OpenSeID",
     0x3A3E8378: "Option1",  # FIXME: unclear if correct
     0xF57AF32D: "OrderCondition",
+    0xDDB9C6C6: "OrderCondition2",
+    0x0085193A: "OrderConditionText",
     0x247A535E: "OrderIcon",
     0x712324D3: "OtherRole",
     0xD2D55B46: "OutsideAlpha",
@@ -7171,6 +7192,7 @@ hashes = {
     0xC4EFD428: "UniqueDirectionL",
     0x506DA4A5: "UniqueDirectionR",
     0x9146D0A4: "UnitText",
+    0xF3688B66: "Untiuroboros",
     0x836D60B7: "UpSeID",
     0x60C02D92: "UpSpeed",
     0x7471D714: "UpdateCheck",
@@ -7262,6 +7284,7 @@ hashes = {
     0xE69906B7: "WarmupFrame",
     0x6E3B810E: "WarningFlag",
     0xD21B65B6: "Water",
+    0x9268614A: "Wave",
     0xF4CB3858: "WaveFreq",
     0xD8A3A4C9: "WaveRandom",
     0x51F76591: "WaveRate",
@@ -11789,13 +11812,15 @@ text_xrefs = {
                  'Text2': ('msg_autotalk', 'name'),
                  'Text3': ('msg_autotalk', 'name')},
     'F936594B': {'SpotName': ('msg_comspot_name', 'name')},
-    '9D907E07': {'Name': ('192F6292', 'name'), 'Caption1': ('18D9E310', 'name'),
+    'BTL_ChTA_List': {'Name': ('192F6292', 'name'), 'Caption1': ('18D9E310', 'name'),
                  'Caption2': ('2BA64A98', 'name'), 'Caption3': ('2BA64A98', 'name'),
-                 'field_0085193A': ('EE23CB30', 'name')},
+                 'OrderConditionText': ('EE23CB30', 'name')},
     'D027C230': {'Caption': ('msg_btl_ChSU_shop_caption', 'name')},
     'A2626871': {'Name': ('msg_btl_ChSU_gate_name', 'name'), 'Caption': ('msg_btl_ChSU_gate_caption', 'name')},
     '28AAFFB2': {'Caption': ('msg_btl_ChSU_event_caption', 'name')},
-    'BTL_ChSU_Emblem': {'Name': ('msg_btl_ChSU_emblem_name', 'name')},
+    'BTL_ChSU_Emblem': {'Name': ('msg_btl_ChSU_emblem_name', 'name'), 'Caption': ('C20EDDF5', 'name')},
+    'BTL_ChSU_List': {'Name': ('192F6292', 'name'), 'Caption1': ('18D9E310', 'name'), 'Caption2': ('2BA64A98', 'name'),
+            'Caption3': ('2BA64A98', 'name'), 'OrderConditionText': ('EE23CB30', 'name')},
 }
 
 refset_arts_en = ('BTL_Arts_En', )
@@ -11879,6 +11904,7 @@ field_xrefs = {
     'Conditon6': refset_condition,
     'Conditon7': refset_condition,
     'Conditon8': refset_condition,
+    'CostumeChr': refset_pc,
     'Debuff1': 'BTL_BuffDeBuff',
     'Debuff2': 'BTL_BuffDeBuff',
     'Debuff3': 'BTL_BuffDeBuff',
@@ -12000,6 +12026,7 @@ field_xrefs = {
     'NpType19': refset_item,
     'NpType20': refset_item,
     'OrderCondition': refset_condition,
+    'OrderCondition2': refset_condition,
     'SetItem1': refset_item,
     'SetItem2': refset_item,
     'SetItem3': refset_item,
@@ -12031,6 +12058,7 @@ field_xrefs = {
     'ShopItem19': refset_item,
     'ShopItem20': refset_item,
 
+    'MapJump': 'SYS_MapJumpList',
     'MapJumpID': 'SYS_MapJumpList',
 
     'CurrentMap': refset_map,
@@ -12767,9 +12795,11 @@ table_xrefs = {
                  'RelationID4': 'FLD_RelationColony'},
     'FD4384CB': {'EventID': refset_event_name},
     'FEF315B6': {'EventID': refset_event_name},
-    '9D907E07': {'field_DDB9C6C6': refset_condition, 'Reward': '0DBCD5D6'},
-    '0DBCD5D6': {'FirstReward': refset_item},
+    'BTL_ChTA_List': {'Reward': 'BTL_ChTA_Reward'},
+    'BTL_ChSU_List': {'Reward': 'BTL_ChSU_Reward'},
+    'BTL_ChTA_Reward': {'FirstReward': (None, None, 'chta_reward')},
     'BTL_ChSU_ShopItem': {'Item': (None, None, 'chsu_shopitem')},
+    'BTL_ChSU_Reward': {'FirstReward': (None, None, 'chta_reward')},
 }
 
 
@@ -12860,6 +12890,13 @@ def resolve_field_xrefs(tables, table, field_idx, target, add_link):
                         type = table.get(row, type_field)
                         test_table = tables["BTL_ChSU_Emblem"] if type == 0 else tables["CHR_PC"]
                         test_row = test_table.id_to_row(value)
+                    elif target[2] == 'chta_reward':
+                        # Costume if CostumeChr != 0, item otherwise
+                        chr_field = table.field_index('CostumeChr')
+                        chr = table.get(row, chr_field)
+                        test_table = tables["RSC_PcCostumeOpen"] if chr else tables["ITM_Accessory"]
+                        test_row = test_table.id_to_row(value)
+                        pass
                     else:
                         raise Exception(f'Unhandled special case: {target[2]}')
                 elif name.split('.')[0].startswith('SYS_GimmickLocation'):
@@ -12878,7 +12915,7 @@ def resolve_field_xrefs(tables, table, field_idx, target, add_link):
                         target_table = test_table
                         target_row = test_row
                     else:
-                        raise ValueError(f'Duplicate ID {id} in table {target_table_name} (reference from {table.name}#{table.get(row, 0)})')
+                        raise ValueError(f'Duplicate ID {id} in table {target_table.name} (reference from {table.name}#{table.get(row, 0)})')
             if target_row is None:
                 # Suppress intentionally unmatching cases
                 if target_table == 'None':
@@ -12953,7 +12990,7 @@ def resolve_field_xrefs(tables, table, field_idx, target, add_link):
                 elif target[2] == 'event_name':
                     value = table.get(row, field_idx)
                 elif target[2] in ('condition_quest', 'qst_task',
-                                   'gimmick_object', 'field_vanish', 'chsu_shopitem'):
+                                   'gimmick_object', 'field_vanish', 'chsu_shopitem', 'chta_reward'):
                     pass  # No additional logic
                 else:
                     raise Exception(f'Unhandled special case: {target[2]}')
