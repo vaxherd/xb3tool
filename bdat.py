@@ -10514,23 +10514,6 @@ if True:
         if word is not None and murmur32(word) != hash:
             raise Exception(f'murmur32({word}) != 0x{hash:08X} (should be 0x{murmur32(word):08X})')
 
-# Compile gimmick hashes
-for map in map_names:
-    for gmk_type in gimmick_types:
-        table_name = f"{map}_GMK_{gmk_type}"
-        hashes[murmur32(table_name)] = table_name
-        
-# Check "_dlc04" hashes
-for name in list(hashes.values()):
-    if not name:
-        continue
-    for suffix in ["_dlc04", "_DLC04"]:
-        dlc_hash = name + suffix
-        hashes[murmur32(dlc_hash)] = dlc_hash
-
-if __name__ == "__main__":
-    print("Compiled gimmick & DLC4 hashes.")
-
 def unhash(hash, default=None):
     """Return the string corresponding to a hash, or the default if unknown."""
     value = hashes.get(hash, default)
@@ -11554,17 +11537,6 @@ row_name_fields = {
     'BB82DEE6': 'Name',
     'D9B88F26': 'Name',
     'gimmickLocation': 'LocationName',
-    'ma01a_GMK_Location': 'LocationName',
-    'ma04a_GMK_Location': 'LocationName',
-    'ma07a_GMK_Location': 'LocationName',
-    'ma09a_GMK_Location': 'LocationName',
-    'ma11a_GMK_Location': 'LocationName',
-    'ma14a_GMK_Location': 'LocationName',
-    'ma15a_GMK_Location': 'LocationName',
-    'ma17a_GMK_Location': 'LocationName',
-    'ma20a_GMK_Location': 'LocationName',
-    'ma22a_GMK_Location': 'LocationName',
-    'ma90a_GMK_Location': 'LocationName',
     'BTL_ChSU_Emblem': 'Name',
 }
 
@@ -11787,17 +11759,6 @@ text_xrefs = {
     'ma22a_GMK_Event': {'Name': ('msg_fld_searchpoint', 'name')},
     'ma90a_GMK_Event': {'Name': ('msg_fld_searchpoint', 'name')},
     'gimmickLocation': {'LocationName': ('msg_location_name', 'name')},
-    'ma01a_GMK_Location': {'LocationName': ('msg_location_name', 'name')},
-    'ma04a_GMK_Location': {'LocationName': ('msg_location_name', 'name')},
-    'ma07a_GMK_Location': {'LocationName': ('msg_location_name', 'name')},
-    'ma09a_GMK_Location': {'LocationName': ('msg_location_name', 'name')},
-    'ma11a_GMK_Location': {'LocationName': ('msg_location_name', 'name')},
-    'ma14a_GMK_Location': {'LocationName': ('msg_location_name', 'name')},
-    'ma15a_GMK_Location': {'LocationName': ('msg_location_name', 'name')},
-    'ma17a_GMK_Location': {'LocationName': ('msg_location_name', 'name')},
-    'ma20a_GMK_Location': {'LocationName': ('msg_location_name', 'name')},
-    'ma22a_GMK_Location': {'LocationName': ('msg_location_name', 'name')},
-    'ma90a_GMK_Location': {'LocationName': ('msg_location_name', 'name')},
     '39D667D1': {'UIName1': ('msg_mnu_char_ms', 'name'),
                  'UIName2': ('msg_mnu_char_ms', 'name'),
                  'UIName3': ('msg_mnu_char_ms', 'name'),
@@ -12836,6 +12797,27 @@ table_xrefs = {
     'BTL_ChSU_ShopItem': {'Item': (None, None, 'chsu_shopitem')},
     'BTL_ChSU_Reward': {'FirstReward': (None, None, 'chta_reward')},
 }
+
+
+# Compile gimmick hashes
+for map in map_names:
+    for gmk_type in gimmick_types:
+        table_name = f"{map}_GMK_{gmk_type}"
+        hashes[murmur32(table_name)] = table_name
+        if gmk_type == "Location":
+            row_name_fields[table_name] = 'LocationName'
+            text_xrefs[table_name] = {'LocationName': ('msg_location_name', 'name')}
+        
+# Check "_dlc04" hashes
+for name in list(hashes.values()):
+    if not name:
+        continue
+    for suffix in ["_dlc04", "_DLC04"]:
+        dlc_hash = name + suffix
+        hashes[murmur32(dlc_hash)] = dlc_hash
+
+if __name__ == "__main__":
+    print("Compiled gimmick & DLC4 hashes.")
 
 
 def add_xref(table, row, field_idx, value, target_table, target_row):
