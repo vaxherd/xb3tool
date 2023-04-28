@@ -566,7 +566,7 @@ class SegInfo(object):
         # the segment data, so instead we just check for every possible
         # segment file and use the ones we find.  However, we do exclude
         # non-present segments from the base data because in many cases,
-        # those files exists but contain dummy data (probably the rough
+        # those files exist but contain dummy data (probably the rough
         # renders over which the map illustrators drew the final images).
         seg_path = self._seg_path(x, y)
         if seg_path and seg_path.startswith(self._seg_base_paths[-1]) and not self._seg_present[y][x]:
