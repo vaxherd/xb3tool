@@ -3,6 +3,9 @@
 # Generate a minimap image for a Xenoblade 3 map.
 #
 # Requires PIL (the Python Imaging Library).
+#
+# Public domain, share and enjoy.
+#
 
 import argparse
 from collections import namedtuple
@@ -549,13 +552,26 @@ class SegInfo(object):
         """The row count (height in segments) of the minimap."""
         return self._num_rows
 
+    @property
+    def render_offset(self):
+        """The rendering offset relative to world coordinates, in pixels."""
+        return (self._xofs, self._yofs)
+
     def seg_image(self, x, y):
         """Return the image for the given segment as a linear byte array
         of RGBA8888 pixels."""
         if x < 0 or y < 0 or x >= self._num_columns or y >= self._num_rows:
             raise ValueError(f'Invalid segment position: {x},{y}')
-        if self._seg_present[y][x]:
-            seg_path = self._seg_path(x, y)
+        # If using expansions, we can't rely on the seg_present array from
+        # the segment data, so instead we just check for every possible
+        # segment file and use the ones we find.  However, we do exclude
+        # non-present segments from the base data because in many cases,
+        # those files exists but contain dummy data (probably the rough
+        # renders over which the map illustrators drew the final images).
+        seg_path = self._seg_path(x, y)
+        if seg_path and seg_path.startswith(self._seg_base_paths[-1]) and not self._seg_present[y][x]:
+            seg_path = None
+        if seg_path:
             if self._verbose:
                 print(seg_path)
             seg_texture = Wilay(seg_path)
@@ -574,7 +590,8 @@ class SegInfo(object):
         if len(data) < 32:
             raise ValueError(f'{self._path}: File is too short')
         (self._seg_width, self._seg_height, self._num_columns,
-         self._num_rows) = struct.unpack('<IIII', data[0:16])
+         self._num_rows, self._xofs, self._yofs) = struct.unpack('<IIIIhh',
+                                                                 data[0:20])
         if self._seg_width == 0 or self._seg_height == 0:
             raise ValueError(f'{self._path}: Invalid segment size {self._seg_width}x{self._seg_height}')
         if data[20:32] != b'\0'*12:
@@ -586,6 +603,7 @@ class SegInfo(object):
         if verbose:
             print(f'    Segment size: {self._seg_width}x{self._seg_height}')
             print(f'    Minimap size: {self._num_columns}x{self._num_rows}')
+            print(f'    Render offset: {self._xofs}, {self._yofs}')
             if verbose >= 2:
                 print('      Segment map:')
                 for y in range(self._num_rows):
@@ -596,11 +614,18 @@ class SegInfo(object):
         # same 32-byte header (aligned to a multiple of 4 bytes), listing
         # replacement segments to reflect map changes (such as when the
         # bridge in the middle of Aetia spawns in chapter 7).  We don't
-        # currently support those.
+        # currently support these extra lists; we could potentially use
+        # them to avoid trying to open nonexistent segment image files,
+        # but that overhead is trivial, so we don't bother with this extra
+        # parsing.
 
     def _seg_path(self, x, y):
-        """Return the pathname of the first eligible segment image file."""
-        return next(filter(os.path.exists, map(lambda p: p + f'{x:02d}{y:02d}.wilay', self._seg_base_paths)))
+        """Return the pathname of the first eligible segment image file for
+        the given segment, or None if no images are found for the segment."""
+        try:
+            return next(filter(os.path.exists, map(lambda p: p + f'{x:02d}{y:02d}.wilay', self._seg_base_paths)))
+        except StopIteration:
+            return None
 
 
 class MapInfo(object):
@@ -630,6 +655,14 @@ class MapInfo(object):
         """The number of layers in this minimap."""
         return self._num_layers
 
+    def max_scale(self, layer):
+        """Return the maximum scale factor index for the given layer in this
+        minimap.
+        """
+        if layer < 0 or layer >= self._num_layers:
+            raise ValueError(f'Invalid layer index: {layer}')
+        return len(self._layers[layer].segmaps)
+
     def image(self, layer, scale):
         """Return the minimap image for the given layer.
 
@@ -645,6 +678,8 @@ class MapInfo(object):
             raise ValueError(f'Invalid layer index: {layer}')
         if scale < 0 or scale > len(self._layers[layer].segmaps):
             raise ValueError(f'Scale factor {scale} is unavailable')
+        if scale == 0:
+            scale = len(self._layers[layer].segmaps)
         seg = self._layers[layer].segmaps[scale-1]
         seg_rowsize = 4 * seg.seg_width
         rowsize = seg_rowsize * seg.num_columns
@@ -662,6 +697,44 @@ class MapInfo(object):
         return PIL.Image.frombytes('RGBA', (seg.seg_width * seg.num_columns,
                                             seg.seg_height * seg.num_rows),
                                    bytes(data), 'raw', 'RGBA', 0, 1)
+
+    def image_pos(self, layer, scale, wx, wy, wz):
+        """Return the image coordinates corresponding to the given world
+        coordinates on this map.
+
+        Note that the returned coordinates are not necessarily within the
+        bounds of the image itself; if an out-of-bounds world position is
+        passed to this function, the returned image position will likewise
+        be out of bounds.  The returned coordinates are also not rounded to
+        the nearest pixel, so that the caller can use the fractional part
+        to perform antialiasing if desired.
+
+        Parameters:
+            layer: Layer index.
+            scale: Render scale factor, as for image().
+            wx, wy, wz: World coordinates.
+
+        Return value:
+            A 2-tuple (x,y) containing the corresponding image coordinates.
+        """
+        if layer < 0 or layer >= self._num_layers:
+            raise ValueError(f'Invalid layer index: {layer}')
+        if scale < 0 or scale > len(self._layers[layer].segmaps):
+            raise ValueError(f'Scale factor {scale} is unavailable')
+        if scale == 0:
+            scale = len(self._layers[layer].segmaps)
+        l = self._layers[layer]
+        seg = l.segmaps[scale-1]
+        width = seg.seg_width * seg.num_columns
+        height = seg.seg_height * seg.num_rows
+        # FIXME: this scaling seems to be slightly incorrect, and more so at
+        # higher scales (lower resolutions)
+        rel_x = (wx - l.xmin) / (l.xmax - l.xmin)
+        rel_y = (wz - l.zmin) / (l.zmax - l.zmin)
+        # FIXME: unclear why this /2 is needed, but it seems to give better
+        # results
+        return (rel_x * width - seg.render_offset[0]/2,
+                rel_y * height - seg.render_offset[1]/2)
 
     def _parse(self, data, verbose, expansions):
         """Parse a *.mi file."""
