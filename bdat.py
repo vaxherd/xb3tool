@@ -13148,8 +13148,16 @@ for name in list(hashes.values()):
     if not name:
         continue
     for suffix in ['_dlc04', '_DLC04']:
-        dlc_hash = name + suffix
-        hashes[murmur32(dlc_hash)] = dlc_hash
+        dlc_name = name + suffix
+        dlc_hash = murmur32(dlc_name)
+        if dlc_hash in hashes:
+            if hashes[dlc_hash] != dlc_name:
+                if dlc_name == 'ArtsID_DLC04':
+                    pass  # Known collision with RSC_MapObjList_dlc04
+                else:
+                    raise Exception(f'DLC04 collision: [{dlc_name}] collides with [{hashes[dlc_hash]}]')
+        else:
+            hashes[dlc_hash] = dlc_name
 
 if __name__ == '__main__':
     print('Compiled gimmick & DLC4 hashes.')
