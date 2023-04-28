@@ -75,13 +75,13 @@ def murmur32(s):
 # Gimmick hashes are compiled on-the-fly
 map_names = [e for l in [
     # Regular maps
-    [f"ma{i:02}a" for i in range(1, 80 + 1)], # not all numbers are used though
+    [f"ma{i+1:02}a" for i in range(80)], # not all numbers are used though
 
     # Challenge battle maps
-    [f"ma25a_{i:02}" for i in range(1, 18 + 1)], # one for each challenge
+    [f"ma25a_{i+1:02}" for i in range(19)], # one for each challenge
 
     # Challenge gauntlet maps
-    [f"ma25a_{i:02}" for i in range(50, 50 + 10 + 1)], # one for each challenge
+    [f"ma25a_{i+50:02}" for i in range(10)], # one for each challenge
 
     # Debug/cutscene/unused/unknown maps
     ["gmk_test", "ma40a", "ma0101", "ma90a",
@@ -92,6 +92,7 @@ map_names = [e for l in [
 ] for e in l]
 gimmick_types = [
     "Affordance",
+    "AreaBattle",
     "BGM",
     "BlackMist",
     "Collection",
@@ -103,6 +104,7 @@ gimmick_types = [
     "ElevatorSw",
     "EnemyAff",
     "EnemyDead",
+    "EnemyFogPop",
     "EnemyPop",
     "EnemyWave",
     "EtherPoint",
@@ -117,8 +119,9 @@ gimmick_types = [
     "Grave",
     "IconLocator",
     "Interest",
-    "Location",
     "JumpPortal",
+    "KizunaEvent",
+    "Location",
     "MapJumpList",
     "Mob",
     "Object",
@@ -129,6 +132,7 @@ gimmick_types = [
     "SE",
     "Schedule",
     "TreasureBox",
+    "WalkEvent",
     "Weather",
 ]
 
@@ -4769,6 +4773,7 @@ hashes = {
     0x96802080: "BattleCategory",
     0x210044ED: "BattleLockID",
     0x977F1E8D: "BattleRockID",
+    0xB6472E03: "BattleType",
     0x30499B89: "BdatNum",
     0x27DD2297: "Before",
     0x64FCF627: "BeforeWeather",
@@ -5770,6 +5775,7 @@ hashes = {
     0xA492DCCC: "Job",
     0x1136C98A: "JumpPortal",
 
+    0x77D7C7CA: "KP",
     0x210B556E: "KeepEnhance",
     0xC253A756: "Keepf",
     0xC4B89BE5: "KevesRate",
@@ -11728,29 +11734,6 @@ text_xrefs = {
     'SYS_TutorialSummary': {'Title': ('msg_mnu_tutorial_tips', 'name')},
     'SYS_TutorialTask': {'Title': ('msg_mnu_tutorial_tips', 'name')},
     'SYS_TutorialTelop': {'Title': ('msg_mnu_tutorial_tips', 'name')},
-    'gimmickEnemyPop': {'GroupName': ('msg_enemy_group_name', 'name')},
-    'ma01a_GMK_EnemyPop': {'GroupName': ('msg_enemy_group_name', 'name')},
-    'ma04a_GMK_EnemyPop': {'GroupName': ('msg_enemy_group_name', 'name')},
-    'ma07a_GMK_EnemyPop': {'GroupName': ('msg_enemy_group_name', 'name')},
-    'ma09a_GMK_EnemyPop': {'GroupName': ('msg_enemy_group_name', 'name')},
-    'ma11a_GMK_EnemyPop': {'GroupName': ('msg_enemy_group_name', 'name')},
-    'ma14a_GMK_EnemyPop': {'GroupName': ('msg_enemy_group_name', 'name')},
-    'ma15a_GMK_EnemyPop': {'GroupName': ('msg_enemy_group_name', 'name')},
-    'ma17a_GMK_EnemyPop': {'GroupName': ('msg_enemy_group_name', 'name')},
-    'ma22a_GMK_EnemyPop': {'GroupName': ('msg_enemy_group_name', 'name')},
-    'ma90a_GMK_EnemyPop': {'GroupName': ('msg_enemy_group_name', 'name')},
-    'gimmickEvent': {'Name': ('msg_fld_searchpoint', 'name')},
-    'ma01a_GMK_Event': {'Name': ('msg_fld_searchpoint', 'name')},
-    'ma04a_GMK_Event': {'Name': ('msg_fld_searchpoint', 'name')},
-    'ma07a_GMK_Event': {'Name': ('msg_fld_searchpoint', 'name')},
-    'ma09a_GMK_Event': {'Name': ('msg_fld_searchpoint', 'name')},
-    'ma11a_GMK_Event': {'Name': ('msg_fld_searchpoint', 'name')},
-    'ma14a_GMK_Event': {'Name': ('msg_fld_searchpoint', 'name')},
-    'ma15a_GMK_Event': {'Name': ('msg_fld_searchpoint', 'name')},
-    'ma17a_GMK_Event': {'Name': ('msg_fld_searchpoint', 'name')},
-    'ma20a_GMK_Event': {'Name': ('msg_fld_searchpoint', 'name')},
-    'ma22a_GMK_Event': {'Name': ('msg_fld_searchpoint', 'name')},
-    'ma90a_GMK_Event': {'Name': ('msg_fld_searchpoint', 'name')},
     'gimmickLocation': {'LocationName': ('msg_location_name', 'name')},
     '39D667D1': {'UIName1': ('msg_mnu_char_ms', 'name'),
                  'UIName2': ('msg_mnu_char_ms', 'name'),
@@ -11806,6 +11789,12 @@ text_xrefs = {
     'BTL_ChSU_Emblem': {'Name': ('msg_btl_ChSU_emblem_name', 'name'), 'Caption': ('C20EDDF5', 'name')},
     'BTL_ChSU_List': {'Name': ('192F6292', 'name'), 'Caption1': ('18D9E310', 'name'), 'Caption2': ('2BA64A98', 'name'),
             'Caption3': ('2BA64A98', 'name'), 'OrderConditionText': ('EE23CB30', 'name')},
+}
+
+# Additional text_xrefs which are applied to all gimmick tables.
+gimmick_text_xrefs = {
+    'EnemyPop': {'GroupName': ('msg_enemy_group_name', 'name')},
+    'Event': {'Name': ('msg_fld_searchpoint', 'name')},
 }
 
 refset_arts_en = ('BTL_Arts_En', )
@@ -12650,21 +12639,27 @@ table_xrefs = {
                          'TimeZone03': 'SYS_WeatherRate',
                          'TimeZone04': 'SYS_WeatherRate',
                          'TimeZone05': 'SYS_WeatherRate'},
-    'ma01a_GMK_Corpse': {'EventID': refset_event_name},
+    'ma01a_GMK_Corpse': {'EventID': refset_event_name,
+                         'Reward': 'ITM_RewardGrieve'},
+    'ma04a_GMK_Corpse': {'EventID': refset_event_name,
+                         'Reward': 'ITM_RewardGrieve'},
+    'ma07a_GMK_Corpse': {'EventID': refset_event_name,
+                         'Reward': 'ITM_RewardGrieve'},
+    'ma09a_GMK_Corpse': {'EventID': refset_event_name,
+                         'Reward': 'ITM_RewardGrieve'},
+    'ma11a_GMK_Corpse': {'EventID': refset_event_name,
+                         'Reward': 'ITM_RewardGrieve'},
     'ma01a_GMK_Event': {'EventID': refset_event_name},
-    'ma04a_GMK_Corpse': {'EventID': refset_event_name},
     'ma04a_GMK_Event': {'EventID': refset_event_name},
-    'ma07a_GMK_Corpse': {'EventID': refset_event_name},
     'ma07a_GMK_Event': {'EventID': refset_event_name},
-    'ma09a_GMK_Corpse': {'EventID': refset_event_name},
     'ma09a_GMK_Event': {'EventID': refset_event_name},
-    'ma11a_GMK_Corpse': {'EventID': refset_event_name},
     'ma11a_GMK_Event': {'EventID': refset_event_name},
     'ma14a_GMK_Event': {'EventID': refset_event_name},
     'ma15a_GMK_Event': {'EventID': refset_event_name},
     'ma17a_GMK_Event': {'EventID': refset_event_name},
     'ma20a_GMK_Event': {'EventID': refset_event_name},
     'ma22a_GMK_Event': {'EventID': refset_event_name},
+    'ma40a_GMK_Event': {'EventID': refset_event_name},
     'ma90a_GMK_Event': {'EventID': refset_event_name},
     'ma01a_GMK_TreasureBox': {'RewardID': 'ITM_RewardAssort'},
     'ma04a_GMK_TreasureBox': {'RewardID': 'ITM_RewardAssort'},
@@ -12675,12 +12670,9 @@ table_xrefs = {
     'ma15a_GMK_TreasureBox': {'RewardID': 'ITM_RewardAssort'},
     'ma17a_GMK_TreasureBox': {'RewardID': 'ITM_RewardAssort'},
     'ma22a_GMK_TreasureBox': {'RewardID': 'ITM_RewardAssort'},
+    'ma40a_GMK_TreasureBox': {'RewardID': 'ITM_RewardAssort'},
+    'C566F8E6': {'RewardID': 'ITM_RewardAssort'},  # another ma40a_GMK table
     'ma90a_GMK_TreasureBox': {'RewardID': 'ITM_RewardAssort'},
-    'ma01a_GMK_Corpse': {'Reward': 'ITM_RewardGrieve'},
-    'ma04a_GMK_Corpse': {'Reward': 'ITM_RewardGrieve'},
-    'ma07a_GMK_Corpse': {'Reward': 'ITM_RewardGrieve'},
-    'ma09a_GMK_Corpse': {'Reward': 'ITM_RewardGrieve'},
-    'ma11a_GMK_Corpse': {'Reward': 'ITM_RewardGrieve'},
     '02E2BD0D': {'affType': '76D0D7D9',
                  'matchPop1': refset_gimmick,
                  'matchPop2': refset_gimmick,
@@ -13020,11 +13012,18 @@ def resolve_xrefs(tables):
         for field, target in fields.items():
             resolve_field_xrefs(tables, table, table.field_index(field, True),
                                 target, False)
+    for gimmick_name, fields in gimmick_text_xrefs.items():
+        for name, table in tables.items():
+            if (name == f'gimmick{gimmick_name}'
+                    or re.match(f'ma..a_GMK_{gimmick_name}$', name)):
+                for field, target in fields.items():
+                    resolve_field_xrefs(tables, table, table.field_index(field, True),
+                                        target, False)
     for table_name in recursive_text_tables:
         for field, target in text_xrefs[table_name].items():
             resolve_field_xrefs(tables, tables[table_name],
-                                tables[table_name].field_index(field, True), target,
-                                False)
+                                tables[table_name].field_index(field, True),
+                                target, False)
 
     for name, table in tables.items():
         matched_fields = set()
