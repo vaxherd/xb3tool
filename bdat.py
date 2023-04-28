@@ -10514,14 +10514,6 @@ if True:
         if word is not None and murmur32(word) != hash:
             raise Exception(f'murmur32({word}) != 0x{hash:08X} (should be 0x{murmur32(word):08X})')
 
-# Compile gimmick hashes
-for map in map_names:
-    for gmk_type in gimmick_types:
-        table_name = f"{map}_GMK_{gmk_type}"
-        hashes[murmur32(table_name)] = table_name
-if __name__ == "__main__":
-    print("Compiled gimmick hashes.")
-
 def unhash(hash, default=None):
     """Return the string corresponding to a hash, or the default if unknown."""
     value = hashes.get(hash, default)
@@ -10534,8 +10526,7 @@ def unhash(hash, default=None):
 # UINT fields that should be parsed as HSTRINGs (dict of table: [fields])
 uint_hashes = {
     'SYS_GimmickLocation': ['field_6C50B44E', 'Option1'],
-    'SYS_GimmickLocation_dlc02': ['field_6C50B44E', 'Option1'],
-    'SYS_GimmickLocation_dlc03': ['field_6C50B44E', 'Option1'],
+    'SYS_GimmickLocation_dlc04': ['field_6C50B44E', 'Option1'],
     '8F29BCAF': ['LocationBdat', 'field_5177BA21'],
     'C5C5F70E': ['FormationTopWindow', 'FormationCooking', 'field_07F1CB46',
                  'field_F1D020CF', 'field_E27F23C7', 'FormationCookingAction',
@@ -11480,8 +11471,7 @@ def resolve_labels(tables):
 
     # SYS_GimmickLocation.GimmickID comes last because we need the dict
     # of gimmick IDs from per-map tables.
-    gmk_loc_tables = [tables['SYS_GimmickLocation'], tables.get('SYS_GimmickLocation_dlc02'),
-                      tables.get('SYS_GimmickLocation_dlc03'), tables.get('SYS_GimmickLocation_dlc04')]
+    gmk_loc_tables = [tables.get('SYS_GimmickLocation'), tables.get('SYS_GimmickLocation_dlc04')]
     for gmkloc in gmk_loc_tables:
         if not gmkloc:
             continue
@@ -11538,6 +11528,7 @@ row_name_fields = {
     'QST_RequestItemSet': 'Name',
     'QST_Task': 'TaskLog1',
     'SYS_GimmickLocation': 'GimmickID',
+    'SYS_GimmickLocation_dlc04': 'GimmickID',
     'SYS_MapList': 'Name',
     'SYS_TutorialMessage': 'Title',
     'SYS_TutorialSummary': 'Title',
@@ -11546,17 +11537,6 @@ row_name_fields = {
     'BB82DEE6': 'Name',
     'D9B88F26': 'Name',
     'gimmickLocation': 'LocationName',
-    'ma01a_GMK_Location': 'LocationName',
-    'ma04a_GMK_Location': 'LocationName',
-    'ma07a_GMK_Location': 'LocationName',
-    'ma09a_GMK_Location': 'LocationName',
-    'ma11a_GMK_Location': 'LocationName',
-    'ma14a_GMK_Location': 'LocationName',
-    'ma15a_GMK_Location': 'LocationName',
-    'ma17a_GMK_Location': 'LocationName',
-    'ma20a_GMK_Location': 'LocationName',
-    'ma22a_GMK_Location': 'LocationName',
-    'ma90a_GMK_Location': 'LocationName',
     'BTL_ChSU_Emblem': 'Name',
 }
 
@@ -11779,17 +11759,6 @@ text_xrefs = {
     'ma22a_GMK_Event': {'Name': ('msg_fld_searchpoint', 'name')},
     'ma90a_GMK_Event': {'Name': ('msg_fld_searchpoint', 'name')},
     'gimmickLocation': {'LocationName': ('msg_location_name', 'name')},
-    'ma01a_GMK_Location': {'LocationName': ('msg_location_name', 'name')},
-    'ma04a_GMK_Location': {'LocationName': ('msg_location_name', 'name')},
-    'ma07a_GMK_Location': {'LocationName': ('msg_location_name', 'name')},
-    'ma09a_GMK_Location': {'LocationName': ('msg_location_name', 'name')},
-    'ma11a_GMK_Location': {'LocationName': ('msg_location_name', 'name')},
-    'ma14a_GMK_Location': {'LocationName': ('msg_location_name', 'name')},
-    'ma15a_GMK_Location': {'LocationName': ('msg_location_name', 'name')},
-    'ma17a_GMK_Location': {'LocationName': ('msg_location_name', 'name')},
-    'ma20a_GMK_Location': {'LocationName': ('msg_location_name', 'name')},
-    'ma22a_GMK_Location': {'LocationName': ('msg_location_name', 'name')},
-    'ma90a_GMK_Location': {'LocationName': ('msg_location_name', 'name')},
     '39D667D1': {'UIName1': ('msg_mnu_char_ms', 'name'),
                  'UIName2': ('msg_mnu_char_ms', 'name'),
                  'UIName3': ('msg_mnu_char_ms', 'name'),
@@ -11853,7 +11822,7 @@ refset_enemy = ('FLD_EnemyData', )
 refset_enhance = ('BTL_Enhance', )
 refset_event = (('EVT_listEv', 'EVT_listFev', 'EVT_listQst', 'EVT_listTlk'), )
 refset_event_name = (('EVT_listEv', 'EVT_listFev', 'EVT_listQst', 'EVT_listTlk'), None, 'event_name')
-refset_gimmick = ('SYS_GimmickLocation.GimmickID',)
+refset_gimmick = (('SYS_GimmickLocation.GimmickID', 'SYS_GimmickLocation_dlc04.GimmickID'),)
 refset_gimmick_object = (None, None, 'gimmick_object')
 refset_item = (('ITM_Accessory', 'ITM_Collection', 'ITM_Collepedia', 'ITM_Cylinder', 'ITM_Gem', 'ITM_Info', 'ITM_Precious'), )
 refset_map = (('SYS_MapList'), )
@@ -12143,6 +12112,10 @@ field_xrefs = {
     'field_223EFE81': 'BTL_ChSU_RateShop',
     'field_BC6FBC62': 'BTL_ChSU_RateEvent',
     'field_6D8A087C': 'BTL_ChSU_RateGate',
+    
+    'weatherA': 'RSC_WeatherSet',
+    'weatherB': 'RSC_WeatherSet',
+    'weatherC': 'RSC_WeatherSet',
 }
 
 # List of table-specific fields which are ID references to other tables.
@@ -12826,6 +12799,27 @@ table_xrefs = {
 }
 
 
+# Compile gimmick hashes
+for map in map_names:
+    for gmk_type in gimmick_types:
+        table_name = f"{map}_GMK_{gmk_type}"
+        hashes[murmur32(table_name)] = table_name
+        if gmk_type == "Location":
+            row_name_fields[table_name] = 'LocationName'
+            text_xrefs[table_name] = {'LocationName': ('msg_location_name', 'name')}
+        
+# Check "_dlc04" hashes
+for name in list(hashes.values()):
+    if not name:
+        continue
+    for suffix in ["_dlc04", "_DLC04"]:
+        dlc_hash = name + suffix
+        hashes[murmur32(dlc_hash)] = dlc_hash
+
+if __name__ == "__main__":
+    print("Compiled gimmick & DLC4 hashes.")
+
+
 def add_xref(table, row, field_idx, value, target_table, target_row):
     """Add a cross-reference from table[row][field_idx] to target_table[row]."""
     old_value=value
@@ -12858,6 +12852,8 @@ def add_xref(table, row, field_idx, value, target_table, target_row):
 
 def resolve_field_xrefs(tables, table, field_idx, target, add_link):
     """Resolve cross-references in the given table column."""
+    if not field_idx:
+        return
     if not islistlike(target):
         target = (target,)
     target_tables = target[0]
@@ -12893,7 +12889,7 @@ def resolve_field_xrefs(tables, table, field_idx, target, add_link):
                         test_row = test_table.id_to_row(id)
                     elif target[2] == 'gimmick_object':
                         hash = murmur32(id)
-                        test_table = tables['SYS_GimmickLocation']
+                        test_table = get_gmk_location_table(tables)
                         idx_GimmickID = test_table.field_index('GimmickID')
                         test_row = test_table.id_to_row(f'<{hash:08X}>',
                                                         idx_GimmickID)
@@ -12923,9 +12919,12 @@ def resolve_field_xrefs(tables, table, field_idx, target, add_link):
                     else:
                         raise Exception(f'Unhandled special case: {target[2]}')
                 elif name.split('.')[0].startswith('SYS_GimmickLocation'):
-                    test_table = tables[name.split('.')[0]]
-                    idx_GimmickID = test_table.field_index('GimmickID')
-                    test_row = test_table.id_to_row(id, idx_GimmickID)
+                    test_table = tables.get(name.split('.')[0])
+                    if test_table:
+                        idx_GimmickID = test_table.field_index('GimmickID')
+                        test_row = test_table.id_to_row(id, idx_GimmickID)
+                    else:
+                        test_row = None
                 elif len(target) > 2 and target[2] == 'event_name':
                     test_table = tables[name]
                     hash = murmur32(id)
@@ -13022,7 +13021,16 @@ def resolve_field_xrefs(tables, table, field_idx, target, add_link):
             else:
                 assert value is not None
                 table.set(row, field_idx, value)
-
+                
+def get_gmk_location_table(tables):
+    """Returns the correct SYS_GimmickLocation table."""
+    base = tables.get('SYS_GimmickLocation')
+    if base:
+        return base
+    dlc = tables.get('SYS_GimmickLocation_dlc04')
+    if dlc:
+        return dlc
+    raise Exception(f'No SYS_GimmickLocation table found. Is base game or DLC4 present?') 
 
 def resolve_xrefs(tables):
     """Resolve all cross-references in the given list of tables."""
@@ -13038,12 +13046,12 @@ def resolve_xrefs(tables):
             continue  # postpone until after this loop
         table = tables[table_name]
         for field, target in fields.items():
-            resolve_field_xrefs(tables, table, table.field_index(field),
+            resolve_field_xrefs(tables, table, table.field_index(field, True),
                                 target, False)
     for table_name in recursive_text_tables:
         for field, target in text_xrefs[table_name].items():
             resolve_field_xrefs(tables, tables[table_name],
-                                tables[table_name].field_index(field), target,
+                                tables[table_name].field_index(field, True), target,
                                 False)
 
     for name, table in tables.items():
