@@ -10507,13 +10507,6 @@ hashes = {
     0x142305F6: "AreaBgm_Test/ControlPoint-3"
 }
 
-# Sanity check on unhash table
-# (enabled by default since it doesn't take very long to run)
-if True:
-    for hash, word in hashes.items():
-        if word is not None and murmur32(word) != hash:
-            raise Exception(f'murmur32({word}) != 0x{hash:08X} (should be 0x{murmur32(word):08X})')
-
 def unhash(hash, default=None):
     """Return the string corresponding to a hash, or the default if unknown."""
     value = hashes.get(hash, default)
@@ -11367,7 +11360,7 @@ def parse_unhashed_table(type, table):
         # Column hashes
         string_ptr = 0
     else:
-        raise Exception(f"Unknown unhashed table type {type}")
+        raise Exception(f'Unknown unhashed table type {type}')
     return [b.decode('utf-8') for b in table[string_ptr:].split(b'\0') if b]
 
 
@@ -12799,27 +12792,6 @@ table_xrefs = {
 }
 
 
-# Compile gimmick hashes
-for map in map_names:
-    for gmk_type in gimmick_types:
-        table_name = f"{map}_GMK_{gmk_type}"
-        hashes[murmur32(table_name)] = table_name
-        if gmk_type == "Location":
-            row_name_fields[table_name] = 'LocationName'
-            text_xrefs[table_name] = {'LocationName': ('msg_location_name', 'name')}
-        
-# Check "_dlc04" hashes
-for name in list(hashes.values()):
-    if not name:
-        continue
-    for suffix in ["_dlc04", "_DLC04"]:
-        dlc_hash = name + suffix
-        hashes[murmur32(dlc_hash)] = dlc_hash
-
-if __name__ == "__main__":
-    print("Compiled gimmick & DLC4 hashes.")
-
-
 def add_xref(table, row, field_idx, value, target_table, target_row):
     """Add a cross-reference from table[row][field_idx] to target_table[row]."""
     old_value=value
@@ -12907,13 +12879,13 @@ def resolve_field_xrefs(tables, table, field_idx, target, add_link):
                         # This is either an emblem or a hero
                         type_field = table.field_index('field_6CA7326E')
                         type = table.get(row, type_field)
-                        test_table = tables["BTL_ChSU_Emblem"] if type == 0 else tables["CHR_PC"]
+                        test_table = tables['BTL_ChSU_Emblem'] if type == 0 else tables['CHR_PC']
                         test_row = test_table.id_to_row(value)
                     elif target[2] == 'chta_reward':
                         # Costume if CostumeChr != 0, item otherwise
                         chr_field = table.field_index('CostumeChr')
                         chr = table.get(row, chr_field)
-                        test_table = tables["RSC_PcCostumeOpen"] if chr else tables["ITM_Accessory"]
+                        test_table = tables['RSC_PcCostumeOpen'] if chr else tables['ITM_Accessory']
                         test_row = test_table.id_to_row(value)
                         pass
                     else:
@@ -13150,6 +13122,37 @@ def resolve_xrefs(tables):
                             target = m.group(1)
                     if target in tables:
                         table.set(row, field, value, target, None)
+
+
+########################################################################
+# Initialization logic for dynamically-initialized data
+
+# Sanity check on unhash table
+# (enabled by default since it doesn't take very long to run)
+if True:
+    for hash, word in hashes.items():
+        if word is not None and murmur32(word) != hash:
+            raise Exception(f'murmur32({word}) != 0x{hash:08X} (should be 0x{murmur32(word):08X})')
+
+# Compile gimmick hashes
+for map in map_names:
+    for gmk_type in gimmick_types:
+        table_name = f'{map}_GMK_{gmk_type}'
+        hashes[murmur32(table_name)] = table_name
+        if gmk_type == 'Location':
+            row_name_fields[table_name] = 'LocationName'
+            text_xrefs[table_name] = {'LocationName': ('msg_location_name', 'name')}
+        
+# Check "*_dlc04" hashes
+for name in list(hashes.values()):
+    if not name:
+        continue
+    for suffix in ['_dlc04', '_DLC04']:
+        dlc_hash = name + suffix
+        hashes[murmur32(dlc_hash)] = dlc_hash
+
+if __name__ == '__main__':
+    print('Compiled gimmick & DLC4 hashes.')
 
 
 ########################################################################
