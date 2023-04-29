@@ -5942,6 +5942,7 @@ hashes = {
     0x67174E6E: "KeyShift1",
     0x9C2CAE21: "KeyShift2",
     0x54C1395A: "KillEffType",
+    0xC403588F: "KizunaEvent",
     0x46009BBD: "KizunaFlag",
     0xD20CEFB1: "Knee",
 
