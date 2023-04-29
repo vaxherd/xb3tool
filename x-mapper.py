@@ -275,13 +275,13 @@ def main(argv):
     parser.add_argument('-s', '--scale', type=int,
                         help=('Map scale to render (1 = highest resolution, 2 = 1/2 scale, 3 = 1/4 scale). Defaults to the highest scale (smallest image) available for the selected map and layer.'))
     parser.add_argument('-e', '--expansions', help='Expansions to use, these replace specific map portions based on story progress. Use a comma-separated list of suffixes. (Example: "-e ex,ex02,ex03" for ma07a)')
-    parser.add_argument('-l', '--language', help='Set the language code to use for name lookups (default "gb" for English)')
-    parser.add_argument('-I', '--items', metavar='ITEMS',
-                        help=('IDs of items to show, separated by commas.\n'
-                              'Each ID may optionally be followed by ":#RRGGBB" to set the icon color for the item (default '+DEF_COLOR+').'))
+    parser.add_argument('-l', '--language', help='Set the language code to use for name lookups (default "gb" for English).')
     parser.add_argument('-E', '--enemies', metavar='ENEMIES',
                         help=('IDs (from FLD_EnemyData) or names (with internal commas omitted) of enemies to show, separated by commas.\n'
-                              'Each ID/name may optionally be followed by ":#RRGGBB" as for items.'))
+                              'Each ID/name may optionally be followed by ":#RRGGBB" to set the icon color for the enemy (default '+DEF_COLOR+').'))
+    parser.add_argument('-I', '--items', metavar='ITEMS',
+                        help=('IDs or names of items to show, separated by commas.\n'
+                              'Each ID/name may optionally be followed by ":#RRGGBB" as for enemies.'))
     parser.add_argument('datadir', metavar='DATADIR',
                         help='Pathname of directory containing Xenoblade 3 data.')
     parser.add_argument('map_id', metavar='MAP-ID',
@@ -297,25 +297,6 @@ def main(argv):
     scale = args.scale if args.scale is not None else 0
     expansions = args.expansions.split(',') if args.expansions is not None else []
     lang = args.language if args.language is not None else 'gb'
-
-    items = args.items.split(',') if args.items is not None else []
-    for i in range(len(items)):
-        item = items[i]
-        if ':' in item:
-            id, color = item.split(':', 1)
-        else:
-            id = item
-            color = ''
-        if color == '':
-            color = DEF_COLOR
-        try:
-            id = int(id)
-        except ValueError:
-            raise ValueError(f'Invalid item ID; {id}')
-        if not re.match(r'#[0-9A-F]{6}$', color):
-            raise ValueError(f'Invalid color specification for item {item}: {color}')
-        r, g, b = (int(color[1:3],16), int(color[3:5],16), int(color[5:7],16))
-        items[i] = (id, make_feature_icon(r, g, b))
 
     enemies = args.enemies.split(',') if args.enemies is not None else []
     for i in range(len(enemies)):
@@ -335,6 +316,25 @@ def main(argv):
             raise ValueError(f'Invalid color specification for enemy {enemy}: {color}')
         r, g, b = (int(color[1:3],16), int(color[3:5],16), int(color[5:7],16))
         enemies[i] = (id, make_feature_icon(r, g, b))
+
+    items = args.items.split(',') if args.items is not None else []
+    for i in range(len(items)):
+        item = items[i]
+        if ':' in item:
+            id, color = item.split(':', 1)
+        else:
+            id = item
+            color = ''
+        if color == '':
+            color = DEF_COLOR
+        try:
+            id = int(id)
+        except ValueError:
+            pass
+        if not re.match(r'#[0-9A-F]{6}$', color):
+            raise ValueError(f'Invalid color specification for item {item}: {color}')
+        r, g, b = (int(color[1:3],16), int(color[3:5],16), int(color[5:7],16))
+        items[i] = (id, make_feature_icon(r, g, b))
 
     if (not os.path.exists(os.path.join(args.datadir, 'menu'))
             or not os.path.exists(os.path.join(args.datadir, 'bdat'))):
@@ -356,15 +356,15 @@ def main(argv):
         if isinstance(id, str):
             found = False
             flden = tables['FLD_EnemyData']
-            field_flden_name = flden.field_index('MsgName')
-            msgname = tables['msg_enemy_name']
-            field_msgname_name = msgname.field_index('name')
+            field_flden_name = flden.field_index('Msg')
+            msg = tables['msg_enemy_name']
+            field_msg_name = msg.field_index('name')
             for row in range(flden.num_rows):
                 name_id = flden.get(row, field_flden_name)
                 if name_id == 0:
                     continue
-                name = msgname.get(msgname.id_to_row(name_id),
-                                   field_msgname_name)
+                name = msg.get(msg.id_to_row(name_id),
+                                   field_msg_name)
                 name = name.replace(',', '')
                 if name == id:
                     if not found:
@@ -374,6 +374,36 @@ def main(argv):
                         enemies.append((row+1, icon))
             if not found:
                 raise ValueError(f'Unknown enemy name: {id}')
+
+    for i in range(len(items)):
+        id, icon = items[i]
+        if isinstance(id, str):
+            found = False
+            item_tables = ((tables[itmname], tables[msgname])
+                           for itmname, msgname
+                           in (('ITM_Accessory', 'msg_item_accessory'),
+                               ('ITM_Collection', 'msg_item_collection'),
+                               ('ITM_Info', 'CA2198EC'),
+                               ('ITM_Precious', 'msg_item_precious')))
+            for itm, msg in item_tables:
+                field_itm_name = itm.field_index('Name')
+                field_msg_name = msg.field_index('name')
+                for row in range(itm.num_rows):
+                    name_id = itm.get(row, field_itm_name)
+                    if name_id == 0:
+                        continue
+                    name = msg.get(msg.id_to_row(name_id),
+                                   field_msg_name)
+                    name = name.replace(',', '')
+                    if name == id:
+                        num_id = itm.get(row, 0) # Numeric ID is always field 0
+                        if not found:
+                            found = True
+                            items[i] = (num_id, icon)
+                        else:
+                            items.append((num_id, icon))
+            if not found:
+                raise ValueError(f'Unknown item name: {id}')
 
     mi = genmap.MapInfo(os.path.join(args.datadir,
                                      f'menu/minimap/{args.map_id}.mi'),
