@@ -10870,6 +10870,8 @@ class BdatTable(object):
         If id is out of range (when numeric) or not found (when a hash),
         None is returned.
         """
+        if self.num_rows == 0:
+            return None
         if field_index is None:
             if isinstance(id, int):
                 row_index = id - self._rows[0][0]
