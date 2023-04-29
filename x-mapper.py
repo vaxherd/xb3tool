@@ -274,7 +274,8 @@ def main(argv):
                         help='Output status messages during parsing.')
     parser.add_argument('-s', '--scale', type=int,
                         help=('Map scale to render (1 = highest resolution, 2 = 1/2 scale, 3 = 1/4 scale). Defaults to the highest scale (smallest image) available for the selected map and layer.'))
-    parser.add_argument('-e', '--expansions', help=('Expansions to use, these replace specific map portions based on story progress. Use a comma-separated list of suffixes. (Example: "-e ex,ex02,ex03" for ma07a)'))
+    parser.add_argument('-e', '--expansions', help='Expansions to use, these replace specific map portions based on story progress. Use a comma-separated list of suffixes. (Example: "-e ex,ex02,ex03" for ma07a)')
+    parser.add_argument('-l', '--language', help='Set the language code to use for name lookups (default "gb" for English)')
     parser.add_argument('-I', '--items', metavar='ITEMS',
                         help=('IDs of items to show, separated by commas.\n'
                               'Each ID may optionally be followed by ":#RRGGBB" to set the icon color for the item (default '+DEF_COLOR+').'))
@@ -295,6 +296,7 @@ def main(argv):
     verbose = args.verbose if args.verbose is not None else 0
     scale = args.scale if args.scale is not None else 0
     expansions = args.expansions.split(',') if args.expansions is not None else []
+    lang = args.language if args.language is not None else 'gb'
 
     items = args.items.split(',') if args.items is not None else []
     for i in range(len(items)):
@@ -340,7 +342,7 @@ def main(argv):
 
     # Assume English for translating enemy names -> IDs
     files = (glob.glob(os.path.join(args.datadir, 'bdat/*.bdat'))
-             + glob.glob(os.path.join(args.datadir, 'bdat/gb/game/*.bdat')))
+             + glob.glob(os.path.join(args.datadir, f'bdat/{lang}/game/*.bdat')))
     for file in files:
         bdat.Bdat.load_debug_strings(file, verbose)
     tables = {}
