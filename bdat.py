@@ -442,10 +442,10 @@ hashes = {
     0xE1C78647: None,  # Has fields: {ColonyID,value}1-3, Comment
     0x861D003A: None,  # Has fields: {RelationID,value}1-10, Comment
     0xFAC1F258: None,  # Has fields: {RelationID,value}1-4, Comment
-    0xC80D5841: "FLD_AffCollection",  # FIXME: unclear if correct
+    0xC80D5841: "FLD_AffCollection",
     0xCB74AC0D: "SYS_GimmickLocation",
     0x35454DAE: "SYS_PreciousIDGimmick",
-    0x8F29BCAF: None,  # Has fields: GimmickID
+    0x8F29BCAF: None,  # Has fields: GimmickID, LocationBdat
     0x15DE3DDF: None,  # Ferronis hulk startup costs
     0x6EDF0096: None,  # (Possibly related to 2500 Ether Cylinder quest?) Has fields: Cylinder, ItemCountMin, ItemCountMax, Item
     0x7729B35C: None,  # Has fields: Condition, Item{Id,Rate}1-10
@@ -844,11 +844,17 @@ hashes = {
     0xF89EF606: "BTL_HyperCombo",
     0xD4DECEDF: "BTL_Pair",
     0xD1C136A1: None,  # DLC4 event table
+    0x3027DA48: None,  # DLC4 field craft list
     0x22A64BEC: "FLD_CraftTerminal",
     0x77F197BC: "FLD_EtherSlide",
+    0x2AD6BE88: "FLD_KizunaEventVoice",
     0x987BF889: "FLD_MapAchievement",
+    0xA24FAA23: "FLD_MapAchievementSearch",
+    0x947C9B0C: None,  # DLC4 collepedia list
+    0xB4158056: None,  # DLC4 enemypedia list
     0xDFE3D998: "MNU_LocationOffset",
     0x5C40B458: "MNU_WeaponCraft",
+    0xDF563EF6: None,  # Has fields: GimmickID, LocationBdat (seems to be DLC4 version of 8F29BCAF)
     0x4CECED20: "SYS_GimmickLocation_dlc02",  # DLC2 only
     0x65CFAA3C: "SYS_GimmickLocation_dlc03",  # DLC3 only
     0x5F2A841C: "msg_btl_ChSU_gate_message",
@@ -11162,6 +11168,7 @@ uint_hashes = {
     'C5C5F70E': ['FormationTopWindow', 'FormationCooking', 'field_07F1CB46',
                  'field_F1D020CF', 'field_E27F23C7', 'FormationCookingAction',
                  'FormationTraining'],
+    'DF563EF6': ['LocationBdat', 'field_5177BA21']
 }
 
 # Integer fields that should be printed in hexadecimal (set of fields,
@@ -12177,6 +12184,9 @@ row_name_fields = {
 # Value format: {'source_field_name': ('target_table', 'target_field_name' [, 'special_rule'])}
 # A source (ID) value of zero is converted to an empty cell.
 text_xrefs = {
+    'AMB_CollectionLot': {'SetName': ('msg_mnu_amiibo', 'name')},
+    'AMB_SpecialAmiibo': {'RewordName': ('msg_mnu_amiibo', 'name'),
+                          'RewordText': ('msg_mnu_amiibo', 'name')},
     'BTL_Achievement': {'Caption': ('msg_btl_achievement', 'name', 'achievement')},
     'BTL_Arts_En': {'Name': ('msg_btl_arts_en_name', 'name')},
     'BTL_Arts_PC': {'Name': ('msg_btl_arts_name', 'name'),
@@ -12218,6 +12228,8 @@ text_xrefs = {
     'FLD_ColonyList': {'Name': ('msg_colony_name', 'name'),
                        'Caption': ('msg_colony_text', 'name')},
     'FLD_CookRecipe': {'Name': ('8B7D949B', 'name')},
+    'FLD_CraftTerminal': {'Name': ('41AAA47D', 'name'),
+                          'Caption': ('41AAA47D', 'name')},
     'FLD_EnemyData': {'MsgName': ('msg_enemy_name', 'name')},
     'FLD_InfoList': {'Name': ('CA2198EC', 'name')},
     'FLD_MealRecipe': {'Name': ('0103F5B8', 'name')},
@@ -12246,7 +12258,8 @@ text_xrefs = {
     'ITM_Accessory': {'Name': ('msg_item_accessory', 'name')},
     'ITM_Collection': {'Name': ('msg_item_collection', 'name'),
                        'Name2': ('msg_item_collection', 'name')},
-    'ITM_Collepedia': {'Text': ('BEDB6533', 'name'),
+    'ITM_Collepedia': {'Name': ('BEDB6533', 'name'),
+                       'Text': ('BEDB6533', 'name'),
                        'Text2': ('BEDB6533', 'name')},
     'ITM_Cylinder': {'Name': ('msg_item_cylinder', 'name')},
     'ITM_Exchange': {'Name': ('msg_item_exchange', 'name')},
@@ -12281,6 +12294,7 @@ text_xrefs = {
                      'Comment4': ('msg_mnu_tutorial_tips', 'name'),
                      'Comment5': ('msg_mnu_tutorial_tips', 'name'),
                      'Comment6': ('msg_mnu_tutorial_tips', 'name')},
+    'MNU_WeaponCraft': {'WeaponName': ('msg_btl_weapon_type', 'name')},
     'MNU_game_option_category': {'name': ('msg_mnu_option', 'name'),
                                  'help': ('msg_mnu_option', 'name')},
     'MNU_option_brightness': {'name': ('msg_mnu_option', 'name'),
@@ -12410,7 +12424,7 @@ text_xrefs = {
     '808F8A04': {'Text1': ('msg_autotalk', 'name'),
                  'Text2': ('msg_autotalk', 'name'),
                  'Text3': ('msg_autotalk', 'name')},
-    '95351164': {'SetName': ('msg_mnu_amiibo', 'name')},
+    '947C9B0C': {'Category': ('msg_mnu_dlc_collepedia', 'name')},
     '9AE9C010': {'Text1': ('msg_autotalk', 'name'),
                  'Text2': ('msg_autotalk', 'name'),
                  'Text3': ('msg_autotalk', 'name')},
@@ -12420,8 +12434,6 @@ text_xrefs = {
     'B30AE3F7': {'name': ('msg_mnu_mainmenu', 'name'),
                  'hint': ('msg_mnu_mainmenu', 'name')},
     'BB82DEE6': {'Name': ('F6E689C3', 'name')},
-    'C810A4F3': {'RewordName': ('msg_mnu_amiibo', 'name'),
-                 'RewordText': ('msg_mnu_amiibo', 'name')},
     'D4A3534F': {'Text1': ('msg_autotalk', 'name'),
                  'Text2': ('msg_autotalk', 'name'),
                  'Text3': ('msg_autotalk', 'name')},
@@ -12750,6 +12762,7 @@ field_xrefs = {
 
 # List of table-specific fields which are ID references to other tables.
 table_xrefs = {
+    'AMB_CollectionLot': {'RewordID': 'ITM_RewardAssort'},
     'BTL_Arts_Chain_Set': {'UseTalent': refset_talent,
                            'UseChr': refset_pc,
                            'ChainArts': refset_arts_pc},
@@ -13409,13 +13422,14 @@ table_xrefs = {
                  'RelationID8': 'FLD_RelationNpc',
                  'RelationID9': 'FLD_RelationNpc',
                  'RelationID10': 'FLD_RelationNpc'},
-    '95351164': {'RewordID': 'ITM_RewardAssort'},
+    '947C9B0C': {'field_7A94A94B': 'ma40a_GMK_Location'},
     '9ED5F02A': {'EventID': refset_event_name},
     'A24771FC': {'Contents1': '9AE9C010',
                  'Contents2': '9AE9C010',
                  'Contents3': '9AE9C010',
                  'Contents4': '9AE9C010'},
     'A6AAF689': {'ArtsID': refset_arts_pc},
+    'B4158056': {'field_7A94A94B': 'ma40a_GMK_Location'},
     'B971C420': {'Talent': refset_talent,
                  'ArtsID': (('BTL_Arts_PC', 'E29EF7E9'), )},
     'BF287371': {'affType': '76D0D7D9'},
