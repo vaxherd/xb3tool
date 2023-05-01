@@ -356,7 +356,7 @@ def main(argv):
         if isinstance(id, str):
             found = False
             flden = tables['FLD_EnemyData']
-            field_flden_name = flden.field_index('Msg')
+            field_flden_name = flden.field_index('MsgName')
             msg = tables['msg_enemy_name']
             field_msg_name = msg.field_index('name')
             for row in range(flden.num_rows):
