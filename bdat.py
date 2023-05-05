@@ -11575,8 +11575,7 @@ class BdatTable(object):
         s += '      <th class="side dir-u" onclick="sortColumn(this, 0, 0)">ID</th>\n'
         s += '      <th>Referenced By</th>\n'
         col_index = 2
-        for i in range(1, len(self._fields)):
-            field = self._fields[i]
+        for field in self._fields[1:]:
             if field.array_size is None:
                 if field.value_type in (BdatValueType.STRING,
                                         BdatValueType.HSTRING,
