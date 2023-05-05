@@ -11475,11 +11475,11 @@ class BdatTable(object):
     # Styling/scripting adapted from https://github.com/Thealexbarney/XbTool
     _HTML_HEADER = """<?xml version="1.0" encoding="UTF-8" ?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml" {lang}>
+<html xmlns="http://www.w3.org/1999/xhtml" {LANG}>
 <head>
   <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
   <meta http-equiv="Content-Style-Type" content="text/css" />
-  <title>{title}</title>
+  <title>{TITLE}</title>
   <style type="text/css">
     table, th, td {border: 1px solid #000000; border-collapse: collapse;}
     table {border-width: 3px;}
@@ -11505,11 +11505,50 @@ class BdatTable(object):
     }
     window.addEventListener("hashchange", offsetAnchor);
     window.setTimeout(offsetAnchor, 1);
+
+    // Sort a table.  Also updates column header sort indicators.
+    // table: <table> element of table to sort
+    // column: column index (zero-based)
+    // dataType: 0 = int, 1 = float, 2 = string
+    // dir: >0 to sort ascending, <0 to sort descending
+    function sortTable(table, column, numericType, dir) {
+      for (var c = 0; c < table.rows[0].cells.length; c++) {
+        var th = table.rows[0].cells[c];
+        th.classList.remove("dir-u");
+        th.classList.remove("dir-d");
+        if (c == column) {
+          th.classList.add(dir>0 ? "dir-u" : "dir-d");
+        }
+      }
+      var cmp;
+      if (numericType == 0) {
+        cmp = function(a, b) {a = parseInt(a.cells[column].innerHTML);
+                              b = parseInt(b.cells[column].innerHTML);
+                              return a<b ? -dir : a>b ? dir : 0};
+      } else if (numericType == 1) {
+        cmp = function(a, b) {a = parseFloat(a.cells[column].innerHTML);
+                              b = parseFloat(b.cells[column].innerHTML);
+                              return a<b ? -dir : a>b ? dir : 0};
+      } else {
+        var strcmp = {STR_COMPARE};
+        cmp = function(a, b) {return dir * strcmp(a.cells[column].innerHTML,
+                                                  b.cells[column].innerHTML);}
+      }
+      var rows = Array.prototype.slice.call(table.querySelectorAll("tr"), 1);
+      rows.sort(cmp);
+      rows.forEach(function(tr){table.appendChild(tr);});
+    }
+
+    // Wrapper for use as column header click handler.
+    function sortColumn(th, column, dataType) {
+      sortTable(th.parentElement.parentElement, column,
+                dataType, th.classList.contains("dir-u") ? -1 : 1);
+    }
   </script>
 </head>
 <body>
   <table class="sortable">
-    <h2>{title}</h2>
+    <h2>{TITLE}</h2>
 """
 
     _HTML_FOOTER = """  </table>
@@ -11523,17 +11562,38 @@ class BdatTable(object):
         Parameters:
             language: ISO language code for HTML header, or None if not known.
         """
-        s = self._HTML_HEADER.replace('{title}', self.name)
+        s = self._HTML_HEADER.replace('{TITLE}', self.name)
         if language is not None:
-            s = s.replace('{lang}', f'lang="{language}" xml:lang="{language}"')
+            s = s.replace('{LANG}', f'lang="{language}" xml:lang="{language}"')
+            s = s.replace('{STR_COMPARE}',
+                          f'Intl.Collator("{language}").compare;')
         else:
-            s = s.replace('{lang}', '')
+            s = s.replace('{LANG}', '')
+            s = s.replace('{STR_COMPARE}',
+                          'function(a,b) {return a<b ? -1 : a>b ? 1 : 0;}')
         s += '    <tr id="header">\n'
-        s += '      <th class="side dir-d ">ID</th>\n'
+        s += '      <th class="side dir-u" onclick="sortColumn(this, 0, 0)">ID</th>\n'
         s += '      <th>Referenced By</th>\n'
-        for f in self._fields[1:]:
-            colspan = '' if f.array_size is None else f' colspan="{f.array_size}"'
-            s += f'      <th{colspan}>{f.name}</th>\n'
+        col_index = 2
+        for i in range(1, len(self._fields)):
+            field = self._fields[i]
+            if field.array_size is None:
+                if field.value_type in (BdatValueType.STRING,
+                                        BdatValueType.HSTRING,
+                                        BdatValueType.UNK_11,
+                                        BdatValueType.UNK_12,
+                                        BdatValueType.UNK_13):
+                    numeric_type = 2
+                elif field.value_type in (BdatValueType.FLOAT32,
+                                          BdatValueType.PERCENT):
+                    numeric_type = 1
+                else:
+                    numeric_type = 0
+                s += f'      <th onclick="sortColumn(this, {col_index}, {numeric_type})">{field.name}</th>\n'
+                col_index += 1
+            else:
+                s += f'      <th colspan="{field.array_size}">{field.name}</th>\n'
+                col_index += field.array_size
         s += '    </tr>\n'
         for i in range(len(self._rows)):
             row = self._rows[i]
@@ -12095,7 +12155,7 @@ def resolve_labels(tables):
                         id = 0
                     else:
                         print(f'Warning: failed to match some row labels in {table.name}',
-                          file=sys.stderr)
+                              file=sys.stderr)
                         break
                 detected_letter = ''
                 for letter in bruteforce_alphabet:
