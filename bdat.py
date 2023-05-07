@@ -12835,6 +12835,8 @@ field_xrefs = {
 
     'TalentID': refset_talent,
 
+    'TaskID': 'QST_Task',
+
     'TutorialID': 'SYS_Tutorial',
 
     'SysWeatherID': 'SYS_WeatherList',
@@ -13340,8 +13342,7 @@ table_xrefs = {
                  'RewardSetB': 'ITM_RewardQuest',
                  'StartPurpose': 'QST_Purpose',
                  'LinkQuest': 'QST_List'},
-    'QST_Purpose': {'TaskID': 'QST_Task',
-                    'CallEventA': refset_event_name,
+    'QST_Purpose': {'CallEventA': refset_event_name,
                     'CallEventB': refset_event_name,
                     'NextPurposeA': 'QST_Purpose',
                     'NextPurposeB': 'QST_Purpose'},
