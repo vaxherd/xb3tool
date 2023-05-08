@@ -84,7 +84,7 @@ map_names = [e for l in [
     [f"ma25a_{i+50:02}" for i in range(10)], # one for each challenge
 
     # Debug/cutscene/unused/unknown maps
-    ["gmk_test", "ma40a", "ma0101", "ma90a",
+    ["gmk_test", "ma0101", "ma90a",
     "ma04a_demo", "ma09a_demo", "ma15a_demo",
     "ma90gmk", "ma90a_ai_test", "ma90a_pl_test",
     "ma90a_ts_test", "ma90a_ok_test", "ma90a_sz_test",
@@ -13910,7 +13910,7 @@ def resolve_xrefs(tables):
 ########################################################################
 # Initialization logic for dynamically-initialized data
 
-# Sanity check on unhash table
+# Sanity-check unhash table
 # (enabled by default since it doesn't take very long to run)
 if True:
     for hash, word in hashes.items():
@@ -13921,31 +13921,36 @@ if True:
 for map in map_names:
     for gmk_type in gimmick_types:
         table_name = f'{map}_GMK_{gmk_type}'
-        hashes[murmur32(table_name)] = table_name
+        hash = murmur32(table_name)
+        if hash in hashes and hashes[hash] != table_name:
+            raise Exception(f'Gimmick table hash collision: [{table_name}] collides with [{hashes[hash]}]')
+        hashes[hash] = table_name
         if gmk_type == 'Location':
             row_name_fields[table_name] = 'LocationName'
             text_xrefs[table_name] = {'LocationName': ('msg_location_name', 'name')}
 
-# "gimmickXXX"-style tables.
+# Add hashes for empty "gimmickXXX"-style tables.
 # Note: some tables may not follow this format, 
 # e.g. "gimmickElevatorCallSwitch" != "gimmickElevatorCSw"
 for gmk_type in gimmick_types:
-    empty = f'gimmick{gmk_type}'
-    hashes[murmur32(empty)] = empty
+    empty_name = f'gimmick{gmk_type}'
+    hash = murmur32(empty_name)
+    if hash in hashes and hashes[hash] != empty_name:
+        raise Exception(f'Gimmick table hash collision: [{empty_name}] collides with [{hashes[hash]}]')
+    hashes[hash] = empty_name
         
-# Check "*_dlc04" hashes
+# Add "*_dlc04" hashes
 for name in list(hashes.values()):
     if not name:
         continue
     for suffix in ['_dlc04', '_DLC04']:
         dlc_name = name + suffix
         dlc_hash = murmur32(dlc_name)
-        if dlc_hash in hashes:
-            if hashes[dlc_hash] != dlc_name:
-                if dlc_name == 'ArtsID_DLC04':
-                    pass  # Known collision with RSC_MapObjList_dlc04
-                else:
-                    raise Exception(f'DLC04 collision: [{dlc_name}] collides with [{hashes[dlc_hash]}]')
+        if dlc_hash in hashes and hashes[dlc_hash] != dlc_name:
+            if dlc_name == 'ArtsID_DLC04':
+                pass  # Known collision with RSC_MapObjList_dlc04
+            else:
+                raise Exception(f'DLC04 collision: [{dlc_name}] collides with [{hashes[dlc_hash]}]')
         else:
             hashes[dlc_hash] = dlc_name
 
