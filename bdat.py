@@ -844,7 +844,7 @@ hashes = {
     0xF89EF606: "BTL_HyperCombo",
     0xD4DECEDF: "BTL_Pair",
     0xD1C136A1: None,  # DLC4 event table
-    0x3027DA48: "FLD_Architecture",  # DLC4 field craft list
+    0x3027DA48: "FLD_Architecture",
     0x22A64BEC: "FLD_CraftTerminal",
     0x77F197BC: "FLD_EtherSlide",
     0x2AD6BE88: "FLD_KizunaEventVoice",
@@ -865,7 +865,7 @@ hashes = {
     0xECE07266: "msg_btl_ChSU_emblem_name",
     0xF3D268C3: "msg_extra_accessory",
     0xB3881515: "msg_mnu_dlc_collepedia",
-    0xC20EDDF5: None, # emblem caption list
+    0xC20EDDF5: None,  # emblem caption list
 
     # Event tables:
     0x71ABA395: "msg_ask110001",
@@ -13963,30 +13963,33 @@ def main(argv):
     parser.add_argument('-v', '--verbose', action='count',
                         help=('Output status messages during parsing.\n'
                               'Use multiple times for more verbosity.'))
-    parser.add_argument('-o', '--outdir', metavar='OUTDIR', required=True,
+    parser.add_argument('-l', '--language', metavar='LANG', default='gb',
+                        help='Language code for text files, one of: cn fr gb ge it jp kr sp tw (default: gb)')
+    parser.add_argument('-o', '--outdir', metavar='OUTPUT-DIR', required=True,
                         help='Path of output directory for table HTML files.')
-    parser.add_argument('bdatdir',
-                        help='Path of Xenoblade 3 "bdat" directory.')
-    parser.add_argument('language',
-                        help='Language code for text files, one of: cn fr gb ge it jp kr sp tw')
+    parser.add_argument('bdatdir', metavar='BDAT-DIR', nargs='+',
+                        help=('Path of Xenoblade 3 "bdat" directory.\n'
+                              'If multiple directories are given, tables in later directories (DLC data, for example) will override same-named tables in earlier directories.'))
     args = parser.parse_args()
     verbose = args.verbose if args.verbose is not None else 0
 
-    if not os.path.exists(args.bdatdir):
-        print(f'BDAT directory {args.bdatdir} does not exist', file=sys.stderr)
-        sys.exit(1)
-    if not os.path.exists(os.path.join(args.bdatdir, 'sys.bdat')):
-        print(f'{args.bdatdir} does not look like a BDAT directory',
-              file=sys.stderr)
-        sys.exit(1)
-    if not os.path.exists(os.path.join(args.bdatdir, args.language)):
-        print(f'Language directory not found: {args.language}',
-              file=sys.stderr)
-        sys.exit(1)
+    files = []
+    for dir in args.bdatdir:
+        if not os.path.exists(dir):
+            print(f'BDAT directory {dir} does not exist', file=sys.stderr)
+            sys.exit(1)
+        if not os.path.exists(os.path.join(dir, 'sys.bdat')):
+            print(f'{dir} does not look like a BDAT directory',
+                  file=sys.stderr)
+            sys.exit(1)
+        if not os.path.exists(os.path.join(dir, args.language)):
+            print(f'Language directory not found: {args.language}',
+                  file=sys.stderr)
+            sys.exit(1)
+        files += glob.glob(os.path.join(dir, '*.bdat'))
+        files += glob.glob(os.path.join(dir, args.language, '*/*.bdat'))
+        files += glob.glob(os.path.join(dir, args.language, '*/*/*.bdat'))
 
-    files = (glob.glob(os.path.join(args.bdatdir, '*.bdat'))
-             + glob.glob(os.path.join(args.bdatdir, args.language, '*/*.bdat'))
-             + glob.glob(os.path.join(args.bdatdir, args.language, '*/*/*.bdat')))
     for file in files:
         Bdat.load_debug_strings(file, verbose)
 
@@ -13995,6 +13998,16 @@ def main(argv):
         bdat = Bdat(file, verbose)
         for table in bdat.tables():
             tables[table.name] = table
+
+    # Special case for XC3 DLC4: SYS_GimmickLocation_dlc04 replaces the
+    # base SYS_GimmickLocation table rather than adding to it (and if we
+    # leave both tables in, the gimmick xref logic gets confused by
+    # duplicate IDs).
+    if 'SYS_GimmickLocation_dlc04' in tables:
+        try:
+            del tables['SYS_GimmickLocation']
+        except KeyError:
+            pass
 
     resolve_labels(tables)  # XC3 specific
     resolve_xrefs(tables)
