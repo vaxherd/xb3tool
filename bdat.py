@@ -78,7 +78,7 @@ map_names = [e for l in [
     [f"ma{i+1:02}a" for i in range(80)], # not all numbers are used though
 
     # Challenge battle maps
-    [f"ma25a_{i+1:02}" for i in range(19)], # one for each challenge
+    [f"ma25a_{i+1:02}" for i in range(20)], # one for each challenge
 
     # Challenge gauntlet maps
     [f"ma25a_{i+50:02}" for i in range(10)], # one for each challenge
@@ -844,7 +844,7 @@ hashes = {
     0xF89EF606: "BTL_HyperCombo",
     0xD4DECEDF: "BTL_Pair",
     0xD1C136A1: None,  # DLC4 event table
-    0x3027DA48: None,  # DLC4 field craft list
+    0x3027DA48: "FLD_Architecture",  # DLC4 field craft list
     0x22A64BEC: "FLD_CraftTerminal",
     0x77F197BC: "FLD_EtherSlide",
     0x2AD6BE88: "FLD_KizunaEventVoice",
@@ -5153,6 +5153,7 @@ hashes = {
     0xC36BF063: "Appearance",
     0xEA82E2C3: "ApplyGroundColor",
     0xC4AE94F9: "ApplyRatio",
+    0x6EB736C5: "Architecture",
     0xEFD483D9: "Argument1",
     0x62B6A631: "Argument2",
     0x4B7A78CE: "AroundFrm",
@@ -5822,6 +5823,7 @@ hashes = {
     0x3BBE76C9: "EnemyDead",
     0x611E819D: "EnemyExp",
     0xAAEA8654: "EnemyFamily",
+    0x3F11AFF2: "EnemyFog",
     0x9053E074: "EnemyGold",
     0xAC3DA873: "EnemyID",
     0xB3B15FB9: "EnemyID1",
@@ -5846,6 +5848,7 @@ hashes = {
     0x2F54A6B8: "EnemyPopType",
     0xC3306164: "EnemyRare",
     0xA1A748BB: "EnemySolders", # sic
+    0xF0BB370E: "EnemySuppression",
     0x0C149953: "EnemyTalentExp",
     0x0C961F78: "EnemyUseArts01",
     0xFA909155: "EnemyUseArts02",
@@ -5898,6 +5901,7 @@ hashes = {
     0x5623FEE0: "EtherPatternFlag",
     0xEF0DD561: "EtherPoint",
     0x8ED88423: "EtherPrice",
+    0xA8B96BD8: "EtherSlide",
     0x88AE2F7A: "EtherSphere",
     0x98B5A07E: "Event",
     0x5104C2B6: "EventID",
@@ -7984,6 +7988,8 @@ hashes = {
     0xF5E05E39: "WakeupCondition",
     0x08C0C3DD: "WakeupQuest",
     0x73A88931: "Walk",
+    0x2C5F2152: "WalkEvent",
+    0x1DBCD2D1: "WalkEventReaction",
     0xE69906B7: "WarmupFrame",
     0x6E3B810E: "WarningFlag",
     0xA1E4E1E6: "WarningValue",
@@ -13919,6 +13925,13 @@ for map in map_names:
         if gmk_type == 'Location':
             row_name_fields[table_name] = 'LocationName'
             text_xrefs[table_name] = {'LocationName': ('msg_location_name', 'name')}
+
+# "gimmickXXX"-style tables.
+# Note: some tables may not follow this format, 
+# e.g. "gimmickElevatorCallSwitch" != "gimmickElevatorCSw"
+for gmk_type in gimmick_types:
+    empty = f'gimmick{gmk_type}'
+    hashes[murmur32(empty)] = empty
         
 # Check "*_dlc04" hashes
 for name in list(hashes.values()):
