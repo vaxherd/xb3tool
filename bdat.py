@@ -9558,12 +9558,18 @@ def resolve_field_xrefs(tables, table, field_idx, target, add_link):
                     else:
                         test_row = None
                 elif len(target) > 2 and target[2] == 'event_name':
-                    test_table = tables[name]
-                    hash = murmur32(id)
-                    test_row = test_table.id_to_row(f'<{hash:08X}>')
+                    test_table = tables.get(name)
+                    if test_table:
+                        hash = murmur32(id)
+                        test_row = test_table.id_to_row(f'<{hash:08X}>')
+                    else:
+                        test_row = None
                 else:
-                    test_table = tables[name]
-                    test_row = test_table.id_to_row(id)
+                    test_table = tables.get(name)
+                    if test_table:
+                        test_row = test_table.id_to_row(id)
+                    else:
+                        test_row = None
                 if test_row is not None:
                     if target_row is None:
                         target_table = test_table
