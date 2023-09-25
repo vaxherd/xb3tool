@@ -8579,6 +8579,7 @@ field_xrefs = {
 
     'FlowEventID': 'SYS_FlowEventList',
     'flowEventID': 'SYS_FlowEventList',
+    'field_01FB515A': 'SYS_FlowEventList', # "before" flow event ID
 
     'Navi': refset_gimmick,
 
@@ -9270,6 +9271,8 @@ table_xrefs = {
     'SYS_FlowEventArtsSet': {'ChrID': refset_pc,
                              'ClassID': refset_talent,
                              'ArtsID': refset_arts_pc},
+    'SYS_FlowEventList': {'EventID': (None, None, 'flow_event')},
+    'SYS_FlowEventDropInfoPiece': {'NPC': refset_npc},
     'SYS_GimmickPreparing': {'Gimmick': refset_gimmick},
     'SYS_MapJumpList': {'FormationID': refset_gimmick},
     'SYS_MapList': {'ResourceId': 'RSC_MapFile',
@@ -9548,6 +9551,81 @@ def resolve_field_xrefs(tables, table, field_idx, target, add_link):
                         test_table = tables['RSC_PcCostumeOpen'] if chr else tables['ITM_Accessory']
                         test_row = test_table.id_to_row(value)
                         pass
+                    elif target[2] == 'flow_event':
+                        type = table.get(row, table.field_index('EventType'))
+                        test_row = None
+                        ref_table = None
+                        
+                        if type == 0:
+                            ref_table = 'SYS_FlowEventFlag'
+                        elif type == 3:
+                            ref_table = 'SYS_ScenarioFlag'
+                        elif (4 <= type <= 8) or (33 <= type <= 34) or type == 51 or type == 53 or type == 56:
+                            ref_table = 'CHR_PC'
+                        elif type == 9:
+                            # Draw/sheathe swords: 0 is for the party
+                            ref_table = 'FLD_EnemyData'
+                        elif type == 10:
+                            ref_table = 'SYS_FlowEventItem'
+                        elif type == 11:
+                            ref_table = 'QST_List'
+                        elif type == 14 or type == 15:
+                            ref_table = 'RSC_WeatherSet'
+                        elif type == 17:
+                            ref_table = 'FLD_KizunaChangeFlag'
+                        elif type == 18:
+                            ref_table = next(filter(lambda t: tables[t].id_to_row(value) != None, refset_event[0]))
+                        elif type == 19 or type == 20 or type == 64:
+                            ref_table = 'FLD_NpcList'
+                        elif type == 21:
+                            ref_table = 'FLD_ColonyList'
+                        elif type == 22:
+                            ref_table = 'SYS_FlowEventAddFlag'
+                        elif type == 23:
+                            ref_table = 'SYS_Tutorial'
+                        elif type == 25:
+                            ref_table = 'SYS_CameraShake'
+                        elif type == 27:
+                            ref_table = 'SYS_FlowEventLaunchGimmick'
+                        elif 28 <= type <= 31:
+                            ref_table = 'SYS_MapPartsList'
+                        elif type == 35:
+                            ref_table = 'CHR_Weathering'
+                        elif type == 36:
+                            ref_table = 'SYS_FlowEventArtsStatus'
+                        elif type == 37:
+                            ref_table = 'SYS_FlowEventSkillStatus'
+                        elif type == 38:
+                            ref_table = 'SYS_FlowEventArtsSet'
+                        elif type == 42 or type == 43:
+                            ref_table = 'SYS_SystemOpen'
+                        elif type == 44:
+                            ref_table = 'SYS_IntermissionSave'
+                        elif type == 46:
+                            ref_table = 'SYS_FlowEventPlaySE'
+                        elif type == 47:
+                            ref_table = 'SYS_FlowEventDropInfoPiece'
+                        elif type == 48:
+                            ref_table = 'RSC_PcCostumeOpen'
+                        elif type == 49:
+                            ref_table = 'SYS_PopupAnnounce'
+                        elif type == 50:
+                            ref_table = 'SYS_FlowEventFade'
+                        elif type == 52:
+                            ref_table = 'SYS_Vibration'
+                        elif type == 58:
+                            ref_table = 'A7FF9149'
+                        elif type == 61:
+                            ref_table = '3B275FEB'
+                        elif type == 63:
+                            ref_table = '46B9A047'
+                        
+                        if ref_table is None:
+                            target_table = 'None'
+                        else:
+                            test_table = tables[ref_table]
+                            if test_row is None:
+                                test_row = test_table.id_to_row(value)
                     else:
                         raise Exception(f'Unhandled special case: {target[2]}')
                 elif name.split('.')[0].startswith('SYS_GimmickLocation'):
@@ -9650,7 +9728,9 @@ def resolve_field_xrefs(tables, table, field_idx, target, add_link):
                 elif target[2] == 'event_name':
                     value = table.get(row, field_idx)
                 elif target[2] in ('condition_quest', 'qst_task',
-                                   'gimmick_object', 'field_vanish', 'chsu_shopitem', 'chta_reward'):
+                                   'gimmick_object', 'field_vanish', 
+                                   'chsu_shopitem', 'chta_reward', 
+                                   'flow_event'):
                     pass  # No additional logic
                 else:
                     raise Exception(f'Unhandled special case: {target[2]}')
