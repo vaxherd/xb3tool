@@ -7368,6 +7368,7 @@ class BdatTable(object):
   <meta http-equiv="Content-Style-Type" content="text/css" />
   <title>{TITLE}</title>
   <style type="text/css">
+    .nobr {white-space: nowrap;}
     table, th, td {border: 1px solid #000000; border-collapse: collapse;}
     table {border-width: 3px;}
     th, td {padding: 0.1em 0.2em;}
@@ -7510,14 +7511,14 @@ class BdatTable(object):
                         else:
                             node = ''
                         value_str = (f'<a href="{value[2]}.html{node}">'
-                                     + self._print_value(value[1], self._fields[i])
+                                     + self._print_value(value[1], self._fields[i], language)
                                      + '</a>')
                     else:
                         if isinstance(value, tuple):
                             value = value[1]
                         if self._fields[i].name in hex_fields:
                             value = f'0x{value:X}'
-                        value_str = self._print_value(value, self._fields[i])
+                        value_str = self._print_value(value, self._fields[i], language)
                     s += f'      <td>{value_str}</td>\n'
             # end for
             s += '    </tr>\n'
@@ -7532,7 +7533,7 @@ class BdatTable(object):
         else:
             return f'{x[0]}#{x[1]}'
 
-    def _print_value(self, value, field):
+    def _print_value(self, value, field, language):
         """Return the given value formatted for HTML."""
         if value is None:
             s = ''
@@ -7540,7 +7541,10 @@ class BdatTable(object):
             s = f'{value:.6g}'
         else:
             s = str(value)
-        return self._quote(s)
+        s = self._quote(s)
+        if language and language[:2] in ('ja', 'ko', 'zh'):
+            s = self._debreak_cjk(s)
+        return s
 
     @staticmethod
     def _quote(s):
@@ -7550,6 +7554,24 @@ class BdatTable(object):
         s = s.replace('>', '&gt;')
         s = s.replace('\n', '<br />')
         return s
+
+    @staticmethod
+    def _debreak_cjk(s):
+        """Suppress line breaking in CJK text.
+
+        As a simple heuristic, we treat any character in the range
+        U+3001..U+9FFF as a CJK character and any span of non-blank ASCII
+        (halfwidth or fullwidth) and CJK characters containing at least one
+        CJK character as CJK text (thus covering the case of mixed Japanese
+        text and Arabic numerals, for example).
+
+        The text is assumed to have already been HTMLized, so angle
+        brackets are treated as terminating a run of text.
+        """
+        cjk = '\u3001-\u9FFF'
+        ascii = '!-;=?-~\uFF01-\uFF5E'  # excludes space, '<', and '>'
+        return re.sub(f'([{ascii}{cjk}]*[{cjk}][{ascii}{cjk}]*)',
+                      r'<span class="nobr">\1</span>', s)
 
 
 class Bdat(object):
