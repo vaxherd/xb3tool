@@ -1,15 +1,17 @@
 #!/usr/bin/python3
 #
-# Parse tables from Xenoblade 3 BDAT files into per-table HTML files.
-# The core logic can be used for BDATs from Xenoblade X or later
-# (Xenoblade X requires adding support for big-endian data).
+# Parse tables from Xenoblade 3 or Xenoblade X Definitive Edition BDAT
+# files into per-table HTML files.  The core logic can be used for BDATs
+# from Xenoblade X or later (Xenoblade X requires adding support for
+# big-endian data).
 #
-# Requires Python 3.6 or later.
+# Requires Python 3.7 or later.
 #
 # Public domain, share and enjoy.
 #
 
 import argparse
+from collections import namedtuple
 import enum
 import glob
 import os
@@ -71,70 +73,181 @@ def murmur32(s):
 
 
 ########################################################################
+# String unhashing
 
-# Gimmick hashes are compiled on-the-fly
-map_names = [e for l in [
-    # Regular maps
-    [f"ma{i+1:02}a" for i in range(80)], # not all numbers are used though
+def unhash(hash, default=None, extra_hashes=None):
+    """Return the string corresponding to a hash, or the default if unknown.
 
-    # Challenge battle maps
-    [f"ma25a_{i+1:02}" for i in range(20)], # one for each challenge
+    Parameters:
+        hash: 32-bit hash value to unhash.
+        default: Value to return if the corresponding string is unknown.
+        extra_hashes: Additional table in which to look up the hash if it
+            is not found in the global hash map.
 
-    # Challenge gauntlet maps
-    [f"ma25a_{i+50:02}" for i in range(10)], # one for each challenge
+    Return value:
+        Unhashed string, or default if the hash value could not be unhashed.
+    """
+    value = hashes.get(hash)
+    if value is None and extra_hashes:
+        value = extra_hashes.get(hash)
+    return value if value is not None else default
 
-    # Debug/cutscene/unused/unknown maps
-    ["gmk_test", "ma0101", "ma90a",
-    "ma04a_demo", "ma09a_demo", "ma15a_demo",
-    "ma90gmk", "ma90a_ai_test", "ma90a_pl_test",
-    "ma90a_ts_test", "ma90a_ok_test", "ma90a_sz_test",
-    "ma90a_kn_test", "ma0000", "mob_gmk_test", "debug_map"]
-] for e in l]
-gimmick_types = [
-    "Affordance",
-    "AreaBattle",
-    "BGM",
-    "BlackMist",
-    "Collection",
-    "Corpse",
-    "Door",
-    "Elevator",
-    "ElevatorCSw",
-    "ElevatorDoor",
-    "ElevatorSw",
-    "EnemyAff",
-    "EnemyDead",
-    "EnemyFogPop",
-    "EnemyPop",
-    "EnemyWave",
-    "EtherPoint",
-    "EtherSphere",
-    "Event",
-    "EyepatchArea",
-    "FieldLock",
-    "FixedMob",
-    "FlowEvent",
-    "FootPrint",
-    "Gas", # doesn't seem to be used, but "gimmickGas" is a valid table
-    "Grave",
-    "IconLocator",
-    "Interest",
-    "JumpPortal",
-    "KizunaEvent",
-    "Location",
-    "MapJumpList",
-    "Mob",
-    "Object",
-    "Precious",
-    "Preload",
-    "Puzzle",
-    "SDropping",
-    "SE",
-    "Schedule",
-    "TreasureBox",
-    "WalkEvent",
-    "Weather",
-]
+
+_bdat_unhash_initted = False
+def init_unhash():
+    """Initialize the string unhasher.
+
+    This routine validates the statically defined global hash map and
+    inserts additional dynamically generated strings.
+
+    This should be called before any calls to unhash().  The Bdat class
+    will take care of calling this routine if needed for table parsing, so
+    users of Bdat need not call it directly.
+    """
+    global _bdat_unhash_initted
+    if _bdat_unhash_initted:
+        return
+    _bdat_unhash_initted = True
+
+    # Sanity-check static table
+    for hash, word in hashes.items():
+        if word is not None and murmur32(word) != hash:
+            raise Exception(f'murmur32({word}) != 0x{hash:08X} (should be 0x{murmur32(word):08X})')
+
+    # Data for map/gimmick table name generation
+    map_names = [e for l in [
+        # Regular maps (note that not all numbers are used)
+        [f"ma{i+1:02}a" for i in range(80)],
+        # Challenge battle maps (one for each challenge)
+        [f"ma25a_{i+1:02}" for i in range(20)],
+        # Challenge gauntlet maps (one for each challenge)
+        [f"ma25a_{i+50:02}" for i in range(10)],
+        # Debug/cutscene/unused/unknown maps
+        ["gmk_test", "ma0101", "ma90a",
+        "ma04a_demo", "ma09a_demo", "ma15a_demo",
+        "ma90gmk", "ma90a_ai_test", "ma90a_pl_test",
+        "ma90a_ts_test", "ma90a_ok_test", "ma90a_sz_test",
+        "ma90a_kn_test", "ma0000", "mob_gmk_test", "debug_map"]
+    ] for e in l]
+    gimmick_types = [
+        "Affordance",
+        "AreaBattle",
+        "BGM",
+        "BlackMist",
+        "Collection",
+        "Corpse",
+        "Door",
+        "Elevator",
+        "ElevatorCSw",
+        "ElevatorDoor",
+        "ElevatorSw",
+        "EnemyAff",
+        "EnemyDead",
+        "EnemyFogPop",
+        "EnemyPop",
+        "EnemyWave",
+        "EtherPoint",
+        "EtherSphere",
+        "Event",
+        "EyepatchArea",
+        "FieldLock",
+        "FixedMob",
+        "FlowEvent",
+        "FootPrint",
+        "Gas", # doesn't seem to be used, but "gimmickGas" is a valid table
+        "Grave",
+        "IconLocator",
+        "Interest",
+        "JumpPortal",
+        "KizunaEvent",
+        "Location",
+        "MapJumpList",
+        "Mob",
+        "Object",
+        "Precious",
+        "Preload",
+        "Puzzle",
+        "SDropping",
+        "SE",
+        "Schedule",
+        "TreasureBox",
+        "WalkEvent",
+        "Weather",
+    ]
+
+    # Generate gimmick table name hashes
+    for map in map_names:
+        for gmk_type in gimmick_types:
+            table_name = f'{map}_GMK_{gmk_type}'
+            hash = murmur32(table_name)
+            if hash in hashes and hashes[hash] != table_name:
+                raise Exception(f'Gimmick table hash collision: [{table_name}] collides with [{hashes[hash]}]')
+            hashes[hash] = table_name
+
+    # Add hashes for empty "gimmickXXX"-style tables.
+    # Note: some tables may not follow this format,
+    # e.g. "gimmickElevatorCallSwitch" rather than "gimmickElevatorCSw"
+    for gmk_type in gimmick_types:
+        empty_name = f'gimmick{gmk_type}'
+        hash = murmur32(empty_name)
+        if hash in hashes and hashes[hash] != empty_name:
+            raise Exception(f'Gimmick table hash collision: [{empty_name}] collides with [{hashes[hash]}]')
+        hashes[hash] = empty_name
+
+    # Add "*_dlc04" hashes
+    for name in list(hashes.values()):
+        if not name:
+            continue
+        for suffix in ['_dlc04', '_DLC04']:
+            dlc_name = name + suffix
+            dlc_hash = murmur32(dlc_name)
+            if dlc_hash in hashes and hashes[dlc_hash] != dlc_name:
+                if dlc_name == 'ArtsID_DLC04':
+                    pass  # Known collision with RSC_MapObjList_dlc04
+                else:
+                    raise Exception(f'DLC04 collision: [{dlc_name}] collides with [{hashes[dlc_hash]}]')
+            else:
+                hashes[dlc_hash] = dlc_name
+
+
+def add_hashes_from_bdat(strings_table, hashmap):
+    """Add hashes for strings from the embedded unhashed strings table
+    found in some version 2 BDATs into the given hashmap.
+    """
+    if len(strings_table) < 8:
+        return
+    tables = []
+    type = u32(strings_table, 0)
+    size = u32(strings_table, 4)
+    tables.append(parse_unhashed_table(type, strings_table[8:size]))
+    if len(strings_table) <= size:
+        return
+    type = u32(strings_table, size)
+    new_size = u32(strings_table, size + 4)
+    tables.append(parse_unhashed_table(type, strings_table[size+8:size+new_size]))
+    assert len(strings_table) == size + new_size
+
+    for table in tables:
+        for s in table:
+            hash = murmur32(s)
+            if hash in hashmap:
+                if hashmap[hash] != s:
+                    raise ValueError(f'Hash collision on 0x{hash:08X}: {hashes[hash]} {s}')
+            else:
+                hashmap[hash] = s
+
+
+def parse_unhashed_table(type, table):
+    if type == 1:
+        # Row hashes
+        string_ptr = u32(table, 0)
+    elif type == 2:
+        # Column hashes
+        string_ptr = 0
+    else:
+        raise Exception(f'Unknown unhashed table type {type}')
+    return [b.decode('utf-8') for b in table[string_ptr:].split(b'\0') if b]
+
 
 # Mapping from hashed strings to their original values
 
@@ -10383,14 +10496,6 @@ hashes = {
     0x142305F6: "AreaBgm_Test/ControlPoint-3"
 }
 
-def unhash(hash, default=None, extra_hashes=None):
-    """Return the string corresponding to a hash, or the default if unknown."""
-    value = hashes.get(hash)
-    if value is None and extra_hashes:
-        value = extra_hashes.get(hash)
-    return value if value is not None else default
-
-
 ########################################################################
 # Miscellaneous data tables
 
@@ -10414,15 +10519,9 @@ hex_fields = set([
     'talkattr3',
 ])
 
-# Alphabet used to bruteforce event message labels
-# Note: As of the time of writing this code it doesn't appear that labels
-# are going past 'c'. Additional values here are just serving as a
-# future-proofing measure.
-bruteforce_alphabet = ['','a','b','c','d','e','f']
-
 
 ########################################################################
-# Basic script data constants/structures
+# BDAT table parser
 
 class BdatValueType(enum.Enum):
     """Enumeration of value types."""
@@ -10443,10 +10542,16 @@ class BdatValueType(enum.Enum):
 
 
 class BdatFieldType(enum.Enum):
-    """Enumeration of field types."""
+    """Enumeration of field types.
+
+    BDAT version 1 supported array-type and bitfield-type fields; this
+    enumeration is used to represent those different field types.  This
+    functionality was removed in BDAT version 2, in which every field is
+    a scalar.
+    """
     SCALAR = 1
     ARRAY = 2
-    FLAG = 3  # Rewritten to SCALAR/BOOL internally.
+    FLAG = 3  # Rewritten to SCALAR/BOOL internally for simplicity.
 
 
 class BdatField(object):
@@ -11175,6 +11280,7 @@ class Bdat(object):
             raise ValueError(f'Table at 0x{offset:X}: Truncated data')
         tdata = bytearray(data[offset:end_ofs])
 
+        init_unhash()
         self.local_hashes = {}
         if fields_ofs != 0x30:
             # Found data before columns, should be unhashed strings table
@@ -11316,45 +11422,6 @@ class Bdat(object):
 ########################################################################
 # XC3/XCXDE label unhashing
 
-def add_hashes_from_bdat(strings_table, hashmap):
-    """Add hashes for strings from the embedded unhashed strings table
-    found in some version 2 BDATs into the given hashmap.
-    """
-    if len(strings_table) < 8:
-        return
-    tables = []
-    type = u32(strings_table, 0)
-    size = u32(strings_table, 4)
-    tables.append(parse_unhashed_table(type, strings_table[8:size]))
-    if len(strings_table) <= size:
-        return
-    type = u32(strings_table, size)
-    new_size = u32(strings_table, size + 4)
-    tables.append(parse_unhashed_table(type, strings_table[size+8:size+new_size]))
-    assert len(strings_table) == size + new_size
-
-    for table in tables:
-        for s in table:
-            hash = murmur32(s)
-            if hash in hashmap:
-                if hashmap[hash] != s:
-                    raise ValueError(f'Hash collision on 0x{hash:08X}: {hashes[hash]} {s}')
-            else:
-                hashmap[hash] = s
-
-
-def parse_unhashed_table(type, table):
-    if type == 1:
-        # Row hashes
-        string_ptr = u32(table, 0)
-    elif type == 2:
-        # Column hashes
-        string_ptr = 0
-    else:
-        raise Exception(f'Unknown unhashed table type {type}')
-    return [b.decode('utf-8') for b in table[string_ptr:].split(b'\0') if b]
-
-
 def resolve_labels(tables, mode):
     """Unhash row labels (string IDs) in new-style (XC3 and later) tables."""
     gmknames = dict()
@@ -11405,6 +11472,10 @@ def resolve_labels(tables, mode):
                               file=sys.stderr)
                         break
                 detected_letter = ''
+                # Note: As of the time of writing this code it doesn't appear
+                # that labels are going past 'c'. Additional values here are
+                # just serving as a future-proofing measure.
+                bruteforce_alphabet = ['','a','b','c','d','e','f']
                 for letter in bruteforce_alphabet:
                     label = f'{cur_prefix}{id:04d}{letter}'
                     hash_str = f'<{murmur32(label):08X}>'
@@ -11470,3430 +11541,140 @@ def resolve_labels(tables, mode):
 ########################################################################
 # Table cross-reference resolution
 #
-# All data arrays here are indexed first by the bdat mode (i.e., game ID).
-# row_name_fields['3'] is data for XC3, text_xrefs['XDE'] is data for XCX DE,
-# etc.
-
-# List of table row-name fields.
-# If a table has a row-name field, then reference links to that table will
-# use the row's value for that field (if not empty) in place of the row ID.
-row_name_fields = {}
-
-row_name_fields['3'] = {
-    'BTL_Achievement': 'Caption',
-    'BTL_Arts_En': 'Name',
-    'BTL_Arts_PC': 'Name',
-    'BTL_BuffDeBuff': 'Name',
-    'BTL_Combo': 'Name',
-    'BTL_Enhance': 'Caption',
-    'BTL_EnhanceEff': 'Name',
-    'BTL_MotionState': 'StateName',
-    'BTL_Reaction': 'Name',
-    'BTL_SetUp': 'Name',
-    'BTL_Skill_PC': 'Name',
-    'BTL_Stance': 'Name',
-    'BTL_Talent': 'Name',
-    'BTL_WpnType': 'Name',
-    'CHR_PC': 'Name',
-    'CHR_UroBody': 'Name',
-    'FLD_ColonyList': 'Name',
-    'FLD_CookRecipe': 'Name',
-    'FLD_EnemyData': 'MsgName',
-    'FLD_MealRecipe': 'Name',
-    'FLD_NpcList': 'field_7F0A3296',
-    'FLD_NpcResource': 'Name',
-    'FLD_NpcResource': 'Name',
-    'FLD_PerkPermanent': 'Name',
-    'ITM_Accessory': 'Name',
-    'ITM_Collection': 'Name',
-    'ITM_Collepedia': 'Text',
-    'ITM_Cylinder': 'Name',
-    'ITM_Gem': 'Name',
-    'ITM_Info': 'Name',
-    'ITM_Precious': 'Name',
-    'MNU_EventTheater_scn': 'title',
-    'MNU_MapInfo': 'disp_name',
-    'MNU_ShopList': 'Name',
-    'QST_List': 'QuestTitle',
-    'QST_RequestItemSet': 'Name',
-    'QST_Task': 'TaskLog1',
-    'SYS_GimmickLocation': 'GimmickID',
-    'SYS_GimmickLocation_dlc04': 'GimmickID',
-    'SYS_MapList': 'Name',
-    'SYS_TutorialMessage': 'Title',
-    'SYS_TutorialSummary': 'Title',
-    'SYS_TutorialTask': 'Title',
-    'SYS_TrialList': 'Title',
-    'BB82DEE6': 'Name',
-    'D9B88F26': 'Name',
-    'gimmickLocation': 'LocationName',
-    'BTL_ChSU_Emblem': 'Name',
-}
-
-row_name_fields['XDE'] = {
-    'AMR_DlList': 'Name',
-    'AMR_PcList': 'Name',
-    'BLH_PetList': 'Name',
-    'BTL_ArtsList': 'Name',
-    'BTL_BuffList': 'Name',
-    'BTL_BuffWeatherList': 'Name',
-    'BTL_DlArtsList': 'Name',
-    'BTL_DollGearEffect': 'GearEffName',
-    'BTL_EnArtsList': 'Name',
-    'BTL_Enhance': 'caption',
-    'BTL_ItemSkill_doll': 'Name',
-    'BTL_ItemSkill_inner': 'Name',
-    'BTL_SkillClass': 'Name',
-    'BTL_SoulArts': 'Name',
-    'BTL_SoulTrigger': 'Name',
-    'CHR_ClassInfo': 'Name',
-    'CHR_DlList': 'Name',
-    'CHR_EnList': 'Name',
-    'DEF_DlList': 'Name',
-    'DEF_PcList': 'Name',
-    'DRP_BoxTable': 'PartsName',
-    'DRP_ItemTable': 'ItemID',
-    'FLD_FieldNameList': 'name',
-    'FLD_Location': 'Loc_name',
-    'FLD_TboxPopList': 'name_id',
-    'FLD_WeatherAsset': 'wtr_name',
-    'FLD_questlist': 'quest_title',
-    'FnetBeaconType': 'Name',
-    'FnetVeinList': 'name',  # references FLD_Location.Loc_name
-    'ITM_BattleItem': 'Name',
-    'ITM_BeaconList': 'Name',
-    'ITM_Blueprint': 'Name',
-    'ITM_CollectList': 'Name',
-    'ITM_FigList': 'Name',
-    'ITM_InfoList': 'Name',
-    'ITM_MaterialList': 'Name',
-    'ITM_PieceList': 'Name',
-    'ITM_PreciousList': 'Name',
-    'ITM_RareRscList': 'Name',
-    'MNU_CollectItemCategory': 'CategoryName',
-    'MNU_GlossaryList': 'title',
-    'MNU_SoulVoiceStyle': 'Text',
-    'MNU_TipsList': 'title',
-    'MNU_ZoneNameConvert': 'name',
-    'RSC_EnGenusList': 'Name',
-    'SCL_AchiveList': 'Title',
-    'SCL_RankingList': 'Name',
-    'SCL_SquadQuestList': 'title',
-    'SCL_Union': 'UnionName',
-    'SHP_ItemSkill_Cat_doll': 'name',
-    'SHP_ItemSkill_Cat_inner': 'name',
-    'WPN_DlList': 'Name',
-    'WPN_PcList': 'Name',
-    'npc_union': 'name',
-}
-
-# List of direct references from tables to text strings.
-# Value format: {'source_field_name': ('target_table', 'target_field_name' [, 'special_rule'])}
-# target_field_name may optionally be a tuple of field names; if the first
-# field has an empty value for a given ID, successive fields are tried until
-# a non-empty value is found or all fields have been checked.
-# A source (ID) value of zero is converted to an empty cell.
-text_xrefs = {}
-
-text_xrefs['3'] = {
-    'AMB_CollectionLot': {'SetName': ('msg_mnu_amiibo', 'name')},
-    'AMB_SpecialAmiibo': {'RewordName': ('msg_mnu_amiibo', 'name'),
-                          'RewordText': ('msg_mnu_amiibo', 'name')},
-    'BTL_Achievement': {'Caption': ('msg_btl_achievement', 'name', 'achievement')},
-    'BTL_Arts_En': {'Name': ('msg_btl_arts_en_name', 'name')},
-    'BTL_Arts_PC': {'Name': ('msg_btl_arts_name', 'name'),
-                    'Caption': ('msg_btl_arts_caption', 'name')},
-    'BTL_BuffDeBuff': {'Name': ('msg_btl_buffdebuff_name', 'name'),
-                       'Caption': ('msg_btl_buffdebuff_caption', 'name')},
-    'BTL_ChSU_Emblem': {'Name': ('msg_btl_ChSU_emblem_name', 'name'),
-                        'Caption': ('C20EDDF5', 'name')},
-    'BTL_ChSU_List': {'Name': ('192F6292', 'name'),
-                      'Caption1': ('18D9E310', 'name'),
-                      'Caption2': ('2BA64A98', 'name'),
-                      'Caption3': ('2BA64A98', 'name'),
-                      'OrderConditionText': ('EE23CB30', 'name')},
-    'BTL_ChSU_SettingEvent': {'Caption': ('msg_btl_ChSU_event_caption', 'name')},
-    'BTL_ChSU_SettingGate': {'Name': ('msg_btl_ChSU_gate_name', 'name'),
-                             'Caption': ('msg_btl_ChSU_gate_caption', 'name')},
-    'BTL_ChSU_SettingShop': {'Caption': ('msg_btl_ChSU_shop_caption', 'name')},
-    'BTL_ChTA_List': {'Name': ('192F6292', 'name'),
-                      'Caption1': ('18D9E310', 'name'),
-                      'Caption2': ('2BA64A98', 'name'),
-                      'Caption3': ('2BA64A98', 'name'),
-                      'OrderConditionText': ('EE23CB30', 'name')},
-    'BTL_Combo': {'Name': ('msg_btl_combo_name', 'name')},
-    'BTL_Enhance': {'Caption': ('msg_btl_enhance_cap', 'name', 'enhance')},
-    'BTL_EnhanceEff': {'Name': ('msg_btl_enhance_name', 'name')},
-    'BTL_HyperCombo': {'Name': ('3B9EDF2E', 'name'),
-                       'Caption': ('6F7982E8', 'name'),
-                       'Caption2': ('6F7982E8', 'name')},
-    'BTL_Reaction': {'Name': ('msg_btl_combo_name', 'name')},
-    'BTL_SetUp': {'Name': ('msg_btl_buffdebuff_name', 'name')},
-    'BTL_Skill_PC': {'Name': ('msg_btl_skill_name', 'name')},
-    'BTL_Stance': {'Name': ('msg_btl_stance_name', 'name')},
-    'BTL_Talent': {'Name': ('msg_btl_talent_name', 'name'),
-                   'Caption': ('msg_btl_talent_caption', 'name')},
-    'BTL_WpnType': {'Name': ('msg_btl_weapon_type', 'name'),
-                    'Name2': ('msg_btl_weapon_type', 'name')},
-    'CHR_PC': {'Name': ('msg_player_name', 'name')},
-    'CHR_UroBody': {'Name': ('msg_mnu_char_ms', 'name', 'urobody_name')},
-    'FLD_ColonyList': {'Name': ('msg_colony_name', 'name'),
-                       'Caption': ('msg_colony_text', 'name')},
-    'FLD_CookRecipe': {'Name': ('8B7D949B', 'name')},
-    'FLD_CraftTerminal': {'Name': ('41AAA47D', 'name'),
-                          'Caption': ('41AAA47D', 'name')},
-    'FLD_EnemyData': {'MsgName': ('msg_enemy_name', 'name')},
-    'FLD_InfoList': {'Name': ('CA2198EC', 'name')},
-    'FLD_MealRecipe': {'Name': ('0103F5B8', 'name')},
-    'FLD_NpcList': {'field_7F0A3296': ('FLD_NpcResource', 'Name')},
-    'FLD_NpcResource': {'Name': ('msg_npc_name', 'name'),
-                        'Nickname': ('msg_npc_tag_name', 'name')},
-    'FLD_PerkPermanent': {'Name': ('msg_fld_perk_name', 'name'),
-                          'Caption': ('msg_fld_perk_name', 'name')},
-    'FLD_PerkTemporary': {'Name1': ('msg_fld_perk_name', 'name'),
-                          'Name2': ('msg_fld_perk_name', 'name'),
-                          'Name3': ('msg_fld_perk_name', 'name'),
-                          'Caption1': ('msg_fld_perk_name', 'name'),
-                          'Caption2': ('msg_fld_perk_name', 'name'),
-                          'Caption3': ('msg_fld_perk_name', 'name')},
-    'FLD_RelationColony': {'Text1': ('msg_kizuna_name', 'name'),
-                           'Text2': ('msg_kizuna_name', 'name'),
-                           'Text3': ('msg_kizuna_name', 'name'),
-                           'Text4': ('msg_kizuna_name', 'name'),
-                           'Text5': ('msg_kizuna_name', 'name')},
-    'FLD_RelationNpc': {'Text1': ('msg_kizuna_name', 'name'),
-                        'Text2': ('msg_kizuna_name', 'name'),
-                        'Text3': ('msg_kizuna_name', 'name'),
-                        'Text4': ('msg_kizuna_name', 'name'),
-                        'Text5': ('msg_kizuna_name', 'name')},
-    'FLD_UMonsterList': {'GroupName': ('msg_enemy_group_name', 'name')},
-    'ITM_Accessory': {'Name': ('msg_item_accessory', 'name')},
-    'ITM_Collection': {'Name': ('msg_item_collection', 'name'),
-                       'Name2': ('msg_item_collection', 'name')},
-    'ITM_Collepedia': {'Name': ('BEDB6533', 'name'),
-                       'Text': ('BEDB6533', 'name'),
-                       'Text2': ('BEDB6533', 'name')},
-    'ITM_Cylinder': {'Name': ('msg_item_cylinder', 'name')},
-    'ITM_Exchange': {'Name': ('msg_item_exchange', 'name')},
-    'ITM_Extra': {'Name': ('msg_item_extra', 'name'),
-                  'Name2': ('msg_item_extra', 'name')},
-    'ITM_Gem': {'Name': ('msg_item_gem', 'name'),
-                'Name_dlc04': ('msg_item_gem', 'name')},
-    'ITM_Info': {'Name': ('CA2198EC', 'name')},
-    'ITM_Precious': {'Name': ('msg_item_precious', 'name'),
-                     'Caption': ('msg_item_precious', 'name'),
-                     'Name2': ('msg_item_precious', 'name'),
-                     'Caption2': ('msg_item_precious', 'name')},
-    'MNU_EventTheater_scn': {'title': ('msg_mnu_event_name', 'name'),
-                             'scn_category': ('msg_mnu_event_theater_ms', 'name', 'scn_category'),
-                             'scn_group': ('msg_mnu_event_theater_ms', 'name', 'scn_group')},
-    'MNU_HeroDictionary': {'CVName': ('msg_mnu_hero_book', 'name'),
-                           'field_251175EF': ('msg_mnu_hero_book', 'name'),
-                           'ArtistName': ('msg_mnu_hero_book', 'name'),
-                           'field_3530020D': ('msg_mnu_hero_hint', 'name'),
-                           'field_C65F4B14': ('msg_mnu_hero_hint', 'name')},
-    'MNU_MapInfo': {'disp_name': ('msg_mnu_minimap_areaname', 'name')},
-    'MNU_PatchDetailA': {'DetailIndexText': ('msg_mnu_patch_info', 'name'),
-                         'DetailInfoText': ('msg_mnu_patch_info', 'name'),
-                         'field_444EEAFE': ('msg_mnu_patch_info', 'name')},
-    'MNU_PatchInfo': {'PatchNameText': ('msg_mnu_patch_info', 'name'),
-                      'field_2AF7F370': ('msg_mnu_patch_info', 'name')},
-    'MNU_ShopList': {'Name': ('msg_shop_name', 'name')},
-    'MNU_TipsList': {'Title': ('msg_mnu_tutorial_tips', 'name'),
-                     'Comment1': ('msg_mnu_tutorial_tips', 'name'),
-                     'Comment2': ('msg_mnu_tutorial_tips', 'name'),
-                     'Comment3': ('msg_mnu_tutorial_tips', 'name'),
-                     'Comment4': ('msg_mnu_tutorial_tips', 'name'),
-                     'Comment5': ('msg_mnu_tutorial_tips', 'name'),
-                     'Comment6': ('msg_mnu_tutorial_tips', 'name')},
-    'MNU_WeaponCraft': {'WeaponName': ('msg_btl_weapon_type', 'name')},
-    'MNU_game_option_category': {'name': ('msg_mnu_option', 'name'),
-                                 'help': ('msg_mnu_option', 'name')},
-    'MNU_option_brightness': {'name': ('msg_mnu_option', 'name'),
-                              'help': ('msg_mnu_option', 'name'),
-                              'help1': ('msg_mnu_option', 'name'),
-                              'help2': ('msg_mnu_option', 'name'),
-                              'help3': ('msg_mnu_option', 'name'),
-                              'help4': ('msg_mnu_option', 'name'),
-                              'field_5925DC4C': ('msg_mnu_option', 'name'),
-                              'field_7D13B44A': ('msg_mnu_option', 'name'),
-                              'field_B6E3A0D7': ('msg_mnu_option', 'name'),
-                              'field_D8225635': ('msg_mnu_option', 'name'),
-                              'field_6FBE92E0': ('msg_mnu_option', 'name')},
-    'MNU_option_camera': {'name': ('msg_mnu_option', 'name'),
-                          'help': ('msg_mnu_option', 'name'),
-                          'help1': ('msg_mnu_option', 'name'),
-                          'help2': ('msg_mnu_option', 'name'),
-                          'help3': ('msg_mnu_option', 'name'),
-                          'help4': ('msg_mnu_option', 'name'),
-                          'field_5925DC4C': ('msg_mnu_option', 'name'),
-                          'field_7D13B44A': ('msg_mnu_option', 'name'),
-                          'field_B6E3A0D7': ('msg_mnu_option', 'name'),
-                          'field_D8225635': ('msg_mnu_option', 'name'),
-                          'field_6FBE92E0': ('msg_mnu_option', 'name')},
-    'MNU_option_display': {'name': ('msg_mnu_option', 'name'),
-                           'help': ('msg_mnu_option', 'name'),
-                           'help1': ('msg_mnu_option', 'name'),
-                           'help2': ('msg_mnu_option', 'name'),
-                           'help3': ('msg_mnu_option', 'name'),
-                           'help4': ('msg_mnu_option', 'name'),
-                           'field_5925DC4C': ('msg_mnu_option', 'name'),
-                           'field_7D13B44A': ('msg_mnu_option', 'name'),
-                           'field_B6E3A0D7': ('msg_mnu_option', 'name'),
-                           'field_D8225635': ('msg_mnu_option', 'name'),
-                           'field_6FBE92E0': ('msg_mnu_option', 'name')},
-    'MNU_option_formation': {'name': ('msg_mnu_option', 'name'),
-                             'help': ('msg_mnu_option', 'name'),
-                             'help1': ('msg_mnu_option', 'name'),
-                             'help2': ('msg_mnu_option', 'name'),
-                             'help3': ('msg_mnu_option', 'name'),
-                             'help4': ('msg_mnu_option', 'name'),
-                             'field_5925DC4C': ('msg_mnu_option', 'name'),
-                             'field_7D13B44A': ('msg_mnu_option', 'name'),
-                             'field_B6E3A0D7': ('msg_mnu_option', 'name')},
-    'MNU_option_game': {'name': ('msg_mnu_option', 'name'),
-                        'help': ('msg_mnu_option', 'name'),
-                        'help1': ('msg_mnu_option', 'name'),
-                        'help2': ('msg_mnu_option', 'name'),
-                        'help3': ('msg_mnu_option', 'name'),
-                        'help4': ('msg_mnu_option', 'name'),
-                        'field_5925DC4C': ('msg_mnu_option', 'name'),
-                        'field_7D13B44A': ('msg_mnu_option', 'name'),
-                        'field_B6E3A0D7': ('msg_mnu_option', 'name'),
-                        'field_D8225635': ('msg_mnu_option', 'name'),
-                        'field_6FBE92E0': ('msg_mnu_option', 'name')},
-    'MNU_option_message': {'name': ('msg_mnu_option', 'name'),
-                           'help': ('msg_mnu_option', 'name'),
-                           'help1': ('msg_mnu_option', 'name'),
-                           'help2': ('msg_mnu_option', 'name'),
-                           'help3': ('msg_mnu_option', 'name'),
-                           'help4': ('msg_mnu_option', 'name'),
-                           'field_5925DC4C': ('msg_mnu_option', 'name'),
-                           'field_7D13B44A': ('msg_mnu_option', 'name'),
-                           'field_B6E3A0D7': ('msg_mnu_option', 'name'),
-                           'field_D8225635': ('msg_mnu_option', 'name'),
-                           'field_6FBE92E0': ('msg_mnu_option', 'name')},
-    'MNU_option_notice': {'name': ('msg_mnu_option', 'name'),
-                          'help': ('msg_mnu_option', 'name'),
-                          'help1': ('msg_mnu_option', 'name'),
-                          'help2': ('msg_mnu_option', 'name'),
-                          'help3': ('msg_mnu_option', 'name'),
-                          'help4': ('msg_mnu_option', 'name'),
-                          'field_5925DC4C': ('msg_mnu_option', 'name'),
-                          'field_7D13B44A': ('msg_mnu_option', 'name'),
-                          'field_B6E3A0D7': ('msg_mnu_option', 'name'),
-                          'field_D8225635': ('msg_mnu_option', 'name'),
-                          'field_6FBE92E0': ('msg_mnu_option', 'name')},
-    'MNU_option_sound': {'name': ('msg_mnu_option', 'name'),
-                         'help': ('msg_mnu_option', 'name'),
-                         'help1': ('msg_mnu_option', 'name'),
-                         'help2': ('msg_mnu_option', 'name'),
-                         'help3': ('msg_mnu_option', 'name'),
-                         'help4': ('msg_mnu_option', 'name'),
-                         'field_5925DC4C': ('msg_mnu_option', 'name'),
-                         'field_7D13B44A': ('msg_mnu_option', 'name'),
-                         'field_B6E3A0D7': ('msg_mnu_option', 'name'),
-                         'field_D8225635': ('msg_mnu_option', 'name'),
-                         'field_6FBE92E0': ('msg_mnu_option', 'name')},
-    'MNU_saveload_scenario': {'Chapter': ('msg_mnu_saveload', 'name')},
-    'QST_List': {'QuestTitle': ('msg_qst_task', 'name'),
-                 'Summary': ('msg_qst_task', 'name'),
-                 'ResultA': ('msg_qst_task', 'name'),
-                 'ResultB': ('msg_qst_task', 'name')},
-    'QST_OverWrite': {'OverWriteText': ('msg_qst_overwrite', 'name')},
-    'QST_RequestItemSet': {'Name': ('msg_qst_RequestItemSet', 'name')},
-    'QST_Task': {'TaskLog1': ('msg_qst_task', 'name'),
-                 'TaskLog2': ('msg_qst_task', 'name')},
-    'SYS_MapList': {'Name': ('msg_location_name', 'name')},
-    'SYS_TrialList': {'Title': ('msg_mnu_tutorial_tips', 'name')},
-    'SYS_TutorialHintA': {'Text1': ('msg_mnu_tutorial_tips', 'name'),
-                          'Text2': ('msg_mnu_tutorial_tips', 'name')},
-    'SYS_TutorialMessage': {'Title': ('msg_mnu_tutorial_tips', 'name'),
-                            'Text': ('msg_mnu_tutorial_tips', 'name'),
-                            'Text2': ('msg_mnu_tutorial_tips', 'name')},
-    'SYS_TutorialSummary': {'Title': ('msg_mnu_tutorial_tips', 'name')},
-    'SYS_TutorialTask': {'Title': ('msg_mnu_tutorial_tips', 'name')},
-    'SYS_TutorialTelop': {'Title': ('msg_mnu_tutorial_tips', 'name')},
-    'gimmickLocation': {'LocationName': ('msg_location_name', 'name')},
-    '39D667D1': {'UIName1': ('msg_mnu_char_ms', 'name'),
-                 'UIName2': ('msg_mnu_char_ms', 'name'),
-                 'UIName3': ('msg_mnu_char_ms', 'name'),
-                 'UIName4': ('msg_mnu_char_ms', 'name'),
-                 'UIName5': ('msg_mnu_char_ms', 'name'),
-                 'UIName6': ('msg_mnu_char_ms', 'name')},
-    '5A744A5C': {'name': ('msg_mnu_mainmenu', 'name'),
-                 'hint': ('msg_mnu_mainmenu', 'name')},
-    '70810224': {'Text1': ('msg_autotalk', 'name'),
-                 'Text2': ('msg_autotalk', 'name'),
-                 'Text3': ('msg_autotalk', 'name')},
-    '7138BADF': {'Text1': ('msg_autotalk', 'name'),
-                 'Text2': ('msg_autotalk', 'name'),
-                 'Text3': ('msg_autotalk', 'name')},
-    '7A6735C6': {'Text1': ('msg_autotalk', 'name'),
-                 'Text2': ('msg_autotalk', 'name'),
-                 'Text3': ('msg_autotalk', 'name')},
-    '7E6F5DCC': {'name': ('msg_mnu_mainmenu', 'name')},
-    '808F8A04': {'Text1': ('msg_autotalk', 'name'),
-                 'Text2': ('msg_autotalk', 'name'),
-                 'Text3': ('msg_autotalk', 'name')},
-    '947C9B0C': {'Category': ('msg_mnu_dlc_collepedia', 'name')},
-    '9AE9C010': {'Text1': ('msg_autotalk', 'name'),
-                 'Text2': ('msg_autotalk', 'name'),
-                 'Text3': ('msg_autotalk', 'name')},
-    'ABE85D5D': {'Text1': ('msg_autotalk', 'name'),
-                 'Text2': ('msg_autotalk', 'name'),
-                 'Text3': ('msg_autotalk', 'name')},
-    'B30AE3F7': {'name': ('msg_mnu_mainmenu', 'name'),
-                 'hint': ('msg_mnu_mainmenu', 'name')},
-    'BB82DEE6': {'Name': ('F6E689C3', 'name')},
-    'D4A3534F': {'Text1': ('msg_autotalk', 'name'),
-                 'Text2': ('msg_autotalk', 'name'),
-                 'Text3': ('msg_autotalk', 'name')},
-    'D9B88F26': {'Name': ('msg_btl_chainorder_name', 'name')},
-    'DEC58736': {'name': ('msg_mnu_mainmenu', 'name'),
-                 'hint': ('msg_mnu_mainmenu', 'name')},
-    'E97C90CE': {'name': ('msg_mnu_mainmenu', 'name'),
-                 'hint': ('msg_mnu_mainmenu', 'name')},
-    'F0A0A1B1': {'Text1': ('msg_autotalk', 'name'),
-                 'Text2': ('msg_autotalk', 'name'),
-                 'Text3': ('msg_autotalk', 'name')},
-    'F936594B': {'SpotName': ('msg_comspot_name', 'name')},
-}
-
-text_xrefs['XDE'] = {
-    'AMR_DlList': {'Name': ('AMR_DlList_ms', 'name'),
-                   'TypeAmr': ('amrdl_catlist', 'name')},
-    'AMR_PcList': {'Name': ('AMR_PcList_ms', 'name'),
-                   'Caption': ('AMR_PcList_cap', 'name'),
-                   'TypeAmr': ('amrpc_catlist_ms', 'name')},
-    'BLH_PetList': {'Name': ('BLH_RoomList_ms', 'name')},
-    'BLH_RoomList': {'Parts0NAME': ('BLH_RoomList_ms', 'name'),
-                     'Parts1NAME': ('BLH_RoomList_ms', 'name'),
-                     'Parts2NAME': ('BLH_RoomList_ms', 'name'),
-                     'Parts3NAME': ('BLH_RoomList_ms', 'name'),
-                     'Parts4NAME': ('BLH_RoomList_ms', 'name')},
-    'BTL_ArtsList': {'Name': ('BTL_ArtsList_ms', 'name'),
-                     'Caption': ('BTL_ArtsList_ms', 'name'),
-                     'RangeCaption': ('BTL_ArtsList_ms', 'name')},
-    'BTL_BufEffList': {'Caption': ('BTL_BufEffList_ms', 'name')},
-    'BTL_BuffList': {'Name': ('BTL_BuffList_ms', 'name')},
-    'BTL_BuffWeatherList': {'Name': ('BTL_BuffWeatherList_ms', 'name')},
-    'BTL_CoLimitList': {'CEO': ('CoTxtList_ms', 'name'),
-                        'Caption1': ('CoTxtList_ms', 'name'),
-                        'Caption2': ('CoTxtList_ms', 'name')},
-    'BTL_DlArtsList': {'Name': ('BTL_DlArtsList_ms', 'name'),
-                       'Caption': ('BTL_DlArtsList_ms', 'name'),
-                       'RangeCaption': ('BTL_DlArtsList_ms', 'name')},
-    'BTL_DollGearEffect': {'GearEffName': ('BTL_DollGearEffect_ms', 'name')},
-    'BTL_DrBonus': {'Name': ('BTL_DrBonus_ms', 'name')},
-    'BTL_EnArtsList': {'Name': ('BTL_EnArtsList_ms', 'name')},
-    'BTL_EnBook': {'Caption': ('BTL_EnBook_ms', 'name')},
-    'BTL_EnBookZone': {'Name': ('fieldnamelist_ms', 'name')},
-    'BTL_Enhance': {'caption': ('BTL_Enhance_ms', 'name', 'XDE_enhance')},
-    'BTL_GearChain': {'Text': ('BTL_Gear_ms', 'name')},
-    'BTL_GearColor': {'Text': ('BTL_Gear_ms', 'name')},
-    'BTL_GearCombo': {'Text': ('BTL_Gear_ms', 'name')},
-    'BTL_ItemSkill_doll': {'Name': ('BattleSkill_DL_ms', 'name'),
-                           'Caption': ('BattleSkill_DL_ms', 'name')},
-    'BTL_ItemSkill_inner': {'Name': ('BattleSkill_ms', 'name'),
-                           'Caption': ('BattleSkill_ms', 'name')},
-    'BTL_SkillClass': {'Name': ('BTL_SkillClass_ms', 'name'),
-                       'Caption': ('BTL_SkillClass_ms', 'name')},
-    'BTL_SoulArts': {'Name': ('BTL_SoulArts_ms', 'name')},
-    'BTL_SoulTrigger': {'Name': ('BTL_SoulVoiceSystem', 'name'),
-                        'Caption': ('BTL_SoulVoiceSystem', 'name')},
-    'BTL_SoulVoice': {'word_1': ('BTL_SoulVoice01', 'name'),
-                      'word_2': ('BTL_SoulVoice02', 'name'),
-                      'word_3': ('BTL_SoulVoice03', 'name'),
-                      'word_4': ('BTL_SoulVoice04', 'name'),
-                      'word_5': ('BTL_SoulVoice05', 'name'),
-                      'word_6': ('BTL_SoulVoice06', 'name'),
-                      'word_7': ('BTL_SoulVoice07', 'name'),
-                      'word_8': ('BTL_SoulVoice08', 'name'),
-                      'word_9': ('BTL_SoulVoice09', 'name'),
-                      'word_10': ('BTL_SoulVoice10', 'name'),
-                      'word_21': ('BTL_SoulVoice21', 'name'),
-                      'word_22': ('BTL_SoulVoice22', 'name'),
-                      'word_23': ('BTL_SoulVoice23', 'name'),
-                      'word_24': ('BTL_SoulVoice24', 'name'),
-                      'word_25': ('BTL_SoulVoice25', 'name'),
-                      'word_26': ('BTL_SoulVoice26', 'name'),
-                      'word_27': ('BTL_SoulVoice27', 'name'),
-                      'word_28': ('BTL_SoulVoice28', 'name'),
-                      'word_29': ('BTL_SoulVoice29', 'name'),
-                      'word_30': ('BTL_SoulVoice30', 'name'),
-                      'word_41': ('BTL_SoulVoice41', 'name'),
-                      'word_42': ('BTL_SoulVoice42', 'name'),
-                      'word_43': ('BTL_SoulVoice43', 'name'),
-                      'word_44': ('BTL_SoulVoice44', 'name'),
-                      'word_45': ('BTL_SoulVoice45', 'name'),
-                      'word_46': ('BTL_SoulVoice46', 'name'),
-                      'word_47': ('BTL_SoulVoice47', 'name'),
-                      'word_48': ('BTL_SoulVoice48', 'name'),
-                      'word_49': ('BTL_SoulVoice49', 'name'),
-                      'word_50': ('BTL_SoulVoice50', 'name'),
-                      'word_51': ('BTL_SoulVoice51', 'name'),
-                      'word_52': ('BTL_SoulVoice52', 'name'),
-                      'word_53': ('BTL_SoulVoice53', 'name'),
-                      'word_54': ('BTL_SoulVoice54', 'name'),
-                      'word_55': ('BTL_SoulVoice55', 'name'),
-                      'word_56': ('BTL_SoulVoice56', 'name'),
-                      'word_57': ('BTL_SoulVoice57', 'name'),
-                      'word_58': ('BTL_SoulVoice58', 'name'),
-                      'word_70': ('BTL_SoulVoice70', 'name'),
-                      'word_71': ('BTL_SoulVoice71', 'name'),
-                      'word_72': ('BTL_SoulVoice72', 'name'),
-                      'word_73': ('BTL_SoulVoice73', 'name')},
-    'CHR_ClassInfo': {'Name': ('CHR_ClassList_ms', 'name'),
-                      'Caption': ('CHR_ClassListCaption_ms', 'name')},
-    'CHR_DlList': {'Name': ('CHR_DlList_ms', 'name')},
-    'CHR_EnList': {'Name': ('CHR_EnList_ms', 'name')},
-    'DEF_DlList': {'Name': ('CHR_DlList_ms', 'name'),
-                   'Caption': ('CHR_DlList_ms', 'name')},
-    'DEF_PcList': {'Name': ('DEF_PcList_ms', 'name')},
-    'DRP_BoxTable': {'PartsName': ('ITM_MaterialList_ms', 'name')},
-    'FLD_EvtHexInfo': {'DigreeInfo': ('FLD_EvtHexInfo_ms', 'name')},
-    'FLD_FieldNameList': {'name': ('fieldnamelist_ms', 'name')},
-    'FLD_Location': {'Loc_name': ('fieldnamelist_ms', 'name')},
-    'FLD_NameCondition': {'NameID0': ('fieldnamelist_ms', 'name'),
-                          'NameID1': ('fieldnamelist_ms', 'name')},
-    'FLD_QuestTask': {'purpose_log1': ('quest_ms', 'name'),
-                      'purpose_log2': ('quest_ms', 'name'),
-                      'purpose_log3': ('quest_ms', 'name')},
-    'FLD_TboxPopList': {'name_id': ('FLD_ObjectName', 'name')},
-    'FLD_TownInfo1001': {'name': ('FLD_TownInfo_ms', 'name'),
-                         'msg1': ('FLD_TownInfo_ms', 'name'),
-                         'msg2': ('FLD_TownInfo_ms', 'name'),
-                         'msg3': ('FLD_TownInfo_ms', 'name'),
-                         'msg4': ('FLD_TownInfo_ms', 'name'),
-                         'msg5': ('FLD_TownInfo_ms', 'name')},
-    'FLD_TownInfo1101': {'name': ('FLD_TownInfo_ms', 'name'),
-                         'msg1': ('FLD_TownInfo_ms', 'name'),
-                         'msg2': ('FLD_TownInfo_ms', 'name'),
-                         'msg3': ('FLD_TownInfo_ms', 'name'),
-                         'msg4': ('FLD_TownInfo_ms', 'name'),
-                         'msg5': ('FLD_TownInfo_ms', 'name')},
-    'FLD_TownInfo1201': {'name': ('FLD_TownInfo_ms', 'name'),
-                         'msg1': ('FLD_TownInfo_ms', 'name'),
-                         'msg2': ('FLD_TownInfo_ms', 'name'),
-                         'msg3': ('FLD_TownInfo_ms', 'name'),
-                         'msg4': ('FLD_TownInfo_ms', 'name'),
-                         'msg5': ('FLD_TownInfo_ms', 'name')},
-    'FLD_TownInfo1301': {'name': ('FLD_TownInfo_ms', 'name'),
-                         'msg1': ('FLD_TownInfo_ms', 'name'),
-                         'msg2': ('FLD_TownInfo_ms', 'name'),
-                         'msg3': ('FLD_TownInfo_ms', 'name'),
-                         'msg4': ('FLD_TownInfo_ms', 'name'),
-                         'msg5': ('FLD_TownInfo_ms', 'name')},
-    'FLD_TownInfo1401': {'name': ('FLD_TownInfo_ms', 'name'),
-                         'msg1': ('FLD_TownInfo_ms', 'name'),
-                         'msg2': ('FLD_TownInfo_ms', 'name'),
-                         'msg3': ('FLD_TownInfo_ms', 'name'),
-                         'msg4': ('FLD_TownInfo_ms', 'name'),
-                         'msg5': ('FLD_TownInfo_ms', 'name')},
-    'FLD_TownInfo1501': {'name': ('FLD_TownInfo_ms', 'name'),
-                         'msg1': ('FLD_TownInfo_ms', 'name'),
-                         'msg2': ('FLD_TownInfo_ms', 'name'),
-                         'msg3': ('FLD_TownInfo_ms', 'name'),
-                         'msg4': ('FLD_TownInfo_ms', 'name'),
-                         'msg5': ('FLD_TownInfo_ms', 'name')},
-    'FLD_TownInfo1601': {'name': ('FLD_TownInfo_ms', 'name'),
-                         'msg1': ('FLD_TownInfo_ms', 'name'),
-                         'msg2': ('FLD_TownInfo_ms', 'name'),
-                         'msg3': ('FLD_TownInfo_ms', 'name'),
-                         'msg4': ('FLD_TownInfo_ms', 'name'),
-                         'msg5': ('FLD_TownInfo_ms', 'name')},
-    'FLD_TownInfo1701': {'name': ('FLD_TownInfo_ms', 'name'),
-                         'msg1': ('FLD_TownInfo_ms', 'name'),
-                         'msg2': ('FLD_TownInfo_ms', 'name'),
-                         'msg3': ('FLD_TownInfo_ms', 'name'),
-                         'msg4': ('FLD_TownInfo_ms', 'name'),
-                         'msg5': ('FLD_TownInfo_ms', 'name')},
-    'FLD_TownInfo2001': {'name': ('FLD_TownInfo_ms', 'name'),
-                         'msg1': ('FLD_TownInfo_ms', 'name'),
-                         'msg2': ('FLD_TownInfo_ms', 'name'),
-                         'msg3': ('FLD_TownInfo_ms', 'name'),
-                         'msg4': ('FLD_TownInfo_ms', 'name'),
-                         'msg5': ('FLD_TownInfo_ms', 'name')},
-    'FLD_TownInfo2201': {'name': ('FLD_TownInfo_ms', 'name'),
-                         'msg1': ('FLD_TownInfo_ms', 'name'),
-                         'msg2': ('FLD_TownInfo_ms', 'name'),
-                         'msg3': ('FLD_TownInfo_ms', 'name'),
-                         'msg4': ('FLD_TownInfo_ms', 'name'),
-                         'msg5': ('FLD_TownInfo_ms', 'name')},
-    'FLD_TownInfo6000': {'name': ('FLD_TownInfo_ms', 'name'),
-                         'msg1': ('FLD_TownInfo_ms', 'name'),
-                         'msg2': ('FLD_TownInfo_ms', 'name'),
-                         'msg3': ('FLD_TownInfo_ms', 'name'),
-                         'msg4': ('FLD_TownInfo_ms', 'name'),
-                         'msg5': ('FLD_TownInfo_ms', 'name')},
-    'FLD_WeatherAsset': {'wtr_name': ('FLD_WeatherNameList_ms', 'name')},
-    'FLD_questlist': {'quest_title': ('quest_ms', 'name'),
-                      'category': ('menu_program_ms', 'name', 'XDE_quest_category'),
-                      'summary': ('quest_ms', 'name'),
-                      'result_text_a': ('quest_ms', 'name'),
-                      'result_text_b': ('quest_ms', 'name')},
-    'FnetBeaconType': {'Name': ('ITM_BeaconList_ms', 'name')},
-    'FnetVeinList': {'caption': ('FNT_VeinList_ms', 'name')},
-    'ITM_BattleItem': {'Name': ('ITM_BattleItem_ms', 'name'),
-                       'Caption': ('ITM_BattleItem_ms', 'name')},
-    'ITM_BeaconList': {'Name': ('ITM_BeaconList_ms', 'name'),
-                       'Caption': ('ITM_BeaconList_ms', 'name')},
-    'ITM_Blueprint': {'Name': ('ITM_Blueprint_ms', 'name'),
-                      'Caption': ('ITM_Blueprint_ms', 'name')},
-    'ITM_CollectList': {'Name': ('ITM_CollectList_ms', 'name'),
-                        'Caption': ('ITM_CollectList_ms', 'name')},
-    'ITM_FigList': {'Name': ('ITM_FigList_ms', 'name'),
-                    'Caption': ('ITM_FigList_ms', 'name')},
-    'ITM_InfoList': {'Name': ('ITM_InfoList_ms', 'name'),
-                     'Caption': ('ITM_InfoList_ms', 'name')},
-    'ITM_MaterialList': {'Name': ('ITM_MaterialList_ms', 'name'),
-                         'Caption': ('ITM_MaterialList_ms', 'name')},
-    'ITM_PieceList': {'Name': ('ITM_PieceList_ms', 'name'),
-                      'Caption': ('ITM_PieceList_ms', 'name')},
-    'ITM_PreciousList': {'Name': ('ITM_PreciousList_ms', 'name'),
-                         'Caption': ('ITM_PreciousList_ms', 'name')},
-    'ITM_RareRscList': {'Name': ('ITM_RareRscList_ms', 'name'),
-                        'Caption': ('ITM_RareRscList_ms', 'name')},
-    'MNU_Announce': {'txt[0]': ('MNU_Announce_ms', 'name'),
-                     'txt[1]': ('MNU_Announce_ms', 'name'),
-                     'txt[2]': ('MNU_Announce_ms', 'name'),
-                     'txt[3]': ('MNU_Announce_ms', 'name'),
-                     'txt[4]': ('MNU_Announce_ms', 'name'),
-                     'txt[5]': ('MNU_Announce_ms', 'name')},
-    'MNU_CollectItemCategory': {'CategoryName': ('menu_program_ms', 'name')},
-    'MNU_CommonTelop': {'Text': ('MNU_CommonTelop_ms', 'name')},
-    'MNU_EnemyTalk': {'Text': ('MNU_EnemyTalk_ms', 'name')},
-    'MNU_Filtering': {'HeadText': ('menu_program_ms', 'name'),
-                      'ListText[0]': ('menu_program_ms', 'name'),
-                      'ListText[1]': ('menu_program_ms', 'name'),
-                      'ListText[2]': ('menu_program_ms', 'name'),
-                      'ListText[3]': ('menu_program_ms', 'name'),
-                      'ListText[4]': ('menu_program_ms', 'name'),
-                      'ListText[5]': ('menu_program_ms', 'name'),
-                      'ListText[6]': ('menu_program_ms', 'name'),
-                      'ListText[7]': ('menu_program_ms', 'name'),
-                      'ListText[8]': ('menu_program_ms', 'name')},
-    'MNU_GlossaryList': {'title': ('MNU_GlossaryList_ms', 'name')},
-    'MNU_GlossaryPage': {'field_13D4F614': ('MNU_GlossaryList_ms', 'name')},
-    'MNU_HomeTerminal': {'Text': ('menu_program_ms', 'name')},
-    'MNU_NetTerminal': {'Text': ('menu_program_ms', 'name')},
-    'MNU_SocialInfo': {'Text': ('menu_program_ms', 'name'),
-                       'field_606792C8': ('MNU_SocialInfo_ms', 'name'),
-                       'field_CDF215F8': ('MNU_SocialInfo_ms', 'name')},
-    'MNU_SoulVoiceStyle': {'Text': ('MNU_SoulVoiceStyle_ms', 'name')},
-    'MNU_TipsList': {'title': ('MNU_TipsList_ms', 'name'),
-                     'field_8C58BABA': ('MNU_TipsList_ms', 'name')},
-    'MNU_TownMesWindow': {'Text': ('MNU_TownMesWindow_ms', 'name')},
-    'MNU_ZoneNameConvert': {'name': ('fieldnamelist_ms', 'name'),
-                            'MenuZoneName': ('menu_zonenamelist_ms', 'name')},
-    'MNU_option_battle': {'name': ('MNU_Option_ms', 'name'),
-                          'help': ('MNU_Option_ms', 'name'),
-                          'field_75EB95AD': ('MNU_Option_ms', 'name'),
-                          'field_E2DF5D40': ('MNU_Option_ms', 'name'),
-                          'field_2C42EC4E': ('MNU_Option_ms', 'name'),
-                          'field_AF4E3326': ('MNU_Option_ms', 'name'),
-                          'field_CA6B5496': ('MNU_Option_ms', 'name')},
-    'MNU_option_camera': {'name': ('MNU_Option_ms', 'name'),
-                          'help': ('MNU_Option_ms', 'name'),
-                          'field_75EB95AD': ('MNU_Option_ms', 'name'),
-                          'field_E2DF5D40': ('MNU_Option_ms', 'name'),
-                          'field_2C42EC4E': ('MNU_Option_ms', 'name'),
-                          'field_AF4E3326': ('MNU_Option_ms', 'name'),
-                          'field_CA6B5496': ('MNU_Option_ms', 'name')},
-    'MNU_option_event': {'name': ('MNU_Option_ms', 'name'),
-                         'help': ('MNU_Option_ms', 'name'),
-                         'field_75EB95AD': ('MNU_Option_ms', 'name'),
-                         'field_E2DF5D40': ('MNU_Option_ms', 'name'),
-                         'field_2C42EC4E': ('MNU_Option_ms', 'name'),
-                         'field_AF4E3326': ('MNU_Option_ms', 'name'),
-                         'field_CA6B5496': ('MNU_Option_ms', 'name')},
-    'MNU_option_field': {'name': ('MNU_Option_ms', 'name'),
-                         'help': ('MNU_Option_ms', 'name'),
-                         'field_75EB95AD': ('MNU_Option_ms', 'name'),
-                         'field_E2DF5D40': ('MNU_Option_ms', 'name'),
-                         'field_2C42EC4E': ('MNU_Option_ms', 'name'),
-                         'field_AF4E3326': ('MNU_Option_ms', 'name'),
-                         'field_CA6B5496': ('MNU_Option_ms', 'name')},
-    'MNU_option_game': {'name': ('MNU_Option_ms', 'name'),
-                        'help': ('MNU_Option_ms', 'name'),
-                        'field_75EB95AD': ('MNU_Option_ms', 'name'),
-                        'field_E2DF5D40': ('MNU_Option_ms', 'name'),
-                        'field_2C42EC4E': ('MNU_Option_ms', 'name'),
-                        'field_AF4E3326': ('MNU_Option_ms', 'name'),
-                        'field_CA6B5496': ('MNU_Option_ms', 'name')},
-    'MNU_option_graphic': {'name': ('MNU_Option_ms', 'name'),
-                           'help': ('MNU_Option_ms', 'name'),
-                           'field_75EB95AD': ('MNU_Option_ms', 'name'),
-                           'field_E2DF5D40': ('MNU_Option_ms', 'name'),
-                           'field_2C42EC4E': ('MNU_Option_ms', 'name'),
-                           'field_AF4E3326': ('MNU_Option_ms', 'name'),
-                           'field_CA6B5496': ('MNU_Option_ms', 'name')},
-    'MNU_option_notify': {'name': ('MNU_Option_ms', 'name'),
-                          'help': ('MNU_Option_ms', 'name'),
-                          'field_75EB95AD': ('MNU_Option_ms', 'name'),
-                          'field_E2DF5D40': ('MNU_Option_ms', 'name'),
-                          'field_2C42EC4E': ('MNU_Option_ms', 'name'),
-                          'field_AF4E3326': ('MNU_Option_ms', 'name'),
-                          'field_CA6B5496': ('MNU_Option_ms', 'name')},
-    'MNU_option_online': {'name': ('MNU_Option_ms', 'name'),
-                          'help': ('MNU_Option_ms', 'name'),
-                          'field_75EB95AD': ('MNU_Option_ms', 'name'),
-                          'field_E2DF5D40': ('MNU_Option_ms', 'name'),
-                          'field_2C42EC4E': ('MNU_Option_ms', 'name'),
-                          'field_AF4E3326': ('MNU_Option_ms', 'name'),
-                          'field_CA6B5496': ('MNU_Option_ms', 'name')},
-    'MNU_option_sign': {'name': ('MNU_Option_ms', 'name'),
-                        'help': ('MNU_Option_ms', 'name'),
-                        'field_75EB95AD': ('MNU_Option_ms', 'name'),
-                        'field_E2DF5D40': ('MNU_Option_ms', 'name'),
-                        'field_2C42EC4E': ('MNU_Option_ms', 'name'),
-                        'field_AF4E3326': ('MNU_Option_ms', 'name'),
-                        'field_CA6B5496': ('MNU_Option_ms', 'name')},
-    'MNU_option_social': {'name': ('MNU_Option_ms', 'name'),
-                          'help': ('MNU_Option_ms', 'name'),
-                          'field_75EB95AD': ('MNU_Option_ms', 'name'),
-                          'field_E2DF5D40': ('MNU_Option_ms', 'name'),
-                          'field_2C42EC4E': ('MNU_Option_ms', 'name'),
-                          'field_AF4E3326': ('MNU_Option_ms', 'name'),
-                          'field_CA6B5496': ('MNU_Option_ms', 'name')},
-    'MNU_option_sound': {'name': ('MNU_Option_ms', 'name'),
-                         'help': ('MNU_Option_ms', 'name'),
-                         'field_75EB95AD': ('MNU_Option_ms', 'name'),
-                         'field_E2DF5D40': ('MNU_Option_ms', 'name'),
-                         'field_2C42EC4E': ('MNU_Option_ms', 'name'),
-                         'field_AF4E3326': ('MNU_Option_ms', 'name'),
-                         'field_CA6B5496': ('MNU_Option_ms', 'name')},
-    'MNU_option_status': {'name': ('MNU_Option_ms', 'name'),
-                          'help': ('MNU_Option_ms', 'name'),
-                          'field_75EB95AD': ('MNU_Option_ms', 'name'),
-                          'field_E2DF5D40': ('MNU_Option_ms', 'name'),
-                          'field_2C42EC4E': ('MNU_Option_ms', 'name'),
-                          'field_AF4E3326': ('MNU_Option_ms', 'name'),
-                          'field_CA6B5496': ('MNU_Option_ms', 'name')},
-    'MNU_option_telop': {'name': ('MNU_Option_ms', 'name'),
-                         'help': ('MNU_Option_ms', 'name'),
-                         'field_75EB95AD': ('MNU_Option_ms', 'name'),
-                         'field_E2DF5D40': ('MNU_Option_ms', 'name'),
-                         'field_2C42EC4E': ('MNU_Option_ms', 'name'),
-                         'field_AF4E3326': ('MNU_Option_ms', 'name'),
-                         'field_CA6B5496': ('MNU_Option_ms', 'name')},
-    'MNU_option_voice': {'name': ('MNU_Option_ms', 'name'),
-                         'help': ('MNU_Option_ms', 'name'),
-                         'field_75EB95AD': ('MNU_Option_ms', 'name'),
-                         'field_E2DF5D40': ('MNU_Option_ms', 'name'),
-                         'field_2C42EC4E': ('MNU_Option_ms', 'name'),
-                         'field_AF4E3326': ('MNU_Option_ms', 'name'),
-                         'field_CA6B5496': ('MNU_Option_ms', 'name')},
-    'RSC_EnGenusList': {'Name': ('RSC_EnGenusList_ms', 'name'),
-                        'Caption': ('RSC_EnGenusList_ms', 'name')},
-    'RSC_EnList': {'TypeFamily': ('RSC_EnFamilyList_ms', 'name')},
-    'SCL_AchiveList': {'Title': ('MNU_Achievement_ms', 'name'),
-                       'Description': ('MNU_Achievement_ms', 'name')},
-    'SCL_BRPT_TagList': {'Title': ('MNU_BladeReport_ms', 'name'),
-                         'Suggest': ('MNU_BladeReport_ms', 'name')},
-    'SCL_RankingList': {'Name': ('MNU_Ranking_ms', 'name')},
-    'SCL_SquadQuestList': {'title': ('MultiQuest_Title_ms', 'name'),
-                           'summary': ('MultiQuest_Summary_ms', 'name'),
-                           'PurposeTxt': ('MultiQuest_Purpose_ms', 'name')},
-    'SCL_SquadTaskList': {'Navi_Title': ('MultiQuest_Navi_ms', 'name')},
-    'SCL_Union': {'UnionName': ('unionnamelist_ms', 'name'),
-                  'UnionCaption': ('unionnamelist_ms', 'name')},
-    'SHP_AssetDL': {'name': ('CHR_DlList_ms', 'name'),
-                    'caption': ('CHR_DlList_ms', 'name')},
-    'SHP_ItemSkill_Cat_doll': {'name': ('SHP_ItemSkill_doll_ms', 'name')},
-    'SHP_ItemSkill_Cat_inner': {'name': ('SHP_ItemSkill_inner_ms', 'name')},
-    'SHP_ItemSkill_doll': {'name': ('SHP_ItemSkill_doll_ms', 'name'),
-                           'Caption': ('SHP_ItemSkill_doll_ms', 'name')},
-    'SHP_ItemSkill_inner': {'name': ('SHP_ItemSkill_inner_ms', 'name'),
-                            'Caption': ('SHP_ItemSkill_inner_ms', 'name')},
-    'WPN_DlList': {'Name': ('WPN_DlList_ms', 'name'),
-                   'TypeWpn': ('wpndl_catlist_ms', 'name')},
-    'WPN_EnList': {'Name': ('WPN_EnList_ms', 'name')},
-    'WPN_PcList': {'Name': ('WPN_PcList_ms', 'name'),
-                   'Caption': ('WPN_PcList_ms', 'name'),
-                   'TypeWpn': ('wpnpc_catlist_ms', 'name')},
-    'npc_union': {'name': ('npc_union_ms', 'name'),
-                  'job1': ('npc_peopleinfolist_ms', 'name'),
-                  'job2': ('npc_peopleinfolist_ms', 'name'),
-                  'job3': ('npc_peopleinfolist_ms', 'name'),
-                  'job4': ('npc_peopleinfolist_ms', 'name'),
-                  'outline1': ('npc_peopleinfolist_ms', 'name'),
-                  'outline2': ('npc_peopleinfolist_ms', 'name'),
-                  'outline3': ('npc_peopleinfolist_ms', 'name'),
-                  'outline4': ('npc_peopleinfolist_ms', 'name'),
-                  'outline5': ('npc_peopleinfolist_ms', 'name'),
-                  'outline6': ('npc_peopleinfolist_ms', 'name'),
-                  'outline7': ('npc_peopleinfolist_ms', 'name')},
-}
-
-# Additional text_xrefs which are applied to all gimmick tables. (XC3-specific)
-gimmick_text_xrefs = {}
-gimmick_text_xrefs['3'] = {
-    'EnemyPop': {'GroupName': ('msg_enemy_group_name', 'name')},
-    'Event': {'Name': ('msg_fld_searchpoint', 'name')},
-}
-gimmick_text_xrefs['XDE'] = {}
-
-# Convenience variables for xref tables.
-refset_3_arts_en = ('BTL_Arts_En', )
-refset_3_arts_pc = ('BTL_Arts_PC', )
-refset_3_condition = ('FLD_ConditionList', )
-refset_3_enemy = ('FLD_EnemyData', )
-refset_3_enhance = ('BTL_Enhance', )
-refset_3_event = (('EVT_listEv', 'EVT_listFev', 'EVT_listQst', 'EVT_listTlk',
-                   'D1C136A1'), )
-refset_3_event_name = (('EVT_listEv', 'EVT_listFev', 'EVT_listQst',
-                        'EVT_listTlk', 'D1C136A1'), None, 'event_name')
-refset_3_gimmick = (('SYS_GimmickLocation.GimmickID',
-                     'SYS_GimmickLocation_dlc04.GimmickID'),)
-refset_3_gimmick_object = (None, None, 'gimmick_object')
-refset_3_item = (('ITM_Accessory', 'ITM_Collection', 'ITM_Collepedia',
-                  'ITM_Cylinder', 'ITM_Gem', 'ITM_Info', 'ITM_Precious'), )
-refset_3_map = (('SYS_MapList'), )
-refset_3_npc = ('FLD_NpcList', )
-refset_3_pc = ('CHR_PC', )
-refset_3_quest = ('QST_List', )
-refset_3_quest_taskid = (('QST_TaskAsk', 'QST_TaskBattle', 'QST_TaskChase',
-                          'QST_TaskCollect', 'QST_TaskCollepedia',
-                          'QST_TaskCondition', 'QST_TaskEvent',
-                          'QST_TaskFollow', 'QST_TaskGimmick',
-                          'QST_TaskReach', 'QST_TaskRequest', 'QST_TaskTalk',
-                          'QST_TaskTalkGroup'), )
-refset_3_skill = ('BTL_Skill_PC', )
-refset_3_stance = ('BTL_Stance', )
-refset_3_talent = ('BTL_Talent', )
-def refset_XDE_item(type_field):
-    # Minor hack in which we use name_field to hold the associated
-    # item category field from the source table.
-    return (None, type_field, 'XDE_item')
-
-# List of fields which are always ID references to other tables.
-# Each value is in one of the following formats, with the ID value
-# replaced by text as listed:
-#    - 'target_table'
-#         No text substitution performed on ID.
-#    - ('target_table', 'name_field')
-#         ID replaced by text from field 'name_field' in the target row.
-#         If that field is empty, the ID is left unchanged.
-#    - ('target_table', 'name_field', 'special_rule')
-#         ID replaced by text from field 'name_field' in the target row,
-#         and subsequently modified according to 'special_rule' (see code
-#         in resolve_field_xrefs()).
-# A zero ID is always converted to an empty cell.
-field_xrefs = {}
-
-field_xrefs['3'] = {
-    'ChainOrder': 'D9B88F26',
-
-    'Debuff': 'BTL_BuffDeBuff',
-    'Debuff1': 'BTL_BuffDeBuff',
-    'Debuff2': 'BTL_BuffDeBuff',
-    'Debuff3': 'BTL_BuffDeBuff',
-    'Debuff4': 'BTL_BuffDeBuff',
-
-    'Colony': 'FLD_ColonyList',
-    'ColonyID': 'FLD_ColonyList',
-    'ColonyID1': 'FLD_ColonyList',
-    'ColonyID2': 'FLD_ColonyList',
-    'ColonyID3': 'FLD_ColonyList',
-
-    'AccessCondition': refset_3_condition,
-    'AddCondition1': refset_3_condition,
-    'AddCondition2': refset_3_condition,
-    'AddCondition3': refset_3_condition,
-    'AddCondition4': refset_3_condition,
-    'AddCondition5': refset_3_condition,
-    'AddCondition6': refset_3_condition,
-    'AddCondition7': refset_3_condition,
-    'AddCondition8': refset_3_condition,
-    'AddCondition9': refset_3_condition,
-    'AddCondition10': refset_3_condition,
-    'AddCondition11': refset_3_condition,
-    'AddCondition12': refset_3_condition,
-    'AddCondition13': refset_3_condition,
-    'AddCondition14': refset_3_condition,
-    'AddCondition15': refset_3_condition,
-    'AddCondition16': refset_3_condition,
-    'AddCondition17': refset_3_condition,
-    'AddCondition18': refset_3_condition,
-    'AddCondition19': refset_3_condition,
-    'AddCondition20': refset_3_condition,
-    'AnimationLoadingPlay': refset_3_condition,
-    'ChangeStatusCondition': refset_3_condition,
-    'Combo1': 'BTL_Combo',
-    'Condition': refset_3_condition,  # Excluding FLD_ConditionList (special-cased below)
-    'Condition1': refset_3_condition,
-    'Condition2': refset_3_condition,
-    'Condition3': refset_3_condition,
-    'Condition4': refset_3_condition,
-    'Condition5': refset_3_condition,
-    'Condition6': refset_3_condition,
-    'ConditionNoTarget': refset_3_condition,
-    'Conditon1': refset_3_condition,
-    'Conditon2': refset_3_condition,
-    'Conditon3': refset_3_condition,
-    'Conditon4': refset_3_condition,
-    'Conditon5': refset_3_condition,
-    'Conditon6': refset_3_condition,
-    'Conditon7': refset_3_condition,
-    'Conditon8': refset_3_condition,
-    'IgnoreCondition': refset_3_condition,
-    'NameCondition': refset_3_condition,
-    'NamedSpCond': refset_3_condition,
-    'PriceCondition': refset_3_condition,
-
-    'CookRecipe': 'FLD_CookRecipe',
-
-    'EffConvert': 'SYS_EffConvert',
-
-    'EnemyID': refset_3_enemy,
-    'EnemyID1': refset_3_enemy,
-    'EnemyID2': refset_3_enemy,
-    'EnemyID3': refset_3_enemy,
-    'EnemyID4': refset_3_enemy,
-    'EnemyID5': refset_3_enemy,
-    'EnemyID6': refset_3_enemy,
-    'EnemyID01': refset_3_enemy,
-    'EnemyID02': refset_3_enemy,
-    'EnemyID03': refset_3_enemy,
-    'MatchEnemy1': refset_3_enemy,
-    'MatchEnemy2': refset_3_enemy,
-    'MatchEnemy3': refset_3_enemy,
-    'MatchEnemy4': refset_3_enemy,
-    'Enemy1': refset_3_enemy,
-    'Enemy2': refset_3_enemy,
-    'Enemy3': refset_3_enemy,
-    'Enemy4': refset_3_enemy,
-    'Enemy5': refset_3_enemy,
-    'Enemy6': refset_3_enemy,
-    'Enemy7': refset_3_enemy,
-    'Enemy8': refset_3_enemy,
-    'EnemyMobius': refset_3_enemy,
-    'EnemyRare': refset_3_enemy,
-
-    'Enhance': refset_3_enhance,
-    'Enhance1': refset_3_enhance,
-    'Enhance2': refset_3_enhance,
-    'Enhance3': refset_3_enhance,
-    'Enhance4': refset_3_enhance,
-    'Enhance5': refset_3_enhance,
-    'EnhanceID': refset_3_enhance,
-    'Enhance_dlc04': refset_3_enhance,
-
-    'EnhanceEffect': 'BTL_EnhanceEff',
-
-    'FlowEventID': 'SYS_FlowEventList',
-    'flowEventID': 'SYS_FlowEventList',
-    'field_01FB515A': 'SYS_FlowEventList', # "before" flow event ID
-
-    'Navi': refset_3_gimmick,
-
-    'IK': 'RSC_IK',
-    'IkName': 'RSC_IK',
-
-    'EventTable': 'FLD_InterestEventStart',
-
-    'InfoPiece': refset_3_item,
-    'InfoPiece1': refset_3_item,
-    'InfoPiece2': refset_3_item,
-    'InfoPiece3': refset_3_item,
-    'InfoPiece4': refset_3_item,
-    'Item': refset_3_item,
-    'Item1': refset_3_item,
-    'Item2': refset_3_item,
-    'Item3': refset_3_item,
-    'Item4': refset_3_item,
-    'Item5': refset_3_item,
-    'Item6': refset_3_item,
-    'Item7': refset_3_item,
-    'Item01': refset_3_item,
-    'Item02': refset_3_item,
-    'Item03': refset_3_item,
-    'Item04': refset_3_item,
-    'Item05': refset_3_item,
-    'Item06': refset_3_item,
-    'Item07': refset_3_item,
-    'Item08': refset_3_item,
-    'Item09': refset_3_item,
-    'Item10': refset_3_item,
-    'ItemID': refset_3_item,
-    'ItemID1': refset_3_item,
-    'ItemID2': refset_3_item,
-    'ItemID3': refset_3_item,
-    'ItemID4': refset_3_item,
-    'ItemID5': refset_3_item,
-    'ItemID6': refset_3_item,
-    'ItemID7': refset_3_item,
-    'ItemID8': refset_3_item,
-    'ItemId1': refset_3_item,
-    'ItemId2': refset_3_item,
-    'ItemId3': refset_3_item,
-    'ItemId4': refset_3_item,
-    'ItemId5': refset_3_item,
-    'ItemId6': refset_3_item,
-    'ItemId7': refset_3_item,
-    'ItemId8': refset_3_item,
-    'ItemId9': refset_3_item,
-    'ItemId10': refset_3_item,
-    'NcType': refset_3_item,  # Nc*/Np* are Nopon coin references
-    'NpType02': refset_3_item,
-    'NpType03': refset_3_item,
-    'NpType04': refset_3_item,
-    'NpType05': refset_3_item,
-    'NpType06': refset_3_item,
-    'NpType07': refset_3_item,
-    'NpType08': refset_3_item,
-    'NpType09': refset_3_item,
-    'NpType10': refset_3_item,
-    'NpType11': refset_3_item,
-    'NpType12': refset_3_item,
-    'NpType13': refset_3_item,
-    'NpType14': refset_3_item,
-    'NpType15': refset_3_item,
-    'NpType16': refset_3_item,
-    'NpType17': refset_3_item,
-    'NpType18': refset_3_item,
-    'NpType19': refset_3_item,
-    'NpType20': refset_3_item,
-    'OrderCondition': refset_3_condition,
-    'OrderCondition2': refset_3_condition,
-    'SetItem1': refset_3_item,
-    'SetItem2': refset_3_item,
-    'SetItem3': refset_3_item,
-    'SetItem4': refset_3_item,
-    'SetItem5': refset_3_item,
-    'SetItem6': refset_3_item,
-    'SetItem7': refset_3_item,
-    'SetItem8': refset_3_item,
-    'SetItem9': refset_3_item,
-    'SetItem10': refset_3_item,
-    'ShopItem1': refset_3_item,
-    'ShopItem2': refset_3_item,
-    'ShopItem3': refset_3_item,
-    'ShopItem4': refset_3_item,
-    'ShopItem5': refset_3_item,
-    'ShopItem6': refset_3_item,
-    'ShopItem7': refset_3_item,
-    'ShopItem8': refset_3_item,
-    'ShopItem9': refset_3_item,
-    'ShopItem10': refset_3_item,
-    'ShopItem11': refset_3_item,
-    'ShopItem12': refset_3_item,
-    'ShopItem13': refset_3_item,
-    'ShopItem14': refset_3_item,
-    'ShopItem15': refset_3_item,
-    'ShopItem16': refset_3_item,
-    'ShopItem17': refset_3_item,
-    'ShopItem18': refset_3_item,
-    'ShopItem19': refset_3_item,
-    'ShopItem20': refset_3_item,
-
-    'MapJump': 'SYS_MapJumpList',
-    'MapJumpID': 'SYS_MapJumpList',
-
-    'CurrentMap': refset_3_map,
-    'LinkMapID': refset_3_map,
-    'MapID': refset_3_map,
-    'mapID': refset_3_map,
-
-    'NPCID': refset_3_npc,
-    'NpcID': refset_3_npc,
-    'NpcID1': refset_3_npc,
-    'NpcID2': refset_3_npc,
-    'NpcID3': refset_3_npc,
-    'NpcID4': refset_3_npc,
-    'NpcID5': refset_3_npc,
-    'NpcID6': refset_3_npc,
-
-    'CostumeChr': refset_3_pc,
-    'PCID1': refset_3_pc,
-    'PCID2': refset_3_pc,
-    'PCID3': refset_3_pc,
-    'PcID': refset_3_pc,
-
-    'CraftBuff': 'FLD_PerkTemporary',
-
-    'QuestID': refset_3_quest,
-
-    'Reaction': 'BTL_Reaction',
-
-    'AgnusReward': 'ITM_RewardDroppedSupplies',
-    'KevesReward': 'ITM_RewardDroppedSupplies',
-    'FirstReward': 'ITM_RewardDroppedSupplies',
-
-    'DebScenarioFlag': 'SYS_ScenarioFlag',
-    'ScenarioFlag': 'SYS_ScenarioFlag',
-
-    'Stance': refset_3_stance,
-    'Stance1': refset_3_stance,
-    'Stance2': refset_3_stance,
-    'Stance3': refset_3_stance,
-    'Stance4': refset_3_stance,
-    'Stance5': refset_3_stance,
-
-    'SysOpenID': 'SYS_SystemOpen',
-
-    'TalentID': refset_3_talent,
-
-    'TaskID': 'QST_Task',
-
-    'TutorialID': 'SYS_Tutorial',
-
-    'SysWeatherID': 'SYS_WeatherList',
-
-    'field_E416DB96': 'VO_Group',
-
-    'setupID': 'CC55A8C8',
-    
-    # Challenge battle - gauntlet
-    'field_7EE21AA2': 'BTL_ChSU_EnemyTable',
-    'field_BDC9BBC2': 'BTL_ChSU_EnemyTable',
-    'field_E0975E89': 'BTL_ChSU_EnemyTable',
-    'field_B62754C4': 'BTL_ChSU_EnemyTable',
-    'field_223EFE81': 'BTL_ChSU_RateShop',
-    'field_BC6FBC62': 'BTL_ChSU_RateEvent',
-    'field_6D8A087C': 'BTL_ChSU_RateGate',
-    
-    'weatherA': 'RSC_WeatherSet',
-    'weatherB': 'RSC_WeatherSet',
-    'weatherC': 'RSC_WeatherSet',
-}
-
-field_xrefs['XDE'] = {
-    'LearnArts01': 'BTL_ArtsList',
-    'LearnArts02': 'BTL_ArtsList',
-
-    'BufEff1': 'BTL_BufEffList',
-    'BufEff2': 'BTL_BufEffList',
-    'BufEff3': 'BTL_BufEffList',
-
-    'Buff': 'BTL_BuffList',
-    'BuffA': 'BTL_BuffList',
-    'BuffB': 'BTL_BuffList',
-    'BuffC': 'BTL_BuffList',
-    'BuffD': 'BTL_BuffList',
-    'BuffE': 'BTL_BuffList',
-    'BuffID': 'BTL_BuffList',
-    'buff_debuff': 'BTL_BuffList',
-
-    'BulletID': 'BTL_BulletList',
-
-    'BookID': 'BTL_EnBook',
-
-    'EnhanceID1': 'BTL_Enhance',
-    'EnhanceID2': 'BTL_Enhance',
-    'EnhanceID3': 'BTL_Enhance',
-    'Enhance[0]': 'BTL_Enhance',
-    'Enhance[1]': 'BTL_Enhance',
-    'Enhance[2]': 'BTL_Enhance',
-    'Enhance[3]': 'BTL_Enhance',
-    'Enhance[4]': 'BTL_Enhance',
-    'enhanceID': 'BTL_Enhance',
-
-    'LearnSkill01': 'BTL_ArtsList',
-    'LearnSkill02': 'BTL_ArtsList',
-
-    'SoulCode': 'BTL_SoulCode',
-
-    'OpenClass': 'CHR_ClassInfo',
-
-    'EnemyId': 'CHR_EnList',
-    'enemy_id': 'CHR_EnList',
-
-    'ProxyID': 'CHR_ProxyList',
-
-    'CONDITION1': 'FLD_GameCondition',
-    'CONDITION2': 'FLD_GameCondition',
-    'CONDITION3': 'FLD_GameCondition',
-    'CONDITION4': 'FLD_GameCondition',
-    'Condition': 'FLD_GameCondition',
-    'Condition1': 'FLD_GameCondition',
-    'ConditionA': 'FLD_GameCondition',
-    'ConditionB': 'FLD_GameCondition',
-    'GameCondition': 'FLD_GameCondition',
-    'cond1': 'FLD_GameCondition',
-    'cond2': 'FLD_GameCondition',
-    'cond3': 'FLD_GameCondition',
-    'cond4': 'FLD_GameCondition',
-    'cond5': 'FLD_GameCondition',
-    'gameCondId': 'FLD_GameCondition',
-    # These are in FLD_TownInfo*, possibly a "negative condition" for each msg
-    'field_F55F6CD2': 'FLD_GameCondition',
-    'field_A9B2A981': 'FLD_GameCondition',
-    'field_45FA18DE': 'FLD_GameCondition',
-    'field_17D7EE60': 'FLD_GameCondition',
-    'field_FE705DC0': 'FLD_GameCondition',
-
-    'fieldLoc_id': 'FLD_Location',
-
-    'wtr_id': 'FLD_WeatherAsset',
-
-    'ItemID': refset_XDE_item('ItemType'),
-    'itm1ID': refset_XDE_item('item1Type'),
-    'itm2ID': refset_XDE_item('item2Type'),
-    'itm3ID': refset_XDE_item('item3Type'),
-    'itm4ID': refset_XDE_item('item4Type'),
-    'itm5ID': refset_XDE_item('item5Type'),
-    'itm6ID': refset_XDE_item('item6Type'),
-    'itm7ID': refset_XDE_item('item7Type'),
-    'itm8ID': refset_XDE_item('item8Type'),
-
-    'info': 'ITM_InfoList',
-
-    'materialMA[0]': 'ITM_MaterialList',
-    'materialMA[1]': 'ITM_MaterialList',
-    'materialMA[2]': 'ITM_MaterialList',
-    'materialST[0]': 'ITM_MaterialList',
-    'materialST[1]': 'ITM_MaterialList',
-    'materialST[2]': 'ITM_MaterialList',
-
-    'zone': 'MNU_ZoneNameConvert',
-    'zone_id': 'MNU_ZoneNameConvert',
-
-    'bgmCondition': 'RSC_BgmCondition',
-
-    'TypeGenus': 'RSC_EnGenusList',
-
-    'SeEnvID': 'RSC_SeEnvList',
-    'se_env_id': 'RSC_SeEnvList',
-
-    'call_uid': 'npc_union',
-    'uid': 'npc_union',
-    'union_id': 'npc_union',
-
-    'infoID': (None, None, 'XDE_SegMapInfo'),
-    'seg_id': (None, None, 'XDE_seg_id'),
-}
-
-
-# List of table-specific fields which are ID references to other tables.
-table_xrefs = {}
-
-table_xrefs['3'] = {
-    'AMB_CollectionLot': {'RewordID': 'ITM_RewardAssort'},
-    'BTL_Arts_Chain_Set': {'UseTalent': refset_3_talent,
-                           'UseChr': refset_3_pc,
-                           'ChainArts': refset_3_arts_pc},
-    'BTL_Arts_En': {'StateName': 'BTL_MotionState',
-                    'StateName2': 'BTL_MotionState',
-                    'ArtsBuffDebuff': 'BTL_BuffDeBuff',
-                    'SetUpType': 'BTL_SetUp',
-                    'SummonData': 'BTL_EnSummon'},
-    'BTL_Arts_PC': {'StateName': 'BTL_MotionState',
-                    'StateName2': 'BTL_MotionState',
-                    'ArtsBuffDebuff': 'BTL_BuffDeBuff',
-                    'SetUpType': 'BTL_SetUp',
-                    'SetUpUI': 'BTL_SetUp',
-                    'EnArtsAchieve': 'BTL_Achievement'},
-    'BTL_AutoSetAccessory': {'Talent01': refset_3_item,
-                             'Talent02': refset_3_item,
-                             'Talent03': refset_3_item,
-                             'Talent04': refset_3_item,
-                             'Talent05': refset_3_item,
-                             'Talent06': refset_3_item,
-                             'Talent07': refset_3_item,
-                             'Talent08': refset_3_item,
-                             'Talent09': refset_3_item,
-                             'Talent10': refset_3_item,
-                             'Talent11': refset_3_item,
-                             'Talent12': refset_3_item,
-                             'Talent13': refset_3_item,
-                             'Talent14': refset_3_item,
-                             'Talent15': refset_3_item,
-                             'Talent16': refset_3_item,
-                             'Talent17': refset_3_item,
-                             'Talent18': refset_3_item,
-                             'Talent19': refset_3_item,
-                             'Talent20': refset_3_item,
-                             'Talent21': refset_3_item,
-                             'Talent22': refset_3_item,
-                             'Talent23': refset_3_item,
-                             'Talent24': refset_3_item,
-                             'Talent25': refset_3_item,
-                             'Talent26': refset_3_item,
-                             'Talent27': refset_3_item,
-                             'Talent28': refset_3_item,
-                             'Talent29': refset_3_item,
-                             'Talent30': refset_3_item,
-                             'Talent31': refset_3_item,
-                             'Talent32': refset_3_item,
-                             'Talent33': refset_3_item,
-                             'Talent34': refset_3_item,
-                             'Talent35': refset_3_item,
-                             'Talent36': refset_3_item,
-                             'Talent37': refset_3_item,
-                             'Talent38': refset_3_item,
-                             'Talent39': refset_3_item,
-                             'Talent40': refset_3_item,
-                             'Talent41': refset_3_item,
-                             'Talent42': refset_3_item},
-    'BTL_AutoSetArts': {'Talent01': refset_3_arts_pc,
-                        'Talent02': refset_3_arts_pc,
-                        'Talent03': refset_3_arts_pc,
-                        'Talent04': refset_3_arts_pc,
-                        'Talent05': refset_3_arts_pc,
-                        'Talent06': refset_3_arts_pc,
-                        'Talent07': refset_3_arts_pc,
-                        'Talent08': refset_3_arts_pc,
-                        'Talent09': refset_3_arts_pc,
-                        'Talent10': refset_3_arts_pc,
-                        'Talent11': refset_3_arts_pc,
-                        'Talent12': refset_3_arts_pc,
-                        'Talent13': refset_3_arts_pc,
-                        'Talent14': refset_3_arts_pc,
-                        'Talent15': refset_3_arts_pc,
-                        'Talent16': refset_3_arts_pc,
-                        'Talent17': refset_3_arts_pc,
-                        'Talent18': refset_3_arts_pc,
-                        'Talent19': refset_3_arts_pc,
-                        'Talent20': refset_3_arts_pc,
-                        'Talent21': refset_3_arts_pc,
-                        'Talent22': refset_3_arts_pc,
-                        'Talent23': refset_3_arts_pc,
-                        'Talent24': refset_3_arts_pc,
-                        'Talent25': refset_3_arts_pc,
-                        'Talent26': refset_3_arts_pc,
-                        'Talent27': refset_3_arts_pc,
-                        'Talent28': refset_3_arts_pc,
-                        'Talent29': refset_3_arts_pc,
-                        'Talent30': refset_3_arts_pc,
-                        'Talent31': refset_3_arts_pc,
-                        'Talent32': refset_3_arts_pc,
-                        'Talent33': refset_3_arts_pc,
-                        'Talent34': refset_3_arts_pc,
-                        'Talent35': refset_3_arts_pc,
-                        'Talent36': refset_3_arts_pc,
-                        'Talent37': refset_3_arts_pc,
-                        'Talent38': refset_3_arts_pc,
-                        'Talent39': refset_3_arts_pc,
-                        'Talent40': refset_3_arts_pc,
-                        'Talent41': refset_3_arts_pc,
-                        'Talent42': refset_3_arts_pc},
-    'BTL_AutoSetGem': {'Talent01': refset_3_item,
-                       'Talent02': refset_3_item,
-                       'Talent03': refset_3_item,
-                       'Talent04': refset_3_item,
-                       'Talent05': refset_3_item,
-                       'Talent06': refset_3_item,
-                       'Talent07': refset_3_item,
-                       'Talent08': refset_3_item,
-                       'Talent09': refset_3_item,
-                       'Talent10': refset_3_item,
-                       'Talent11': refset_3_item,
-                       'Talent12': refset_3_item,
-                       'Talent13': refset_3_item,
-                       'Talent14': refset_3_item,
-                       'Talent15': refset_3_item,
-                       'Talent16': refset_3_item,
-                       'Talent17': refset_3_item,
-                       'Talent18': refset_3_item,
-                       'Talent19': refset_3_item,
-                       'Talent20': refset_3_item,
-                       'Talent21': refset_3_item,
-                       'Talent22': refset_3_item,
-                       'Talent23': refset_3_item,
-                       'Talent24': refset_3_item,
-                       'Talent25': refset_3_item,
-                       'Talent26': refset_3_item,
-                       'Talent27': refset_3_item,
-                       'Talent28': refset_3_item,
-                       'Talent29': refset_3_item,
-                       'Talent30': refset_3_item,
-                       'Talent31': refset_3_item,
-                       'Talent32': refset_3_item,
-                       'Talent33': refset_3_item,
-                       'Talent34': refset_3_item,
-                       'Talent35': refset_3_item,
-                       'Talent36': refset_3_item,
-                       'Talent37': refset_3_item,
-                       'Talent38': refset_3_item,
-                       'Talent39': refset_3_item,
-                       'Talent40': refset_3_item,
-                       'Talent41': refset_3_item,
-                       'Talent42': refset_3_item},
-    'BTL_AutoSetSkill': {'Talent01': refset_3_skill,
-                         'Talent02': refset_3_skill,
-                         'Talent03': refset_3_skill,
-                         'Talent04': refset_3_skill,
-                         'Talent05': refset_3_skill,
-                         'Talent06': refset_3_skill,
-                         'Talent07': refset_3_skill,
-                         'Talent08': refset_3_skill,
-                         'Talent09': refset_3_skill,
-                         'Talent10': refset_3_skill,
-                         'Talent11': refset_3_skill,
-                         'Talent12': refset_3_skill,
-                         'Talent13': refset_3_skill,
-                         'Talent14': refset_3_skill,
-                         'Talent15': refset_3_skill,
-                         'Talent16': refset_3_skill,
-                         'Talent17': refset_3_skill,
-                         'Talent18': refset_3_skill,
-                         'Talent19': refset_3_skill,
-                         'Talent20': refset_3_skill,
-                         'Talent21': refset_3_skill,
-                         'Talent22': refset_3_skill,
-                         'Talent23': refset_3_skill,
-                         'Talent24': refset_3_skill,
-                         'Talent25': refset_3_skill,
-                         'Talent26': refset_3_skill,
-                         'Talent27': refset_3_skill,
-                         'Talent28': refset_3_skill,
-                         'Talent29': refset_3_skill,
-                         'Talent30': refset_3_skill,
-                         'Talent31': refset_3_skill,
-                         'Talent32': refset_3_skill,
-                         'Talent33': refset_3_skill,
-                         'Talent34': refset_3_skill,
-                         'Talent35': refset_3_skill,
-                         'Talent36': refset_3_skill,
-                         'Talent37': refset_3_skill,
-                         'Talent38': refset_3_skill,
-                         'Talent39': refset_3_skill,
-                         'Talent40': refset_3_skill,
-                         'Talent41': refset_3_skill,
-                         'Talent42': refset_3_skill},
-    'BTL_ChSU_List': {'Reward': 'BTL_ChSU_Reward'},
-    'BTL_ChSU_Reward': {'FirstReward': (None, None, 'chta_reward')},
-    'BTL_ChSU_ShopItem': {'Item': (None, None, 'chsu_shopitem')},
-    'BTL_ChTA_List': {'Reward': 'BTL_ChTA_Reward'},
-    'BTL_ChTA_Reward': {'FirstReward': (None, None, 'chta_reward')},
-    'BTL_Combo': {'PreCombo': 'BTL_Combo'},
-    'BTL_Element': {'ImpactEnhance': refset_3_enhance,
-                    'KeepEnhance': refset_3_enhance},
-    'BTL_EnFamily': {'field_6C2A5517': refset_3_item,
-                     'field_AB489C01': refset_3_item,
-                     'field_FD843EC5': refset_3_item,
-                     'field_76080402': refset_3_item},
-    'BTL_Enemy': {'Resource': 'BTL_EnRsc',
-                  'EnemyAiHead': 'BTL_EnemyAi',
-                  'EnemyAiTail': 'BTL_EnemyAi',
-                  'EnemyFamily': 'BTL_EnFamily',
-                  'AutoSlot0': refset_3_arts_en,
-                  'AutoSlot1': refset_3_arts_en,
-                  'AutoSlot2': refset_3_arts_en,
-                  'ArtsSlot0': refset_3_arts_en,
-                  'ArtsSlot1': refset_3_arts_en,
-                  'ArtsSlot2': refset_3_arts_en,
-                  'ArtsSlot3': refset_3_arts_en,
-                  'ArtsSlot4': refset_3_arts_en,
-                  'ArtsSlot5': refset_3_arts_en,
-                  'ArtsSlot6': refset_3_arts_en,
-                  'ArtsSlot7': refset_3_arts_en,
-                  'ArtsSlot8': refset_3_arts_en,
-                  'ArtsSlot9': refset_3_arts_en,
-                  'ArtsSlot10': refset_3_arts_en,
-                  'ArtsSlot11': refset_3_arts_en,
-                  'ArtsSlot12': refset_3_arts_en,
-                  'ArtsSlot13': refset_3_arts_en,
-                  'ArtsSlot14': refset_3_arts_en,
-                  'ArtsSlot15': refset_3_arts_en,
-                  'EnhanceSlot0': refset_3_enhance,
-                  'EnhanceSlot1': refset_3_enhance,
-                  'EnhanceSlot2': refset_3_enhance,
-                  'RageStance': refset_3_stance},
-    'BTL_EnemyDrop_Material': {'EnFamily': 'BTL_EnFamily'},
-    'BTL_HyperCombo': {'Reaction': 'BTL_Combo'},
-    'BTL_Pair': {'Chr1': refset_3_pc,
-                 'Chr2': refset_3_pc,
-                 'field_3B047206': refset_3_item,
-                 'PairSkill': refset_3_skill,
-                 'HyperCombo': 'BTL_HyperCombo'},
-    'BTL_SetUp': {'BulletID': 'BTL_Bullet',
-                  'BulletEffID': 'BTL_BulletEffect',
-                  'VanishParam1': (None, None, 'field_vanish')},
-    'BTL_Skill_PC': {'UseTalent': refset_3_talent,
-                     'UseChr': refset_3_pc,
-                     'EnSkillAchieve': 'BTL_Achievement'},
-    'BTL_SpUnique': {'SpUniqueEnemy': 'FLD_EnemyData'},
-    'BTL_Talent': {'WeaponType': 'BTL_WpnType',
-                   'WeaponType2': 'BTL_WpnType',
-                   'TalentAptitude1': 'BTL_TalentAptitude',
-                   'TalentAptitude2': 'BTL_TalentAptitude',
-                   'TalentAptitude3': 'BTL_TalentAptitude',
-                   'TalentAptitude4': 'BTL_TalentAptitude',
-                   'TalentAptitude5': 'BTL_TalentAptitude',
-                   'TalentAptitude6': 'BTL_TalentAptitude'},
-    'CHR_PC': {'SpModelCond1': refset_3_condition,
-               'SpModelCond2': refset_3_condition,
-               'DefTalent': refset_3_talent,
-               'DefAcce1': refset_3_item,
-               'DefAcce2': refset_3_item,
-               'DefAcce3': refset_3_item,
-               'DefGem1': 'MNU_Cloudgem',
-               'DefGem2': 'MNU_Cloudgem',
-               'DefGem3': 'MNU_Cloudgem',
-               'UroBody': 'CHR_UroBody',
-               'UroPartner': refset_3_pc,
-               'UroCondition': refset_3_condition,
-               'TalentNPCArts1': refset_3_arts_pc,
-               'TalentNPCArts2': refset_3_arts_pc,
-               'TalentNPCArts3': refset_3_arts_pc,
-               'TalentNPCArts4': refset_3_arts_pc,
-               'TalentNPCArts5': refset_3_arts_pc,
-               'TalentNPCArtsCond1': refset_3_condition,
-               'TalentNPCArtsCond2': refset_3_condition,
-               'TalentNPCArtsCond3': refset_3_condition,
-               'TalentNPCArtsCond4': refset_3_condition,
-               'TalentNPCArtsCond5': refset_3_condition,
-               'TalentNPCTalentArts': refset_3_arts_pc,
-               'TalentNPCTalentArtsCond': refset_3_condition,
-               'TalentNPCSkill1': refset_3_skill,
-               'TalentNPCSkill2': refset_3_skill,
-               'TalentNPCSkill3': refset_3_skill,
-               'TalentNPCSkill4': refset_3_skill,
-               'TalentNPCSkill5': refset_3_skill,
-               'TalentNPCSkill6': refset_3_skill,
-               'TalentNPCSkillCond1': refset_3_condition,
-               'TalentNPCSkillCond2': refset_3_condition,
-               'TalentNPCSkillCond3': refset_3_condition,
-               'TalentNPCSkillCond4': refset_3_condition,
-               'TalentNPCSkillCond5': refset_3_condition,
-               'TalentNPCSkillCond6': refset_3_condition,
-               'HeroChainEff': refset_3_enhance},
-    'CHR_UroBody': {'Arts1': refset_3_arts_pc,
-                    'Arts2': refset_3_arts_pc,
-                    'Arts3': refset_3_arts_pc,
-                    'Arts4': refset_3_arts_pc,
-                    'Arts5': refset_3_arts_pc,
-                    'Arts6': refset_3_arts_pc,
-                    'TalentArts1': refset_3_arts_pc,
-                    'TalentArts2': refset_3_arts_pc,
-                    'TalentArts3': refset_3_arts_pc},
-    'EVT_HeroEquip': {'pc': refset_3_pc},
-    'EVT_HideList': {'hideObj01': refset_3_gimmick_object,
-                     'hideObj02': refset_3_gimmick_object,
-                     'hideObj03': refset_3_gimmick_object,
-                     'hideObj04': refset_3_gimmick_object,
-                     'hideObj05': refset_3_gimmick_object,
-                     'hideObj06': refset_3_gimmick_object,
-                     'hideObj07': refset_3_gimmick_object,
-                     'hideObj08': refset_3_gimmick_object,
-                     'hideObj09': refset_3_gimmick_object,
-                     'hideObj10': refset_3_gimmick_object,
-                     'hideObj11': refset_3_gimmick_object,
-                     'hideObj12': refset_3_gimmick_object,
-                     'hideObj13': refset_3_gimmick_object,
-                     'hideObj14': refset_3_gimmick_object,
-                     'hideObj15': refset_3_gimmick_object,
-                     'hideObj16': refset_3_gimmick_object},
-    'EVT_listEv': {'linkID': refset_3_event,
-                   'linkCondition': 'FLD_ConditionList',
-                   'linkID2': refset_3_event,
-                   'linkCondition2': 'FLD_ConditionList'},
-    'EVT_listFev': {'linkID': refset_3_event,
-                    'linkCondition': 'FLD_ConditionList'},
-    'EVT_listQst': {'linkID': refset_3_event,
-                    'linkCondition': 'FLD_ConditionList',
-                    'linkID2': refset_3_event,
-                    'linkCondition2': 'FLD_ConditionList'},
-    'EVT_listTlk': {'linkID': refset_3_event,
-                    'linkCondition': 'FLD_ConditionList'},
-    'D1C136A1': {'linkID': refset_3_event,
-                 'linkCondition': 'FLD_ConditionList',
-                 'linkID2': refset_3_event,
-                 'linkCondition2': 'FLD_ConditionList'},
-    'FLD_ColonyList': {'map': refset_3_map,
-                       'Reward1': 'FLD_PerkPermanent',
-                       'Reward2': 'FLD_PerkPermanent',
-                       'Reward3': 'FLD_PerkPermanent',
-                       'Reward4': 'FLD_PerkPermanent',
-                       'Reward5': 'FLD_PerkPermanent'},
-    'FLD_ConditionClassLv': {'ClassID': refset_3_talent},
-    'FLD_ConditionEnv': {'Weather': 'RSC_WeatherSet'},
-    'FLD_ConditionList': {'Condition': (None, None, '3_FLD_ConditionList')},
-    'FLD_ConditionQuest': {'QuestFlag1': (None, None, 'condition_quest'),
-                           'QuestFlag2': (None, None, 'condition_quest'),
-                           'NotQuestFlag1': (None, None, 'condition_quest'),
-                           'NotQuestFlag2': (None, None, 'condition_quest')},
-    'FLD_ConditionScenario': {'ScenarioMin': 'SYS_ScenarioFlag',
-                              'ScenarioMax': 'SYS_ScenarioFlag',
-                              'NotScenarioMin': 'SYS_ScenarioFlag',
-                              'NotScenarioMax': 'SYS_ScenarioFlag'},
-    'FLD_EnemyData': {'IdBattleEnemy': 'BTL_Enemy',
-                      'field_C6717CFE': '152F4D70',
-                      'IdDropPrecious': refset_3_item,
-                      'GetEnArts': refset_3_arts_pc,
-                      'GetEnSkill': refset_3_skill},
-    'FLD_InfoList': {'EventName': refset_3_event_name,
-                     'PieceID1': refset_3_item,
-                     'PieceID2': refset_3_item,
-                     'PieceID3': refset_3_item,
-                     'PieceID4': refset_3_item,
-                     'PieceID5': refset_3_item,
-                     'FreePieceID1': refset_3_item,
-                     'FreePieceID2': refset_3_item,
-                     'FreePieceID3': refset_3_item,
-                     'FreePieceID4': refset_3_item,
-                     'FreePieceID5': refset_3_item,
-                     'NeedCharacter': refset_3_pc},
-    'FLD_InterestEventStart': {'Character1': 'CHR_PC',
-                               'Character2': 'CHR_PC',
-                               'Character3': 'CHR_PC',
-                               'Character4': 'CHR_PC',
-                               'Character5': 'CHR_PC',
-                               'Text1': '621C6EF4',
-                               'Text2': '621C6EF4',
-                               'Text3': '621C6EF4',
-                               'Text4': '621C6EF4',
-                               'Text5': '621C6EF4'},
-    'FLD_InterestEventReaction': {'Character': 'CHR_PC',
-                                  'Text': '621C6EF4'},
-    'FLD_InterestEventTable': {'StartEvent1': 'FLD_InterestEventStart',
-                               'StartEvent2': 'FLD_InterestEventStart',
-                               'StartEvent3': 'FLD_InterestEventStart',
-                               'StartEvent4': 'FLD_InterestEventStart',
-                               'StartEvent5': 'FLD_InterestEventStart',
-                               'StartEvent6': 'FLD_InterestEventStart',
-                               'ReactionEvent1': 'FLD_InterestEventReaction',
-                               'ReactionEvent2': 'FLD_InterestEventReaction',
-                               'ReactionEvent3': 'FLD_InterestEventReaction',
-                               'ReactionEvent4': 'FLD_InterestEventReaction',
-                               'ReactionEvent5': 'FLD_InterestEventReaction',
-                               'ReactionEvent6': 'FLD_InterestEventReaction'},
-    'FLD_KizunaChangeFlag': {'EventID': refset_3_event,
-                             'NpcIconFlag': '2BBE255B',
-                             'ColonyIconFlag': 'E1C78647',
-                             'ArrowNpcFlag': '861D003A',
-                             'ArrowColonyFlag': 'FAC1F258'},
-    'FLD_NpcList': {'TalkListID': 'FLD_NpcTalkList',
-                    'Resource1': 'FLD_NpcResource',
-                    'Resource2': 'FLD_NpcResource',
-                    'Resource3': 'FLD_NpcResource',
-                    'Resource4': 'FLD_NpcResource'},
-    'FLD_NpcTalkList': {'BaseTalkID': 'FLD_NpcTalkResource',
-                        'QuestTalk1': 'FLD_NpcTalkResource',
-                        'QuestTalk2': 'FLD_NpcTalkResource',
-                        'QuestTalk3': 'FLD_NpcTalkResource',
-                        'QuestTalk4': 'FLD_NpcTalkResource',
-                        'QuestTalk5': 'FLD_NpcTalkResource',
-                        'QuestTalk6': 'FLD_NpcTalkResource',
-                        'QuestTalk7': 'FLD_NpcTalkResource',
-                        'QuestTalk8': 'FLD_NpcTalkResource',
-                        'TalkID1': 'FLD_NpcTalkResource',
-                        'TalkID2': 'FLD_NpcTalkResource',
-                        'TalkID3': 'FLD_NpcTalkResource',
-                        'TalkID4': 'FLD_NpcTalkResource',
-                        'TalkID5': 'FLD_NpcTalkResource'},
-    'FLD_NpcTalkResource': {'BaseEventName': refset_3_event_name,
-                            'EventName1': refset_3_event_name,
-                            'EventName2': refset_3_event_name,
-                            'EventName3': refset_3_event_name,
-                            'EventName4': refset_3_event_name,
-                            'EventName5': refset_3_event_name,
-                            'EventName6': refset_3_event_name,
-                            'EventName7': refset_3_event_name,
-                            'EventName8': refset_3_event_name,
-                            'EventName9': refset_3_event_name,
-                            'EventName10': refset_3_event_name},
-    'FLD_RelationColony': {'field_6E741E84': 'FLD_ColonyList',
-                           'field_32A30DD7': 'FLD_ColonyList'},
-    'FLD_UMonsterList': {'Zone': refset_3_map},
-    'ITM_Collepedia': {'Reward1': 'ITM_RewardCollepedia',
-                       'RelationID': 'FLD_RelationNpc',
-                       'ColonyRelationID': 'FLD_RelationColony'},
-    'ITM_Gem': {'Craft': 'BTL_GemCraft',
-                'Craft2': 'BTL_GemCraft'},
-    'ITM_RewardAssort': {'Reward1': refset_3_item,
-                         'Reward2': refset_3_item,
-                         'Reward3': refset_3_item,
-                         'Reward4': refset_3_item,
-                         'Reward5': refset_3_item,
-                         'Reward6': refset_3_item,
-                         'Reward7': refset_3_item,
-                         'Reward8': refset_3_item,
-                         'Reward9': refset_3_item,
-                         'Reward10': refset_3_item,
-                         'Reward11': refset_3_item,
-                         'Reward12': refset_3_item,
-                         'Reward13': refset_3_item,
-                         'Reward14': refset_3_item,
-                         'Reward15': refset_3_item,
-                         'Reward16': refset_3_item,
-                         'Reward17': refset_3_item,
-                         'Reward18': refset_3_item,
-                         'Reward19': refset_3_item,
-                         'Reward20': refset_3_item},
-    'ITM_RewardCollepedia': {'Reward1': refset_3_item},
-    'ITM_RewardQuest': {'Reward1': refset_3_item,
-                        'Reward2': refset_3_item,
-                        'Reward3': refset_3_item,
-                        'Reward4': refset_3_item},
-    'MNU_DLCVolInfo': {'field_2AF7F370': 'msg_mnu_dlc_info',
-                       'ReleaseStatusText': 'msg_mnu_dlc_info',
-                       'SubTitleText': 'msg_mnu_dlc_info'},
-    'MNU_DlcGift': {'vol_id': 'MNU_DLCVolInfo',
-                    'contents_id': 'MNU_DLCContentsInfo'},
-    'MNU_EventTheater_scn': {'ev01_id': refset_3_event,
-                             'ev02_id': refset_3_event,
-                             'ev03_id': refset_3_event,
-                             'ev04_id': refset_3_event,
-                             'ev05_id': refset_3_event,
-                             'ev06_id': refset_3_event,
-                             'ev07_id': refset_3_event,
-                             'ev08_id': refset_3_event,
-                             'ev09_id': refset_3_event,
-                             'ev10_id': refset_3_event},
-    'MNU_HeroDictionary': {'field_F5E05E39': 'FLD_ConditionList',
-                           'WakeupQuest': refset_3_quest,
-                           'Arts1': refset_3_arts_pc,
-                           'Arts2': refset_3_arts_pc,
-                           'Arts3': refset_3_arts_pc,
-                           'Arts4': refset_3_arts_pc,
-                           'Arts5': refset_3_arts_pc,
-                           'Arts6': refset_3_arts_pc},
-    'MNU_MapInfoFile': {'top_id': 'MNU_MapInfo'},
-    'MNU_PatchList': {'LinkDLC': 'MNU_DLCVolInfo'},
-    'MNU_ShopList': {'TableID': 'MNU_ShopTable'},
-    'MNU_UroSkillList': {'SkillID': refset_3_skill,
-                         'UroBodyID': 'CHR_UroBody'},
-    'MNU_saveload_scenario': {'ScenarioCond': refset_3_condition},
-    'QST_List': {'RewardSetA': 'ITM_RewardQuest',
-                 'RewardSetB': 'ITM_RewardQuest',
-                 'StartPurpose': 'QST_Purpose',
-                 'LinkQuest': 'QST_List'},
-    'QST_Purpose': {'CallEventA': refset_3_event_name,
-                    'CallEventB': refset_3_event_name,
-                    'NextPurposeA': 'QST_Purpose',
-                    'NextPurposeB': 'QST_Purpose'},
-    'QST_Task': {'TaskID1': (None, None, 'qst_task'),
-                 'TaskID2': (None, None, 'qst_task'),
-                 'TaskID3': (None, None, 'qst_task'),
-                 'TaskID4': (None, None, 'qst_task')},
-    'QST_TaskCollect': {'TargetID': refset_3_item},
-    'QST_TaskRequest': {'ItemSetID1': 'QST_RequestItemSet',
-                        'ItemSetID2': 'QST_RequestItemSet',
-                        'ItemSetID3': 'QST_RequestItemSet',
-                        'ItemSetID4': 'QST_RequestItemSet',
-                        'ItemSetID5': 'QST_RequestItemSet',
-                        'ItemSetID6': 'QST_RequestItemSet',
-                        'ItemSetID7': 'QST_RequestItemSet',
-                        'ItemSetID8': 'QST_RequestItemSet',
-                        'LinkQuestTask': 'QST_Task'},
-    'QST_TaskTalk': {'TargetID': refset_3_npc},
-    'RSC_IK': {'FootL00': 'RSC_FootIK',
-               'FootR00': 'RSC_FootIK',
-               'FootL01': 'RSC_FootIK',
-               'FootR01': 'RSC_FootIK',
-               'FootL02': 'RSC_FootIK',
-               'FootR02': 'RSC_FootIK',
-               'Placement': 'RSC_PlacementIK',
-               'Toe': 'RSC_ToeIK',
-               'Spine': 'RSC_SpineIK',
-               'LookAt': 'RSC_LookAtIK',
-               'Eye': 'RSC_EyeIK',
-               'SlopeGround': 'RSC_SlopeGroundIK'},
-    'SYS_FlowEventArtsSet': {'ChrID': refset_3_pc,
-                             'ClassID': refset_3_talent,
-                             'ArtsID': refset_3_arts_pc},
-    'SYS_FlowEventList': {'EventID': (None, None, 'flow_event')},
-    'SYS_FlowEventDropInfoPiece': {'NPC': refset_3_npc},
-    'SYS_GimmickPreparing': {'Gimmick': refset_3_gimmick},
-    'SYS_MapJumpList': {'FormationID': refset_3_gimmick},
-    'SYS_MapList': {'ResourceId': 'RSC_MapFile',
-                    'WeatherData': 'SYS_WeatherTable'},
-    'SYS_TrialPartyInfo': {'PC01': refset_3_pc,
-                           'ArtsSet01': 'SYS_TrialPcInfo',
-                           'PC02': refset_3_pc,
-                           'ArtsSet02': 'SYS_TrialPcInfo',
-                           'PC03': refset_3_pc,
-                           'ArtsSet03': 'SYS_TrialPcInfo',
-                           'PC04': refset_3_pc,
-                           'ArtsSet04': 'SYS_TrialPcInfo',
-                           'PC05': refset_3_pc,
-                           'ArtsSet05': 'SYS_TrialPcInfo',
-                           'PC06': refset_3_pc,
-                           'ArtsSet06': 'SYS_TrialPcInfo'},
-    'SYS_TrialList': {'Leader': refset_3_pc,
-                      'Party': 'SYS_TrialPartyInfo'},
-    'SYS_TrialPcInfo': {'Talent': refset_3_talent,
-                        'arts01': refset_3_arts_pc,
-                        'arts02': refset_3_arts_pc,
-                        'arts03': refset_3_arts_pc,
-                        'arts04': refset_3_arts_pc,
-                        'arts05': refset_3_arts_pc,
-                        'arts06': refset_3_arts_pc,
-                        'NoahTalentArts': refset_3_arts_pc},
-    'SYS_Tutorial': {'EnemyInfo': 'SYS_TutorialEnemyInfo'},
-    'SYS_TutorialEnemyInfo': {'field_10FF2123': refset_3_enemy,
-                              'field_1A391DEB': refset_3_enemy,
-                              'field_032170A4': refset_3_enemy},
-    'SYS_WeatherRate': {'Weather1': 'RSC_WeatherSet',
-                        'Weather2': 'RSC_WeatherSet',
-                        'Weather3': 'RSC_WeatherSet',
-                        'Weather4': 'RSC_WeatherSet'},
-    'SYS_WeatherTable': {'TimeZone01': 'SYS_WeatherRate',
-                         'TimeZone02': 'SYS_WeatherRate',
-                         'TimeZone03': 'SYS_WeatherRate',
-                         'TimeZone04': 'SYS_WeatherRate',
-                         'TimeZone05': 'SYS_WeatherRate'},
-    'ma01a_GMK_Corpse': {'EventID': refset_3_event_name,
-                         'Reward': 'ITM_RewardGrieve'},
-    'ma04a_GMK_Corpse': {'EventID': refset_3_event_name,
-                         'Reward': 'ITM_RewardGrieve'},
-    'ma07a_GMK_Corpse': {'EventID': refset_3_event_name,
-                         'Reward': 'ITM_RewardGrieve'},
-    'ma09a_GMK_Corpse': {'EventID': refset_3_event_name,
-                         'Reward': 'ITM_RewardGrieve'},
-    'ma11a_GMK_Corpse': {'EventID': refset_3_event_name,
-                         'Reward': 'ITM_RewardGrieve'},
-    'ma01a_GMK_Event': {'EventID': refset_3_event_name},
-    'ma04a_GMK_Event': {'EventID': refset_3_event_name},
-    'ma07a_GMK_Event': {'EventID': refset_3_event_name},
-    'ma09a_GMK_Event': {'EventID': refset_3_event_name},
-    'ma11a_GMK_Event': {'EventID': refset_3_event_name},
-    'ma14a_GMK_Event': {'EventID': refset_3_event_name},
-    'ma15a_GMK_Event': {'EventID': refset_3_event_name},
-    'ma17a_GMK_Event': {'EventID': refset_3_event_name},
-    'ma20a_GMK_Event': {'EventID': refset_3_event_name},
-    'ma22a_GMK_Event': {'EventID': refset_3_event_name},
-    'ma40a_GMK_Event': {'EventID': refset_3_event_name},
-    'ma90a_GMK_Event': {'EventID': refset_3_event_name},
-    'ma40a_GMK_KizunaEvent': {'EventName': refset_3_event_name,
-                              'field_3EB3E425': refset_3_event_name},
-    'ma01a_GMK_TreasureBox': {'RewardID': 'ITM_RewardAssort'},
-    'ma04a_GMK_TreasureBox': {'RewardID': 'ITM_RewardAssort'},
-    'ma07a_GMK_TreasureBox': {'RewardID': 'ITM_RewardAssort'},
-    'ma09a_GMK_TreasureBox': {'RewardID': 'ITM_RewardAssort'},
-    'ma11a_GMK_TreasureBox': {'RewardID': 'ITM_RewardAssort'},
-    'ma14a_GMK_TreasureBox': {'RewardID': 'ITM_RewardAssort'},
-    'ma15a_GMK_TreasureBox': {'RewardID': 'ITM_RewardAssort'},
-    'ma17a_GMK_TreasureBox': {'RewardID': 'ITM_RewardAssort'},
-    'ma22a_GMK_TreasureBox': {'RewardID': 'ITM_RewardAssort'},
-    'ma40a_GMK_TreasureBox': {'RewardID': 'ITM_RewardAssort'},
-    'C566F8E6': {'RewardID': 'ITM_RewardAssort'},  # another ma40a_GMK table
-    'ma90a_GMK_TreasureBox': {'RewardID': 'ITM_RewardAssort'},
-    '02E2BD0D': {'affType': '76D0D7D9',
-                 'matchPop1': refset_3_gimmick,
-                 'matchPop2': refset_3_gimmick,
-                 'matchPop3': refset_3_gimmick,
-                 'matchPop4': refset_3_gimmick,
-                 'CollectionID': 'FLD_AffCollection'},
-    '0184414B': {'Contents1': '7138BADF',
-                 'Contents2': '7138BADF',
-                 'Contents3': '7138BADF',
-                 'Contents4': '7138BADF'},
-    '0B368E78': {'EffectCondition': refset_3_condition,
-                 'SeCondition': refset_3_condition},
-    '0F058F3F': {'Contents1': 'ABE85D5D',
-                 'Contents2': 'ABE85D5D',
-                 'Contents3': 'ABE85D5D',
-                 'Contents4': 'ABE85D5D'},
-    '0F68F195': {'Contents1': '70810224',
-                 'Contents2': '70810224',
-                 'Contents3': '70810224',
-                 'Contents4': '70810224'},
-    '152F4D70': {'field_791E2B72': 'BTL_EnemyDrop_Appoint'},
-    '1623B3A0': {'ContentsID': 'MNU_DLCContentsInfo'},
-    '1A109460': {'ItmGemID': refset_3_item},  # mapping from gem ID to item ID
-    '268AE713': {'affType': '76D0D7D9'},
-    '296A9010': {'EventID': refset_3_event_name},
-    '39D667D1': {'Talent': refset_3_talent},
-    '4DA4962C': {'NPC': refset_3_npc},
-    '55C603C7': {'affType': '76D0D7D9'},
-    '57554B95': {'Contents1': 'D4A3534F',
-                 'Contents2': 'D4A3534F',
-                 'Contents3': 'D4A3534F',
-                 'Contents4': 'D4A3534F'},
-    '5A6A68B2': {'PC1': refset_3_pc,
-                 'PC2': refset_3_pc},
-    '5B1907A1': {'TargetID1': refset_3_npc,
-                 'TargetID2': refset_3_npc,
-                 'TargetID3': refset_3_npc,
-                 'TargetID4': refset_3_npc,
-                 'TargetID5': refset_3_npc,
-                 'TargetID6': refset_3_npc,
-                 'TargetID7': refset_3_npc,
-                 'TargetID8': refset_3_npc},
-    '5F654D94': {'Talent': refset_3_talent,
-                 'SkillID': refset_3_skill},
-    '62E4FA3E': {'Contents1': '7A6735C6',
-                 'Contents2': '7A6735C6',
-                 'Contents3': '7A6735C6',
-                 'Contents4': '7A6735C6'},
-    '6EC8096C': {'CookName': 'FLD_CookRecipe'},
-    '72C56041': {'PC1': refset_3_pc,
-                 'Object1': 'RSC_MapObjList',
-                 'PC2': refset_3_pc,
-                 'Object2': 'RSC_MapObjList'},
-    '76FFBF3F': {'affType': '76D0D7D9'},
-    '7A066663': {'TaskID': refset_3_quest_taskid},
-    '7A25F920': {'Contents1': '808F8A04',
-                 'Contents2': '808F8A04',
-                 'Contents3': '808F8A04',
-                 'Contents4': '808F8A04'},
-    '861D003A': {'RelationID1': 'FLD_RelationNpc',
-                 'RelationID2': 'FLD_RelationNpc',
-                 'RelationID3': 'FLD_RelationNpc',
-                 'RelationID4': 'FLD_RelationNpc',
-                 'RelationID5': 'FLD_RelationNpc',
-                 'RelationID6': 'FLD_RelationNpc',
-                 'RelationID7': 'FLD_RelationNpc',
-                 'RelationID8': 'FLD_RelationNpc',
-                 'RelationID9': 'FLD_RelationNpc',
-                 'RelationID10': 'FLD_RelationNpc'},
-    '947C9B0C': {'field_7A94A94B': 'ma40a_GMK_Location'},
-    '9ED5F02A': {'EventID': refset_3_event_name},
-    'A24771FC': {'Contents1': '9AE9C010',
-                 'Contents2': '9AE9C010',
-                 'Contents3': '9AE9C010',
-                 'Contents4': '9AE9C010'},
-    'A6AAF689': {'ArtsID': refset_3_arts_pc},
-    'B4158056': {'field_7A94A94B': 'ma40a_GMK_Location'},
-    'B971C420': {'Talent': refset_3_talent,
-                 'ArtsID': (('BTL_Arts_PC', 'E29EF7E9'), )},
-    'BF287371': {'affType': '76D0D7D9'},
-    'C29E28FD': {'Object1': 'RSC_MapObjList'},
-    'CC55A8C8': {'setupName': refset_3_event_name},
-    'D327B2BC': {'TaskID': 'QST_Task'},
-    'D9B88F26': {'CompBonus1': refset_3_enhance,
-                 'CompBonus2': refset_3_enhance,
-                 'CompBonus3': refset_3_enhance,
-                 'CompBonus4': refset_3_enhance,
-                 'CompBonus5': refset_3_enhance,
-                 'KeyChr1': refset_3_pc,
-                 'KeyChr2': refset_3_pc,
-                 'KeyChr3': refset_3_pc,
-                 'KeyChr4': refset_3_pc,
-                 'KeyChr5': refset_3_pc,
-                 'KeyChr6': refset_3_pc},
-    'DA526616': {'VolID': '5CD15665'},
-    'DF81B4D2': {'affType': '76D0D7D9'},
-    'E44BEAA2': {'PC': refset_3_pc},
-    'F0D5C3B6': {'EventID': refset_3_event_name},
-    'FAC1F258': {'RelationID1': 'FLD_RelationColony',
-                 'RelationID2': 'FLD_RelationColony',
-                 'RelationID3': 'FLD_RelationColony',
-                 'RelationID4': 'FLD_RelationColony'},
-    'FD4384CB': {'EventID': refset_3_event_name},
-    'FEF315B6': {'EventID': refset_3_event_name},
-}
-
-table_xrefs['XDE'] = {
-    'AMR_DlList': {'Affix[0]': 'BTL_ItemSkill_doll',
-                   'Affix[1]': 'BTL_ItemSkill_doll',
-                   'Affix[2]': 'BTL_ItemSkill_doll'},
-    'AMR_PcList': {'Affix[0]': 'BTL_ItemSkill_inner',
-                   'Affix[1]': 'BTL_ItemSkill_inner',
-                   'Affix[2]': 'BTL_ItemSkill_inner'},
-    'BLH_PCAmrList': {'HEAD': 'AMR_PcList',
-                      'UPPER': 'AMR_PcList',
-                      'ARM_R': 'AMR_PcList',
-                      'ARM_L': 'AMR_PcList',
-                      'LOWER': 'AMR_PcList'},
-    'BLH_PetList': {'ItemID': 'ITM_PreciousList'},
-    'BTL_DlArtsList': {'ActNo': 'BTL_DlArtsActNoList'},
-    'BTL_DollGearList': {'job01': 'BTL_DollGearEffect',
-                         'job02': 'BTL_DollGearEffect',
-                         'job03': 'BTL_DollGearEffect',
-                         'job04': 'BTL_DollGearEffect',
-                         'job05': 'BTL_DollGearEffect',
-                         'job06': 'BTL_DollGearEffect'},
-    'BTL_EnBook': {'BaseEnemyID': 'CHR_EnList',
-                   'HighEnemyID': 'CHR_EnList',
-                   'MaterialNor1': 'ITM_MaterialList',
-                   'MaterialNor2': 'ITM_MaterialList',
-                   'MaterialNor3': 'ITM_MaterialList',
-                   'MaterialNor4': 'ITM_MaterialList',
-                   'MaterialNor5': 'ITM_MaterialList',
-                   'MaterialNor6': 'ITM_MaterialList',
-                   'MaterialNor7': 'ITM_MaterialList',
-                   'MaterialNor8': 'ITM_MaterialList'},
-    'BTL_EnBookZone': {'ZoneID': 'MNU_ZoneNameConvert'},
-    'BTL_SoulData': {'VoiceID': 'BTL_SoulVoice'},
-    'BTL_SoulResponse': {'svResMA[0]': 'BTL_SoulResCode',
-                         'svResMA[1]': 'BTL_SoulResCode',
-                         'svResMA[2]': 'BTL_SoulResCode',
-                         'svResMA[3]': 'BTL_SoulResCode',
-                         'svResMA[4]': 'BTL_SoulResCode',
-                         'svResMA[5]': 'BTL_SoulResCode',
-                         'svResMA[6]': 'BTL_SoulResCode',
-                         'svResMA[7]': 'BTL_SoulResCode',
-                         'svResMA[8]': 'BTL_SoulResCode',
-                         'svResMA[9]': 'BTL_SoulResCode',
-                         'svResMA[10]': 'BTL_SoulResCode',
-                         'svResMA[11]': 'BTL_SoulResCode',
-                         'svResFE[0]': 'BTL_SoulResCode',
-                         'svResFE[1]': 'BTL_SoulResCode',
-                         'svResFE[2]': 'BTL_SoulResCode',
-                         'svResFE[3]': 'BTL_SoulResCode',
-                         'svResFE[4]': 'BTL_SoulResCode',
-                         'svResFE[5]': 'BTL_SoulResCode',
-                         'svResFE[6]': 'BTL_SoulResCode',
-                         'svResFE[7]': 'BTL_SoulResCode',
-                         'svResFE[8]': 'BTL_SoulResCode',
-                         'svResFE[9]': 'BTL_SoulResCode',
-                         'svResFE[10]': 'BTL_SoulResCode',
-                         'svResFE[11]': 'BTL_SoulResCode',
-                         'svResNP[0]': 'BTL_SoulResCode',
-                         'svResNP[1]': 'BTL_SoulResCode',
-                         'svResNP[2]': 'BTL_SoulResCode',
-                         'svResNP[3]': 'BTL_SoulResCode',
-                         'svResNP[4]': 'BTL_SoulResCode',
-                         'svResNP[5]': 'BTL_SoulResCode',
-                         'svResNP[6]': 'BTL_SoulResCode',
-                         'svResNP[7]': 'BTL_SoulResCode',
-                         'svResNP[8]': 'BTL_SoulResCode',
-                         'svResNP[9]': 'BTL_SoulResCode',
-                         'svResNP[10]': 'BTL_SoulResCode',
-                         'svResNP[11]': 'BTL_SoulResCode',
-                         'svResNP[12]': 'BTL_SoulResCode',
-                         'svResNP[13]': 'BTL_SoulResCode',
-                         'svResNP[14]': 'BTL_SoulResCode',
-                         'svResNP[15]': 'BTL_SoulResCode',
-                         'svResNP[16]': 'BTL_SoulResCode',
-                         'svResNP[17]': 'BTL_SoulResCode',
-                         'svResNP[29]': 'BTL_SoulResCode',
-                         'svResNP[30]': 'BTL_SoulResCode',
-                         'svResNP[31]': 'BTL_SoulResCode',
-                         'svResNP[32]': 'BTL_SoulResCode'},
-    'BTL_SoulTrigger': {'Voice1': 'BTL_SoulVoice',
-                        'Voice2': 'BTL_SoulVoice',
-                        'Voice3': 'BTL_SoulVoice'},
-    'CHR_ClassInfo': {'promotion_A': 'CHR_ClassInfo',
-                      'promotion_B': 'CHR_ClassInfo',
-                      'promotion_C': 'CHR_ClassInfo'},
-    'CHR_EnList': {'ParamID': 'CHR_EnParam',
-                   'TypeAi': 'ai',
-                   'ParamRev': 'CHR_EnParamRev',
-                   'FieldPatternID': 'CHR_EnFieldPattern',
-                   'Partner': 'CHR_EnList',
-                   'PopParamID': 'CHR_EnPopParam',
-                   'DropTableID': 'DRP_BoxTable',
-                   'StartupBuff': 'BTL_BuffList',
-                   'BGMID': 'RSC_BattleBgm',
-                   'ZoneID': 'MNU_ZoneNameConvert'},
-    'CHR_EnParam': {'ResourceID': 'RSC_EnList',
-                    'ArtsNum1': 'BTL_EnArtsList',
-                    'ArtsNum2': 'BTL_EnArtsList',
-                    'ArtsNum3': 'BTL_EnArtsList',
-                    'ArtsNum4': 'BTL_EnArtsList',
-                    'ArtsNum5': 'BTL_EnArtsList',
-                    'ArtsNum6': 'BTL_EnArtsList',
-                    'ArtsNum7': 'BTL_EnArtsList',
-                    'ArtsNum8': 'BTL_EnArtsList',
-                    'ArtsNum9': 'BTL_EnArtsList',
-                    'ArtsNum10': 'BTL_EnArtsList',
-                    'ArtsNum11': 'BTL_EnArtsList',
-                    'ArtsNum12': 'BTL_EnArtsList',
-                    'ArtsNum13': 'BTL_EnArtsList',
-                    'ArtsNum14': 'BTL_EnArtsList',
-                    'ArtsNum15': 'BTL_EnArtsList',
-                    'ArtsNum16': 'BTL_EnArtsList',
-                    'ArtsNum17': 'BTL_EnArtsList',
-                    'ArtsNum18': 'BTL_EnArtsList',
-                    'ArtsNum19': 'BTL_EnArtsList',
-                    'ArtsNum20': 'BTL_EnArtsList',
-                    'ArtsNum21': 'BTL_EnArtsList',
-                    'ArtsNum22': 'BTL_EnArtsList',
-                    'ArtsNum23': 'BTL_EnArtsList',
-                    'ArtsNum24': 'BTL_EnArtsList',
-                    'ArtsNum25': 'BTL_EnArtsList',
-                    'ArtsNum26': 'BTL_EnArtsList',
-                    'ArtsNum27': 'BTL_EnArtsList',
-                    'ArtsNum28': 'BTL_EnArtsList',
-                    'ArtsNum29': 'BTL_EnArtsList',
-                    'ArtsNum30': 'BTL_EnArtsList',
-                    'ArtsNum31': 'BTL_EnArtsList',
-                    'ArtsNum32': 'BTL_EnArtsList'},
-    'DEF_DlList': {'Armor[0]': 'AMR_DlList',
-                   'Armor[1]': 'AMR_DlList',
-                   'Armor[2]': 'AMR_DlList',
-                   'Armor[3]': 'AMR_DlList',
-                   'Armor[4]': 'AMR_DlList',
-                   'Wpn[0]': 'WPN_DlList',
-                   'Wpn[1]': 'WPN_DlList',
-                   'Wpn[2]': 'WPN_DlList',
-                   'Wpn[3]': 'WPN_DlList',
-                   'Wpn[4]': 'WPN_DlList',
-                   'Wpn[5]': 'WPN_DlList',
-                   'Wpn[6]': 'WPN_DlList',
-                   'Wpn[7]': 'WPN_DlList',
-                   'Wpn[8]': 'WPN_DlList',
-                   'Wpn[9]': 'WPN_DlList'},
-    'DEF_NpcList': {'DefAmr1': 'AMR_PcList',
-                    'DefAmr2': 'AMR_PcList',
-                    'DefAmr3': 'AMR_PcList',
-                    'DefAmr4': 'AMR_PcList',
-                    'DefAmr5': 'AMR_PcList'},
-    'DEF_PcList': {'ClassType': 'CHR_ClassInfo',
-                   'DefAmr1': 'AMR_PcList',
-                   'DefAmr2': 'AMR_PcList',
-                   'DefAmr3': 'AMR_PcList',
-                   'DefAmr4': 'AMR_PcList',
-                   'DefAmr5': 'AMR_PcList',
-                   'DefAmr6': 'AMR_PcList',
-                   'DefAmr7': 'AMR_PcList',
-                   'DefAmr8': 'AMR_PcList',
-                   'DefAmr9': 'AMR_PcList',
-                   'DefAmr10': 'AMR_PcList',
-                   'DefWpnFar': 'WPN_PcList',
-                   'DefWpnNear': 'WPN_PcList',
-                   'ArtsNo1': 'BTL_ArtsList',
-                   'ArtsNo2': 'BTL_ArtsList',
-                   'ArtsNo3': 'BTL_ArtsList',
-                   'ArtsNo4': 'BTL_ArtsList',
-                   'ArtsNo5': 'BTL_ArtsList',
-                   'ArtsNo6': 'BTL_ArtsList',
-                   'ArtsNo7': 'BTL_ArtsList',
-                   'ArtsNo8': 'BTL_ArtsList',
-                   'SoulTrigger0': 'BTL_SoulTrigger',
-                   'SoulTrigger1': 'BTL_SoulTrigger',
-                   'SoulTrigger2': 'BTL_SoulTrigger',
-                   'SoulTrigger3': 'BTL_SoulTrigger',
-                   'SoulTrigger4': 'BTL_SoulTrigger',
-                   'SoulTrigger5': 'BTL_SoulTrigger',
-                   'SoulTrigger6': 'BTL_SoulTrigger',
-                   'SoulTrigger7': 'BTL_SoulTrigger',
-                   'SoulTrigger8': 'BTL_SoulTrigger',
-                   'SoulTrigger9': 'BTL_SoulTrigger',
-                   'SoulTrigger10': 'BTL_SoulTrigger',
-                   'SoulTrigger11': 'BTL_SoulTrigger',
-                   'SoulTrigger12': 'BTL_SoulTrigger',
-                   'SoulTrigger13': 'BTL_SoulTrigger',
-                   'SoulTrigger14': 'BTL_SoulTrigger',
-                   'SoulTrigger15': 'BTL_SoulTrigger',
-                   'SoulData0': 'BTL_SoulData',
-                   'SoulData1': 'BTL_SoulData',
-                   'SoulData2': 'BTL_SoulData',
-                   'SoulData3': 'BTL_SoulData',
-                   'SoulData4': 'BTL_SoulData',
-                   'SoulData5': 'BTL_SoulData',
-                   'SoulData6': 'BTL_SoulData',
-                   'SoulData7': 'BTL_SoulData',
-                   'SoulData8': 'BTL_SoulData',
-                   'SoulData9': 'BTL_SoulData',
-                   'SoulData10': 'BTL_SoulData',
-                   'SoulData11': 'BTL_SoulData',
-                   'SoulData12': 'BTL_SoulData',
-                   'SoulData13': 'BTL_SoulData',
-                   'SoulData14': 'BTL_SoulData',
-                   'SoulData15': 'BTL_SoulData'},
-    'DRP_AffixTable': {'AffixID_01': (None, None, 'XDE_drop_affix'),
-                       'AffixID_02': (None, None, 'XDE_drop_affix'),
-                       'AffixID_03': (None, None, 'XDE_drop_affix'),
-                       'AffixID_04': (None, None, 'XDE_drop_affix'),
-                       'AffixID_05': (None, None, 'XDE_drop_affix'),
-                       'AffixID_06': (None, None, 'XDE_drop_affix'),
-                       'AffixID_07': (None, None, 'XDE_drop_affix'),
-                       'AffixID_08': (None, None, 'XDE_drop_affix'),
-                       'AffixID_09': (None, None, 'XDE_drop_affix'),
-                       'AffixID_10': (None, None, 'XDE_drop_affix')},
-    'DRP_BoxTable': {'LotRank': 'DRP_LotRankTable',
-                     'GoldBox': 'DRP_GoldBoxTable',
-                     'SilverBox': 'DRP_SilverBoxTable',
-                     'BronzeBox': 'DRP_BronzeBoxTable'},
-    'DRP_BronzeBoxTable': {'Item_01': 'DRP_ItemTable',
-                           'Item_02': 'DRP_ItemTable',
-                           'Item_03': 'DRP_ItemTable',
-                           'Item_04': 'DRP_ItemTable',
-                           'Item_05': 'DRP_ItemTable',
-                           'Item_06': 'DRP_ItemTable',
-                           'Item_07': 'DRP_ItemTable',
-                           'Item_08': 'DRP_ItemTable'},
-    'DRP_DlArmorTable_Gold': {'armor[0]': 'DRP_ItemTable',
-                              'armor[1]': 'DRP_ItemTable',
-                              'armor[2]': 'DRP_ItemTable',
-                              'armor[3]': 'DRP_ItemTable',
-                              'armor[4]': 'DRP_ItemTable',
-                              'armor[5]': 'DRP_ItemTable',
-                              'armor[6]': 'DRP_ItemTable',
-                              'armor[7]': 'DRP_ItemTable',
-                              'armor[8]': 'DRP_ItemTable',
-                              'armor[9]': 'DRP_ItemTable',
-                              'armor[10]': 'DRP_ItemTable',
-                              'armor[11]': 'DRP_ItemTable'},
-    'DRP_DlArmorTable_Silver': {'armor[0]': 'DRP_ItemTable',
-                                'armor[1]': 'DRP_ItemTable',
-                                'armor[2]': 'DRP_ItemTable',
-                                'armor[3]': 'DRP_ItemTable',
-                                'armor[4]': 'DRP_ItemTable',
-                                'armor[5]': 'DRP_ItemTable',
-                                'armor[6]': 'DRP_ItemTable',
-                                'armor[7]': 'DRP_ItemTable',
-                                'armor[8]': 'DRP_ItemTable',
-                                'armor[9]': 'DRP_ItemTable',
-                                'armor[10]': 'DRP_ItemTable',
-                                'armor[11]': 'DRP_ItemTable'},
-    'DRP_DlWpnTable_Gold': {'wpn[0]': 'DRP_ItemTable',
-                            'wpn[1]': 'DRP_ItemTable',
-                            'wpn[2]': 'DRP_ItemTable',
-                            'wpn[3]': 'DRP_ItemTable',
-                            'wpn[4]': 'DRP_ItemTable',
-                            'wpn[5]': 'DRP_ItemTable',
-                            'wpn[6]': 'DRP_ItemTable',
-                            'wpn[7]': 'DRP_ItemTable',
-                            'wpn[8]': 'DRP_ItemTable',
-                            'wpn[9]': 'DRP_ItemTable',
-                            'wpn[10]': 'DRP_ItemTable',
-                            'wpn[11]': 'DRP_ItemTable',
-                            'wpn[12]': 'DRP_ItemTable',
-                            'wpn[13]': 'DRP_ItemTable',
-                            'wpn[14]': 'DRP_ItemTable',
-                            'wpn[15]': 'DRP_ItemTable',
-                            'wpn[16]': 'DRP_ItemTable',
-                            'wpn[17]': 'DRP_ItemTable',
-                            'wpn[18]': 'DRP_ItemTable',
-                            'wpn[19]': 'DRP_ItemTable',
-                            'wpn[20]': 'DRP_ItemTable',
-                            'wpn[21]': 'DRP_ItemTable',
-                            'wpn[22]': 'DRP_ItemTable',
-                            'wpn[23]': 'DRP_ItemTable',
-                            'wpn[24]': 'DRP_ItemTable',
-                            'wpn[25]': 'DRP_ItemTable',
-                            'wpn[26]': 'DRP_ItemTable'},
-    'DRP_DlWpnTable_Silver': {'wpn[0]': 'DRP_ItemTable',
-                              'wpn[1]': 'DRP_ItemTable',
-                              'wpn[2]': 'DRP_ItemTable',
-                              'wpn[3]': 'DRP_ItemTable',
-                              'wpn[4]': 'DRP_ItemTable',
-                              'wpn[5]': 'DRP_ItemTable',
-                              'wpn[6]': 'DRP_ItemTable',
-                              'wpn[7]': 'DRP_ItemTable',
-                              'wpn[8]': 'DRP_ItemTable',
-                              'wpn[9]': 'DRP_ItemTable',
-                              'wpn[10]': 'DRP_ItemTable',
-                              'wpn[11]': 'DRP_ItemTable',
-                              'wpn[12]': 'DRP_ItemTable',
-                              'wpn[13]': 'DRP_ItemTable',
-                              'wpn[14]': 'DRP_ItemTable',
-                              'wpn[15]': 'DRP_ItemTable',
-                              'wpn[16]': 'DRP_ItemTable',
-                              'wpn[17]': 'DRP_ItemTable',
-                              'wpn[18]': 'DRP_ItemTable',
-                              'wpn[19]': 'DRP_ItemTable',
-                              'wpn[20]': 'DRP_ItemTable',
-                              'wpn[21]': 'DRP_ItemTable',
-                              'wpn[22]': 'DRP_ItemTable',
-                              'wpn[23]': 'DRP_ItemTable',
-                              'wpn[24]': 'DRP_ItemTable',
-                              'wpn[25]': 'DRP_ItemTable',
-                              'wpn[26]': 'DRP_ItemTable'},
-    'DRP_GoldBoxTable': {'Item_01': 'DRP_ItemTable',
-                         'Item_02': 'DRP_ItemTable',
-                         'Item_03': 'DRP_ItemTable',
-                         'Item_04': 'DRP_ItemTable',
-                         'Item_05': 'DRP_ItemTable',
-                         'Item_06': 'DRP_ItemTable',
-                         'Item_07': 'DRP_ItemTable',
-                         'Item_08': 'DRP_ItemTable',
-                         'Item_09': 'DRP_ItemTable',
-                         'Item_10': 'DRP_ItemTable',
-                         'Item_11': 'DRP_ItemTable',
-                         'Item_12': 'DRP_ItemTable'},
-    'DRP_ItemTable': {'AffixLot': 'DRP_AffixTable',
-                      'AffixLotGood': 'DRP_AffixTable',
-                      'AffixNumLot': 'DRP_AffixSlotTable',
-                      'SlotNumLot': 'DRP_AffixSlotTable',
-                      'AffixNumLotG': 'DRP_AffixSlotTable',
-                      'SlotNumLotG': 'DRP_AffixSlotTable'},
-    'DRP_PcArmorTable_Gold': {'armor[0]': 'DRP_ItemTable',
-                              'armor[1]': 'DRP_ItemTable',
-                              'armor[2]': 'DRP_ItemTable',
-                              'armor[3]': 'DRP_ItemTable',
-                              'armor[4]': 'DRP_ItemTable',
-                              'armor[5]': 'DRP_ItemTable',
-                              'armor[6]': 'DRP_ItemTable',
-                              'armor[7]': 'DRP_ItemTable',
-                              'armor[8]': 'DRP_ItemTable',
-                              'armor[9]': 'DRP_ItemTable',
-                              'armor[10]': 'DRP_ItemTable',
-                              'armor[11]': 'DRP_ItemTable',
-                              'armor[12]': 'DRP_ItemTable',
-                              'armor[13]': 'DRP_ItemTable',
-                              'armor[14]': 'DRP_ItemTable',
-                              'armor[15]': 'DRP_ItemTable',
-                              'armor[16]': 'DRP_ItemTable',
-                              'armor[17]': 'DRP_ItemTable',
-                              'armor[18]': 'DRP_ItemTable',
-                              'armor[19]': 'DRP_ItemTable',
-                              'armor[20]': 'DRP_ItemTable',
-                              'armor[21]': 'DRP_ItemTable'},
-    'DRP_PcArmorTable_Silver': {'armor[0]': 'DRP_ItemTable',
-                                'armor[1]': 'DRP_ItemTable',
-                                'armor[2]': 'DRP_ItemTable',
-                                'armor[3]': 'DRP_ItemTable',
-                                'armor[4]': 'DRP_ItemTable',
-                                'armor[5]': 'DRP_ItemTable',
-                                'armor[6]': 'DRP_ItemTable',
-                                'armor[7]': 'DRP_ItemTable',
-                                'armor[8]': 'DRP_ItemTable',
-                                'armor[9]': 'DRP_ItemTable',
-                                'armor[10]': 'DRP_ItemTable',
-                                'armor[11]': 'DRP_ItemTable',
-                                'armor[12]': 'DRP_ItemTable',
-                                'armor[13]': 'DRP_ItemTable',
-                                'armor[14]': 'DRP_ItemTable',
-                                'armor[15]': 'DRP_ItemTable',
-                                'armor[16]': 'DRP_ItemTable',
-                                'armor[17]': 'DRP_ItemTable',
-                                'armor[18]': 'DRP_ItemTable',
-                                'armor[19]': 'DRP_ItemTable',
-                                'armor[20]': 'DRP_ItemTable',
-                                'armor[21]': 'DRP_ItemTable'},
-    'DRP_PcWpnTable_Gold': {'wpn[0]': 'DRP_ItemTable',
-                            'wpn[1]': 'DRP_ItemTable',
-                            'wpn[2]': 'DRP_ItemTable',
-                            'wpn[3]': 'DRP_ItemTable',
-                            'wpn[4]': 'DRP_ItemTable',
-                            'wpn[5]': 'DRP_ItemTable',
-                            'wpn[6]': 'DRP_ItemTable',
-                            'wpn[7]': 'DRP_ItemTable',
-                            'wpn[8]': 'DRP_ItemTable',
-                            'wpn[9]': 'DRP_ItemTable',
-                            'wpn[10]': 'DRP_ItemTable',
-                            'wpn[11]': 'DRP_ItemTable'},
-    'DRP_PcWpnTable_Silver': {'wpn[0]': 'DRP_ItemTable',
-                              'wpn[1]': 'DRP_ItemTable',
-                              'wpn[2]': 'DRP_ItemTable',
-                              'wpn[3]': 'DRP_ItemTable',
-                              'wpn[4]': 'DRP_ItemTable',
-                              'wpn[5]': 'DRP_ItemTable',
-                              'wpn[6]': 'DRP_ItemTable',
-                              'wpn[7]': 'DRP_ItemTable',
-                              'wpn[8]': 'DRP_ItemTable',
-                              'wpn[9]': 'DRP_ItemTable',
-                              'wpn[10]': 'DRP_ItemTable',
-                              'wpn[11]': 'DRP_ItemTable'},
-    'DRP_SilverBoxTable': {'Item_01': 'DRP_ItemTable',
-                           'Item_02': 'DRP_ItemTable',
-                           'Item_03': 'DRP_ItemTable',
-                           'Item_04': 'DRP_ItemTable',
-                           'Item_05': 'DRP_ItemTable',
-                           'Item_06': 'DRP_ItemTable',
-                           'Item_07': 'DRP_ItemTable',
-                           'Item_08': 'DRP_ItemTable',
-                           'Item_09': 'DRP_ItemTable',
-                           'Item_10': 'DRP_ItemTable',
-                           'Item_11': 'DRP_ItemTable',
-                           'Item_12': 'DRP_ItemTable'},
-    'FLD_ConditionList_FNStat': {'veinID': 'FnetVeinList'},
-    'FLD_ConditionList_FriendPoint': {'FriendID': 'npc_union'},
-    'FLD_ConditionList_Item': {'itemID': refset_XDE_item('itemType')},
-    'FLD_ConditionList_PTin': {'PTinID1': 'npc_union',
-                               'PTinID2': 'npc_union',
-                               'PTinID3': 'npc_union'},
-    'FLD_ConditionList_PTout': {'PToutID1': 'npc_union',
-                                'PToutID2': 'npc_union',
-                                'PToutID3': 'npc_union'},
-    'FLD_ConditionList_Quest': {'questNo1': 'FLD_questlist',
-                                'questNo2': 'FLD_questlist',
-                                'questNo3': 'FLD_questlist',
-                                'questNo4': 'FLD_questlist'},
-    'FLD_ConditionList_Segment': {'zoneID1': 'MNU_ZoneNameConvert',
-                                  'zoneID2': 'MNU_ZoneNameConvert'},
-    'FLD_FieldNameList': {'nameCondition': 'FLD_NameCondition'},
-    'FLD_GameCondition': {'cond1': (None, None, 'XDE_GameCondition'),
-                          'cond2': (None, None, 'XDE_GameCondition'),
-                          'cond3': (None, None, 'XDE_GameCondition'),
-                          'cond4': (None, None, 'XDE_GameCondition'),
-                          'cond5': (None, None, 'XDE_GameCondition'),
-                          'cond6': (None, None, 'XDE_GameCondition'),
-                          'cond7': (None, None, 'XDE_GameCondition'),
-                          'cond8': (None, None, 'XDE_GameCondition'),
-                          'cond9': (None, None, 'XDE_GameCondition'),
-                          'cond10': (None, None, 'XDE_GameCondition')},
-    'FLD_Location': {'F_spot': 'FnetVeinList'},
-    'FLD_MobGrpList0003': {'mob_1': 'FLD_MobIndivList0003',
-                           'mob_2': 'FLD_MobIndivList0003',
-                           'mob_3': 'FLD_MobIndivList0003',
-                           'mob_4': 'FLD_MobIndivList0003',
-                           'mob_5': 'FLD_MobIndivList0003',
-                           'mob_6': 'FLD_MobIndivList0003',
-                           'mob_7': 'FLD_MobIndivList0003',
-                           'mob_8': 'FLD_MobIndivList0003',
-                           'mob_9': 'FLD_MobIndivList0003',
-                           'mob_10': 'FLD_MobIndivList0003',
-                           'mob_11': 'FLD_MobIndivList0003',
-                           'mob_12': 'FLD_MobIndivList0003',
-                           'mob_13': 'FLD_MobIndivList0003',
-                           'mob_14': 'FLD_MobIndivList0003',
-                           'mob_15': 'FLD_MobIndivList0003',
-                           'mob_16': 'FLD_MobIndivList0003'},
-    'FLD_MobGrpList0080': {'mob_1': 'FLD_MobIndivList0080',
-                           'mob_2': 'FLD_MobIndivList0080',
-                           'mob_3': 'FLD_MobIndivList0080',
-                           'mob_4': 'FLD_MobIndivList0080',
-                           'mob_5': 'FLD_MobIndivList0080',
-                           'mob_6': 'FLD_MobIndivList0080',
-                           'mob_7': 'FLD_MobIndivList0080',
-                           'mob_8': 'FLD_MobIndivList0080',
-                           'mob_9': 'FLD_MobIndivList0080',
-                           'mob_10': 'FLD_MobIndivList0080',
-                           'mob_11': 'FLD_MobIndivList0080',
-                           'mob_12': 'FLD_MobIndivList0080',
-                           'mob_13': 'FLD_MobIndivList0080',
-                           'mob_14': 'FLD_MobIndivList0080',
-                           'mob_15': 'FLD_MobIndivList0080',
-                           'mob_16': 'FLD_MobIndivList0080'},
-    'FLD_MobGrpList1001': {'mob_1': 'FLD_MobIndivList1001',
-                           'mob_2': 'FLD_MobIndivList1001',
-                           'mob_3': 'FLD_MobIndivList1001',
-                           'mob_4': 'FLD_MobIndivList1001',
-                           'mob_5': 'FLD_MobIndivList1001',
-                           'mob_6': 'FLD_MobIndivList1001',
-                           'mob_7': 'FLD_MobIndivList1001',
-                           'mob_8': 'FLD_MobIndivList1001',
-                           'mob_9': 'FLD_MobIndivList1001',
-                           'mob_10': 'FLD_MobIndivList1001',
-                           'mob_11': 'FLD_MobIndivList1001',
-                           'mob_12': 'FLD_MobIndivList1001',
-                           'mob_13': 'FLD_MobIndivList1001',
-                           'mob_14': 'FLD_MobIndivList1001',
-                           'mob_15': 'FLD_MobIndivList1001',
-                           'mob_16': 'FLD_MobIndivList1001'},
-    'FLD_MobGrpList1101': {'mob_1': 'FLD_MobIndivList1101',
-                           'mob_2': 'FLD_MobIndivList1101',
-                           'mob_3': 'FLD_MobIndivList1101',
-                           'mob_4': 'FLD_MobIndivList1101',
-                           'mob_5': 'FLD_MobIndivList1101',
-                           'mob_6': 'FLD_MobIndivList1101',
-                           'mob_7': 'FLD_MobIndivList1101',
-                           'mob_8': 'FLD_MobIndivList1101',
-                           'mob_9': 'FLD_MobIndivList1101',
-                           'mob_10': 'FLD_MobIndivList1101',
-                           'mob_11': 'FLD_MobIndivList1101',
-                           'mob_12': 'FLD_MobIndivList1101',
-                           'mob_13': 'FLD_MobIndivList1101',
-                           'mob_14': 'FLD_MobIndivList1101',
-                           'mob_15': 'FLD_MobIndivList1101',
-                           'mob_16': 'FLD_MobIndivList1101'},
-    'FLD_MobGrpList1201': {'mob_1': 'FLD_MobIndivList1201',
-                           'mob_2': 'FLD_MobIndivList1201',
-                           'mob_3': 'FLD_MobIndivList1201',
-                           'mob_4': 'FLD_MobIndivList1201',
-                           'mob_5': 'FLD_MobIndivList1201',
-                           'mob_6': 'FLD_MobIndivList1201',
-                           'mob_7': 'FLD_MobIndivList1201',
-                           'mob_8': 'FLD_MobIndivList1201',
-                           'mob_9': 'FLD_MobIndivList1201',
-                           'mob_10': 'FLD_MobIndivList1201',
-                           'mob_11': 'FLD_MobIndivList1201',
-                           'mob_12': 'FLD_MobIndivList1201',
-                           'mob_13': 'FLD_MobIndivList1201',
-                           'mob_14': 'FLD_MobIndivList1201',
-                           'mob_15': 'FLD_MobIndivList1201',
-                           'mob_16': 'FLD_MobIndivList1201'},
-    'FLD_MobGrpList1301': {'mob_1': 'FLD_MobIndivList1301',
-                           'mob_2': 'FLD_MobIndivList1301',
-                           'mob_3': 'FLD_MobIndivList1301',
-                           'mob_4': 'FLD_MobIndivList1301',
-                           'mob_5': 'FLD_MobIndivList1301',
-                           'mob_6': 'FLD_MobIndivList1301',
-                           'mob_7': 'FLD_MobIndivList1301',
-                           'mob_8': 'FLD_MobIndivList1301',
-                           'mob_9': 'FLD_MobIndivList1301',
-                           'mob_10': 'FLD_MobIndivList1301',
-                           'mob_11': 'FLD_MobIndivList1301',
-                           'mob_12': 'FLD_MobIndivList1301',
-                           'mob_13': 'FLD_MobIndivList1301',
-                           'mob_14': 'FLD_MobIndivList1301',
-                           'mob_15': 'FLD_MobIndivList1301',
-                           'mob_16': 'FLD_MobIndivList1301'},
-    'FLD_MobGrpList1401': {'mob_1': 'FLD_MobIndivList1401',
-                           'mob_2': 'FLD_MobIndivList1401',
-                           'mob_3': 'FLD_MobIndivList1401',
-                           'mob_4': 'FLD_MobIndivList1401',
-                           'mob_5': 'FLD_MobIndivList1401',
-                           'mob_6': 'FLD_MobIndivList1401',
-                           'mob_7': 'FLD_MobIndivList1401',
-                           'mob_8': 'FLD_MobIndivList1401',
-                           'mob_9': 'FLD_MobIndivList1401',
-                           'mob_10': 'FLD_MobIndivList1401',
-                           'mob_11': 'FLD_MobIndivList1401',
-                           'mob_12': 'FLD_MobIndivList1401',
-                           'mob_13': 'FLD_MobIndivList1401',
-                           'mob_14': 'FLD_MobIndivList1401',
-                           'mob_15': 'FLD_MobIndivList1401',
-                           'mob_16': 'FLD_MobIndivList1401'},
-    'FLD_MobGrpList1501': {'mob_1': 'FLD_MobIndivList1501',
-                           'mob_2': 'FLD_MobIndivList1501',
-                           'mob_3': 'FLD_MobIndivList1501',
-                           'mob_4': 'FLD_MobIndivList1501',
-                           'mob_5': 'FLD_MobIndivList1501',
-                           'mob_6': 'FLD_MobIndivList1501',
-                           'mob_7': 'FLD_MobIndivList1501',
-                           'mob_8': 'FLD_MobIndivList1501',
-                           'mob_9': 'FLD_MobIndivList1501',
-                           'mob_10': 'FLD_MobIndivList1501',
-                           'mob_11': 'FLD_MobIndivList1501',
-                           'mob_12': 'FLD_MobIndivList1501',
-                           'mob_13': 'FLD_MobIndivList1501',
-                           'mob_14': 'FLD_MobIndivList1501',
-                           'mob_15': 'FLD_MobIndivList1501',
-                           'mob_16': 'FLD_MobIndivList1501'},
-    'FLD_MobGrpList1601': {'mob_1': 'FLD_MobIndivList1601',
-                           'mob_2': 'FLD_MobIndivList1601',
-                           'mob_3': 'FLD_MobIndivList1601',
-                           'mob_4': 'FLD_MobIndivList1601',
-                           'mob_5': 'FLD_MobIndivList1601',
-                           'mob_6': 'FLD_MobIndivList1601',
-                           'mob_7': 'FLD_MobIndivList1601',
-                           'mob_8': 'FLD_MobIndivList1601',
-                           'mob_9': 'FLD_MobIndivList1601',
-                           'mob_10': 'FLD_MobIndivList1601',
-                           'mob_11': 'FLD_MobIndivList1601',
-                           'mob_12': 'FLD_MobIndivList1601',
-                           'mob_13': 'FLD_MobIndivList1601',
-                           'mob_14': 'FLD_MobIndivList1601',
-                           'mob_15': 'FLD_MobIndivList1601',
-                           'mob_16': 'FLD_MobIndivList1601'},
-    'FLD_MobGrpList1701': {'mob_1': 'FLD_MobIndivList1701',
-                           'mob_2': 'FLD_MobIndivList1701',
-                           'mob_3': 'FLD_MobIndivList1701',
-                           'mob_4': 'FLD_MobIndivList1701',
-                           'mob_5': 'FLD_MobIndivList1701',
-                           'mob_6': 'FLD_MobIndivList1701',
-                           'mob_7': 'FLD_MobIndivList1701',
-                           'mob_8': 'FLD_MobIndivList1701',
-                           'mob_9': 'FLD_MobIndivList1701',
-                           'mob_10': 'FLD_MobIndivList1701',
-                           'mob_11': 'FLD_MobIndivList1701',
-                           'mob_12': 'FLD_MobIndivList1701',
-                           'mob_13': 'FLD_MobIndivList1701',
-                           'mob_14': 'FLD_MobIndivList1701',
-                           'mob_15': 'FLD_MobIndivList1701',
-                           'mob_16': 'FLD_MobIndivList1701'},
-    'FLD_MobGrpList2001': {'mob_1': 'FLD_MobIndivList2001',
-                           'mob_2': 'FLD_MobIndivList2001',
-                           'mob_3': 'FLD_MobIndivList2001',
-                           'mob_4': 'FLD_MobIndivList2001',
-                           'mob_5': 'FLD_MobIndivList2001',
-                           'mob_6': 'FLD_MobIndivList2001',
-                           'mob_7': 'FLD_MobIndivList2001',
-                           'mob_8': 'FLD_MobIndivList2001',
-                           'mob_9': 'FLD_MobIndivList2001',
-                           'mob_10': 'FLD_MobIndivList2001',
-                           'mob_11': 'FLD_MobIndivList2001',
-                           'mob_12': 'FLD_MobIndivList2001',
-                           'mob_13': 'FLD_MobIndivList2001',
-                           'mob_14': 'FLD_MobIndivList2001',
-                           'mob_15': 'FLD_MobIndivList2001',
-                           'mob_16': 'FLD_MobIndivList2001'},
-    'FLD_MobGrpList2201': {'mob_1': 'FLD_MobIndivList2201',
-                           'mob_2': 'FLD_MobIndivList2201',
-                           'mob_3': 'FLD_MobIndivList2201',
-                           'mob_4': 'FLD_MobIndivList2201',
-                           'mob_5': 'FLD_MobIndivList2201',
-                           'mob_6': 'FLD_MobIndivList2201',
-                           'mob_7': 'FLD_MobIndivList2201',
-                           'mob_8': 'FLD_MobIndivList2201',
-                           'mob_9': 'FLD_MobIndivList2201',
-                           'mob_10': 'FLD_MobIndivList2201',
-                           'mob_11': 'FLD_MobIndivList2201',
-                           'mob_12': 'FLD_MobIndivList2201',
-                           'mob_13': 'FLD_MobIndivList2201',
-                           'mob_14': 'FLD_MobIndivList2201',
-                           'mob_15': 'FLD_MobIndivList2201',
-                           'mob_16': 'FLD_MobIndivList2201'},
-    'FLD_MobGrpList5000': {'mob_1': 'FLD_MobIndivList5000',
-                           'mob_2': 'FLD_MobIndivList5000',
-                           'mob_3': 'FLD_MobIndivList5000',
-                           'mob_4': 'FLD_MobIndivList5000',
-                           'mob_5': 'FLD_MobIndivList5000',
-                           'mob_6': 'FLD_MobIndivList5000',
-                           'mob_7': 'FLD_MobIndivList5000',
-                           'mob_8': 'FLD_MobIndivList5000',
-                           'mob_9': 'FLD_MobIndivList5000',
-                           'mob_10': 'FLD_MobIndivList5000',
-                           'mob_11': 'FLD_MobIndivList5000',
-                           'mob_12': 'FLD_MobIndivList5000',
-                           'mob_13': 'FLD_MobIndivList5000',
-                           'mob_14': 'FLD_MobIndivList5000',
-                           'mob_15': 'FLD_MobIndivList5000',
-                           'mob_16': 'FLD_MobIndivList5000'},
-    'FLD_MobGrpList6000': {'mob_1': 'FLD_MobIndivList6000',
-                           'mob_2': 'FLD_MobIndivList6000',
-                           'mob_3': 'FLD_MobIndivList6000',
-                           'mob_4': 'FLD_MobIndivList6000',
-                           'mob_5': 'FLD_MobIndivList6000',
-                           'mob_6': 'FLD_MobIndivList6000',
-                           'mob_7': 'FLD_MobIndivList6000',
-                           'mob_8': 'FLD_MobIndivList6000',
-                           'mob_9': 'FLD_MobIndivList6000',
-                           'mob_10': 'FLD_MobIndivList6000',
-                           'mob_11': 'FLD_MobIndivList6000',
-                           'mob_12': 'FLD_MobIndivList6000',
-                           'mob_13': 'FLD_MobIndivList6000',
-                           'mob_14': 'FLD_MobIndivList6000',
-                           'mob_15': 'FLD_MobIndivList6000',
-                           'mob_16': 'FLD_MobIndivList6000'},
-    'FLD_MobList0003': {'res_group': 'FLD_MobGrpList0003'},
-    'FLD_MobList0080': {'res_group': 'FLD_MobGrpList0080'},
-    'FLD_MobList1001': {'res_group': 'FLD_MobGrpList1001'},
-    'FLD_MobList1101': {'res_group': 'FLD_MobGrpList1101'},
-    'FLD_MobList1201': {'res_group': 'FLD_MobGrpList1201'},
-    'FLD_MobList1301': {'res_group': 'FLD_MobGrpList1301'},
-    'FLD_MobList1401': {'res_group': 'FLD_MobGrpList1401'},
-    'FLD_MobList1501': {'res_group': 'FLD_MobGrpList1501'},
-    'FLD_MobList1601': {'res_group': 'FLD_MobGrpList1601'},
-    'FLD_MobList1701': {'res_group': 'FLD_MobGrpList1701'},
-    'FLD_MobList2001': {'res_group': 'FLD_MobGrpList2001'},
-    'FLD_MobList2201': {'res_group': 'FLD_MobGrpList2201'},
-    'FLD_MobList5000': {'res_group': 'FLD_MobGrpList5000'},
-    'FLD_MobList6000': {'res_group': 'FLD_MobGrpList6000'},
-    'FLD_PrcPopList': {'itm1ID': refset_XDE_item('itm1Type')},  # Note different spelling from the Litem* tables!
-    'FLD_ProgressPopList': {'targetCondId': 'FLD_GameCondition'},
-    'FLD_QuestCollect': {'item_id': refset_XDE_item('ref_item_bdat')},
-    'FLD_QuestSuppress': {'WeaponID': 'WPN_PcList'},
-    'FLD_QuestTask': {'purpose1': (None, None, 'XDE_QuestTask'),
-                      'purpose2': (None, None, 'XDE_QuestTask'),
-                      'purpose3': (None, None, 'XDE_QuestTask')},
-    'FLD_SkipTravel': {'formationId': 'FLD_FormationList'},
-    'FLD_TboxAll': {'item_id': refset_XDE_item('item_cat'),
-                    'next_id': 'FLD_TboxAll'},
-    'FLD_TboxPopList': {'reward': 'FLD_TboxAll',
-                        'kizuna_id': 'FLD_KizunaActionList'},
-    'FLD_WarpPopList': {'formationId': 'FLD_FormationList'},
-    'FLD_questlist': {'name': 'npc_union',
-                      'area': 'MNU_ZoneNameConvert',
-                      'HexCondition': 'FLD_EvtHexInfo',
-                      'itemset_id_1': 'QUEST_itemset',
-                      'itemset_id_2': 'QUEST_itemset',
-                      'prt_quest_id': 'FLD_questlist',
-                      'task_id': 'FLD_QuestTask',
-                      'next_quest_a': 'FLD_questlist',
-                      'next_quest_b': 'FLD_questlist'},
-    'FnetVeinList': {'name': 'FLD_Location',
-                     'itm1ID': 'ITM_RareRscList',
-                     'itm2ID': 'ITM_RareRscList',
-                     'itm3ID': 'ITM_RareRscList',
-                     'itm4ID': 'ITM_RareRscList',
-                     'itm5ID': 'ITM_RareRscList'},
-    'ITM_BeaconList': {'type': 'FnetBeaconType',
-                       'zoneBuf1': 'BTL_BuffList',
-                       'zoneBuf2': 'BTL_BuffList',
-                       'zoneBuf3': 'BTL_BuffList',
-                       'zoneBuf4': 'BTL_BuffList',
-                       'zoneBuf5': 'BTL_BuffList'},
-    'ITM_Blueprint': {'itemID': refset_XDE_item('category'),
-                      'material_0': 'ITM_MaterialList',
-                      'material_1': 'ITM_MaterialList',
-                      'material_2': 'ITM_MaterialList',
-                      'material_3': 'ITM_MaterialList',
-                      'material_4': 'ITM_MaterialList',
-                      'material_5': 'ITM_MaterialList',
-                      'rareReID': 'ITM_RareRscList'},
-    'ITM_CollectList': {'category': 'MNU_CollectItemCategory',
-                        'zoneID': 'MNU_ZoneNameConvert'},
-    'ITM_MaterialList': {'Lot': 'DRP_LotMaterialTable',
-                         'LotParts': 'DRP_LotMaterialTable'},
-    'MNU_Announce': {'NpcID': 'DEF_PcList'},
-    'MNU_GlossaryList': {'condition': 'FLD_GameCondition',
-                         'field_3E139884': 'MNU_GlossaryPage',
-                         'field_A5F5679A': 'MNU_GlossaryPage'},
-    'MNU_qiconsetlist': {'questNo': 'FLD_questlist'},
-    'QUEST_itemset': {'item_id1': refset_XDE_item('ref_item_bdat_1'),
-                      'item_id2': refset_XDE_item('ref_item_bdat_2'),
-                      'item_id3': refset_XDE_item('ref_item_bdat_3'),
-                      'item_id4': refset_XDE_item('ref_item_bdat_4')},
-    'RSC_BattleBgm': {'BgmID': 'RSC_BgmList',
-                      'BgmID2': 'RSC_BgmList'},
-    'RSC_BgmCondition': {'BgmIDA': 'RSC_BgmList',
-                         'BgmIDB': 'RSC_BgmList'},
-    'SCL_NamedLinkList': {'EnNumber': 'CHR_EnList'},
-    'SCL_QuestTableList': {'QuestCondition1': 'FLD_GameCondition',
-                           'QuestID1': 'SCL_SquadQuestList',
-                           'QuestCondition2': 'FLD_GameCondition',
-                           'QuestID2': 'SCL_SquadQuestList',
-                           'QuestCondition3': 'FLD_GameCondition',
-                           'QuestID3': 'SCL_SquadQuestList',
-                           'QuestCondition4': 'FLD_GameCondition',
-                           'QuestID4': 'SCL_SquadQuestList',
-                           'QuestCondition5': 'FLD_GameCondition',
-                           'QuestID5': 'SCL_SquadQuestList',
-                           'QuestCondition6': 'FLD_GameCondition',
-                           'QuestID6': 'SCL_SquadQuestList',
-                           'QuestCondition7': 'FLD_GameCondition',
-                           'QuestID7': 'SCL_SquadQuestList',
-                           'QuestCondition8': 'FLD_GameCondition',
-                           'QuestID8': 'SCL_SquadQuestList',
-                           'QuestCondition9': 'FLD_GameCondition',
-                           'QuestID9': 'SCL_SquadQuestList',
-                           'QuestCondition10': 'FLD_GameCondition',
-                           'QuestID10': 'SCL_SquadQuestList',
-                           'OrderCondition': 'FLD_GameCondition'},
-    'SCL_SNPCQuest': {'UnionID': 'npc_union',
-                      'QuestID': 'FLD_questlist'},
-    'SCL_SquadItemPerList': {'QuestID': 'SCL_SquadQuestList',
-                             'item_id1': refset_XDE_item('ref_item_bdat1'),
-                             'item_id2': refset_XDE_item('ref_item_bdat1'),
-                             'item_id3': refset_XDE_item('ref_item_bdat1'),
-                             'item_id4': refset_XDE_item('ref_item_bdat1'),
-                             'item_id5': refset_XDE_item('ref_item_bdat1'),
-                             'item_id6': refset_XDE_item('ref_item_bdat1'),
-                             'item_id7': refset_XDE_item('ref_item_bdat1'),
-                             'item_id8': refset_XDE_item('ref_item_bdat1'),
-                             'item_id9': refset_XDE_item('ref_item_bdat1'),
-                             'item_id10': refset_XDE_item('ref_item_bdat1'),
-                             'item_id11': refset_XDE_item('ref_item_bdat1'),
-                             'item_id12': refset_XDE_item('ref_item_bdat1'),
-                             'item_id13': refset_XDE_item('ref_item_bdat1'),
-                             'item_id14': refset_XDE_item('ref_item_bdat1'),
-                             'item_id15': refset_XDE_item('ref_item_bdat1'),
-                             'item_id16': refset_XDE_item('ref_item_bdat1')},
-    'SCL_SquadMissionList': {'SquadTarget1': (None, None, 'XDE_SquadTarget'),
-                             'SquadTarget2': (None, None, 'XDE_SquadTarget'),
-                             'SquadTarget3': (None, None, 'XDE_SquadTarget'),
-                             'SquadTarget4': (None, None, 'XDE_SquadTarget'),
-                             'SquadTarget5': (None, None, 'XDE_SquadTarget'),
-                             'QuestTable': 'SCL_QuestTableList',
-                             'OrderCondition': 'FLD_GameCondition'},
-    'SCL_SquadProgressList': {'TaskID1': 'SCL_SquadTaskList',
-                              'TaskID2': 'SCL_SquadTaskList',
-                              'TaskID3': 'SCL_SquadTaskList',
-                              'TaskID4': 'SCL_SquadTaskList',
-                              'TaskID5': 'SCL_SquadTaskList',
-                              'TaskID6': 'SCL_SquadTaskList',
-                              'TaskID7': 'SCL_SquadTaskList',
-                              'TaskID8': 'SCL_SquadTaskList',
-                              'TaskID9': 'SCL_SquadTaskList',
-                              'TaskID10': 'SCL_SquadTaskList',
-                              'TaskID11': 'SCL_SquadTaskList',
-                              'TaskID12': 'SCL_SquadTaskList',
-                              'TaskID13': 'SCL_SquadTaskList',
-                              'TaskID14': 'SCL_SquadTaskList',
-                              'TaskID15': 'SCL_SquadTaskList'},
-    'SCL_SquadQuestList': {'task': 'SCL_SquadProgressList',
-                           'weather': 'FLD_WeatherAsset',
-                           'formationID': 'FLD_FormationList',
-                           'unionID': 'npc_union'},
-    'SCL_SquadTaskList': {'enemyID1': 'CHR_EnList',
-                          'enemyID2': 'CHR_EnList',
-                          'enemyID2': 'CHR_EnList',
-                          'enemyID2': 'CHR_EnList'},
-    'SCL_SquadTargetEnemy': {'GenusId': 'RSC_EnGenusList',
-                             'TargetId': 'CHR_EnList'},
-    'SCL_SquadTargetItem': {'GroupId': 'MNU_CollectItemCategory',
-                            'TargetId': 'ITM_CollectList'},
-    'SCL_SupportBuff': {'Union': 'SCL_Union',
-                        'UnionBuff': 'BTL_BuffList'},
-    'SCL_WldEnReword': {'TargetEnemy': 'CHR_EnList'},
-    'SEG_ProbeList': {'vein_id': 'FnetVeinList',
-                      'seg_term_id1': (None, None, 'XDE_seg_term_id'),
-                      'seg_term_id2': (None, None, 'XDE_seg_term_id'),
-                      'seg_term_id3': (None, None, 'XDE_seg_term_id'),
-                      'seg_term_id4': (None, None, 'XDE_seg_term_id'),
-                      'seg_term_id5': (None, None, 'XDE_seg_term_id'),
-                      'seg_term_id6': (None, None, 'XDE_seg_term_id')},
-    'SHP_AmrDL': {'shpAmrDlList01': 'AMR_DlList',
-                  'shpAmrDlList02': 'AMR_DlList',
-                  'shpAmrDlList03': 'AMR_DlList',
-                  'shpAmrDlList04': 'AMR_DlList',
-                  'shpAmrDlList05': 'AMR_DlList'},
-    'SHP_AmrPC': {'shpAmrPcList01': 'AMR_PcList',
-                  'shpAmrPcList02': 'AMR_PcList',
-                  'shpAmrPcList03': 'AMR_PcList',
-                  'shpAmrPcList04': 'AMR_PcList',
-                  'shpAmrPcList05': 'AMR_PcList'},
-    'SHP_AssetDL': {'DollSetupID': 'DEF_DlList'},
-    'SHP_ItemSkill_doll': {'category': 'SHP_ItemSkill_Cat_doll',
-                           'skillTopID': 'BTL_ItemSkill_doll'},
-    'SHP_ItemSkill_inner': {'category': 'SHP_ItemSkill_Cat_inner',
-                            'skillTopID': 'BTL_ItemSkill_inner'},
-    'SHP_WpnDL': {'shpWpnDlList01': 'WPN_DlList',
-                  'shpWpnDlList02': 'WPN_DlList',
-                  'shpWpnDlList03': 'WPN_DlList',
-                  'shpWpnDlList04': 'WPN_DlList',
-                  'shpWpnDlList05': 'WPN_DlList'},
-    'SHP_WpnPC': {'shpWpnPcList01': 'WPN_PcList',
-                  'shpWpnPcList02': 'WPN_PcList',
-                  'shpWpnPcList03': 'WPN_PcList',
-                  'shpWpnPcList04': 'WPN_PcList',
-                  'shpWpnPcList05': 'WPN_PcList',
-                  'shpWpnPcList06': 'WPN_PcList',
-                  'shpWpnPcList07': 'WPN_PcList',
-                  'shpWpnPcList08': 'WPN_PcList',
-                  'shpWpnPcList09': 'WPN_PcList',
-                  'shpWpnPcList10': 'WPN_PcList',
-                  'shpWpnPcList11': 'WPN_PcList',
-                  'shpWpnPcList12': 'WPN_PcList',
-                  'shpWpnPcList13': 'WPN_PcList'},
-    'WPN_DlList': {'Affix[0]': 'BTL_ItemSkill_doll',
-                   'Affix[1]': 'BTL_ItemSkill_doll',
-                   'Affix[2]': 'BTL_ItemSkill_doll'},
-    'WPN_PcList': {'Affix[0]': 'BTL_ItemSkill_inner',
-                   'Affix[1]': 'BTL_ItemSkill_inner',
-                   'Affix[2]': 'BTL_ItemSkill_inner'},
-    'collepediareward': {'zoneID': 'MNU_ZoneNameConvert',
-                         'category': 'MNU_CollectItemCategory',
-                         'Item_ID': refset_XDE_item('Lgroup')},
-    'npc_relatelist': {'unionID1': 'npc_union',
-                       'unionID2': 'npc_union',
-                       # These indicate a range of messages, so it makes
-                       # sense to link to the message table rather than
-                       # inserting the text directly.
-                       'msg_start': 'npc_relatelist_ms',
-                       'msg_end': 'npc_relatelist_ms'},
-    'npc_union': {'UnionSet': 'SCL_Union'},
-    'A8012BAC': {'item_id': refset_XDE_item('field_9E390E27')},
-    'FA12D19B': {'item_id': refset_XDE_item('field_9E390E27')},
-}
-
-
-def get_gmk_location_table(tables):
-    """Return the correct SYS_GimmickLocation table for XC3."""
-    base = tables.get('SYS_GimmickLocation')
-    if base:
-        return base
-    dlc = tables.get('SYS_GimmickLocation_dlc04')
-    if dlc:
-        return dlc
-    raise Exception(f'No SYS_GimmickLocation table found. Is base game or DLC4 present?') 
-
-
-def add_xref(mode, table, row, field_idx, value, target_table, target_row):
-    """Add a cross-reference from table[row][field_idx] to target_table[target_row]."""
-    old_value=value
-    if value is None:
-        if target_table.name in row_name_fields[mode]:
-            name_idx = target_table.field_index(row_name_fields[mode][target_table.name])
-            value = target_table.get(target_row, name_idx)
-        elif target_table.field(1).is_id():
-            id = target_table.get(target_row, 1)
-            value = '' if id.startswith('<') else id
-        else:
-            value = ''
-        if value == '':
-            value = target_table.get(target_row, 0)
-    table.set(row, field_idx, value,
-              target_table.name, target_table.get(target_row, 0))
-
-    if table.name in row_name_fields[mode]:
-        name_idx = table.field_index(row_name_fields[mode][table.name])
-        row_value = table.get(row, name_idx)
-    elif table.field(1).is_id():
-        id = table.get(row, 1)
-        row_value = '' if id.startswith('<') else id
-    else:
-        row_value = ''
-    if row_value == '':
-        row_value = table.get(row, 0)
-    target_table.addref(target_row, table.name, table.get(row, 0), row_value)
-
-
-def resolve_field_xrefs(tables, mode, table, field_idx, target, add_link):
-    """Resolve cross-references in the given table column."""
-    if not field_idx:
-        return
-    if not islistlike(target):
-        target = (target,)
-    target_tables = target[0]
-    if not islistlike(target_tables):
-        target_tables = (target_tables,)
-    matched = False
-    for row in range(table.num_rows):
-        value = table.get(row, field_idx)
-        if value == 0 or value == '':
-            table.set(row, field_idx, '')
-            continue
-        id = value
-        target_table = None
-        target_row = None
-        for name in target_tables:
-            if name is None:
-                if target[2] == 'condition_quest':
-                    flag_idx = field_idx+1
-                    if table.get(row, flag_idx) == 1:
-                        test_table = tables['QST_List']
-                    else:
-                        assert table.get(row, flag_idx) == 0
-                        test_table = tables['QST_Purpose']
-                    test_row = test_table.id_to_row(id)
-
-                elif target[2] == 'qst_task':
-                    type_idx = field_idx-1
-                    type = table.get(row, type_idx)
-                    assert type >= 0
-                    typename = ('Battle', 'Talk', 'Event', 'Ask',
-                                'Reach', 'Chase', 'Request', 'Collect',
-                                'Collepedia', 'Gimmick', 'Follow', 'Condition')[type]
-                    test_table = tables[f'QST_Task{typename}']
-                    test_row = test_table.id_to_row(id)
-
-                elif target[2] == 'gimmick_object':
-                    hash = murmur32(id)
-                    test_table = get_gmk_location_table(tables)
-                    idx_GimmickID = test_table.field_index('GimmickID')
-                    test_row = test_table.id_to_row(f'<{hash:08X}>',
-                                                    idx_GimmickID)
-
-                elif target[2] == 'field_vanish':
-                    type_idx = field_idx-1
-                    type = table.get(row, type_idx)
-                    if type == 1 or type == 2:
-                        test_table = tables['BTL_BuffDeBuff']
-                        test_row = test_table.id_to_row(id)
-                    else:
-                        test_table = None
-                        test_row = None
-                        target_table = 'None'  # Suppress no-match warning
-
-                elif target[2] == 'chsu_shopitem':
-                    # This is either an emblem or a hero
-                    type_field = table.field_index('field_6CA7326E')
-                    type = table.get(row, type_field)
-                    test_table = tables['BTL_ChSU_Emblem'] if type == 0 else tables['CHR_PC']
-                    test_row = test_table.id_to_row(id)
-
-                elif target[2] == 'chta_reward':
-                    # Costume if CostumeChr != 0, item otherwise
-                    chr_field = table.field_index('CostumeChr')
-                    chr = table.get(row, chr_field)
-                    test_table = tables['RSC_PcCostumeOpen'] if chr else tables['ITM_Accessory']
-                    test_row = test_table.id_to_row(id)
-                    pass
-
-                elif target[2] == 'flow_event':
-                    type = table.get(row, table.field_index('EventType'))
-                    test_row = None
-                    ref_table = None
-                    
-                    if type == 0:
-                        ref_table = 'SYS_FlowEventFlag'
-                    elif type == 3:
-                        ref_table = 'SYS_ScenarioFlag'
-                    elif (4 <= type <= 8) or (33 <= type <= 34) or type == 51 or type == 53 or type == 56:
-                        ref_table = 'CHR_PC'
-                    elif type == 9:
-                        # Draw/sheathe swords: 0 is for the party
-                        ref_table = 'FLD_EnemyData'
-                    elif type == 10:
-                        ref_table = 'SYS_FlowEventItem'
-                    elif type == 11:
-                        ref_table = 'QST_List'
-                    elif type == 14 or type == 15:
-                        ref_table = 'RSC_WeatherSet'
-                    elif type == 17:
-                        ref_table = 'FLD_KizunaChangeFlag'
-                    elif type == 18:
-                        ref_table = next(filter(lambda t: tables[t].id_to_row(id) != None, refset_3_event[0]))
-                    elif type == 19 or type == 20 or type == 64:
-                        ref_table = 'FLD_NpcList'
-                    elif type == 21:
-                        ref_table = 'FLD_ColonyList'
-                    elif type == 22:
-                        ref_table = 'SYS_FlowEventAddFlag'
-                    elif type == 23:
-                        ref_table = 'SYS_Tutorial'
-                    elif type == 25:
-                        ref_table = 'SYS_CameraShake'
-                    elif type == 27:
-                        ref_table = 'SYS_FlowEventLaunchGimmick'
-                    elif 28 <= type <= 31:
-                        ref_table = 'SYS_MapPartsList'
-                    elif type == 35:
-                        ref_table = 'CHR_Weathering'
-                    elif type == 36:
-                        ref_table = 'SYS_FlowEventArtsStatus'
-                    elif type == 37:
-                        ref_table = 'SYS_FlowEventSkillStatus'
-                    elif type == 38:
-                        ref_table = 'SYS_FlowEventArtsSet'
-                    elif type == 42 or type == 43:
-                        ref_table = 'SYS_SystemOpen'
-                    elif type == 44:
-                        ref_table = 'SYS_IntermissionSave'
-                    elif type == 46:
-                        ref_table = 'SYS_FlowEventPlaySE'
-                    elif type == 47:
-                        ref_table = 'SYS_FlowEventDropInfoPiece'
-                    elif type == 48:
-                        ref_table = 'RSC_PcCostumeOpen'
-                    elif type == 49:
-                        ref_table = 'SYS_PopupAnnounce'
-                    elif type == 50:
-                        ref_table = 'SYS_FlowEventFade'
-                    elif type == 52:
-                        ref_table = 'SYS_Vibration'
-                    elif type == 58:
-                        ref_table = 'A7FF9149'
-                    elif type == 61:
-                        ref_table = '3B275FEB'
-                    elif type == 63:
-                        ref_table = '46B9A047'
-                    
-                    if ref_table is None:
-                        target_table = 'None'
-                    else:
-                        test_table = tables[ref_table]
-                        if test_row is None:
-                            test_row = test_table.id_to_row(id)
-
-                elif target[2] == '3_FLD_ConditionList':
-                    type = table.get(row, table.field_index('ConditionType'))
-                    assert type > 0
-                    table_map = ('FLD_ConditionList',
-                                 'FLD_ConditionScenario',
-                                 'FLD_ConditionQuest',
-                                 'FLD_ConditionEnv',
-                                 'FLD_ConditionFlag',
-                                 'FLD_ConditionItem',
-                                 'FLD_ConditionPT',
-                                 'FLD_ConditionMapGimmick',
-                                 'FLD_ConditionUMonster',
-                                 'FLD_ConditionTutorial',
-                                 'FLD_ConditionPcLv',
-                                 'FLD_ConditionClassLv',
-                                 '0186E651')
-                    test_table = tables[table_map[type-1]]
-                    test_row = test_table.id_to_row(id)
-
-                elif target[2] == 'XDE_item':
-                    category = table.get(row, table.field_index(target[1]))
-                    ref_table = None
-                    if category >= 1 and category <= 5:
-                        ref_table = 'AMR_PcList'
-                    elif category == 6 or category == 7:
-                        ref_table = 'WPN_PcList'
-                    elif category == 9:
-                        ref_table = 'DEF_DlList'
-                    elif category >= 10 and category <= 14:
-                        ref_table = 'AMR_DlList'
-                    elif category >= 15 and category <= 19:
-                        ref_table = 'WPN_DlList'
-                    elif category == 21:
-                        ref_table = 'BTL_ItemSkill_inner'
-                    elif category == 24:
-                        ref_table = 'BTL_ItemSkill_doll'
-                    elif category == 25:
-                        ref_table = 'ITM_RareRscList'
-                    elif category == 26:
-                        ref_table = 'ITM_MaterialList'
-                    elif category == 27:
-                        ref_table = 'ITM_CollectList'
-                    elif category == 28:
-                        ref_table = 'ITM_BeaconList'
-                    elif category == 29:
-                        ref_table = 'ITM_PreciousList'
-                    elif category == 30:
-                        ref_table = 'ITM_PieceList'
-                    elif category == 31:
-                        ref_table = 'ITM_BattleItem'
-                    elif category == 64:
-                        ref_table = 'ITM_FigList'
-                    elif category == 65:
-                        ref_table = 'ITM_Blueprint'
-                    elif category == 66:
-                        ref_table = 'ITM_InfoList'
-                    if ref_table is None:
-                        target_table = 'None'
-                        test_row = None
-                    else:
-                        test_table = tables[ref_table]
-                        test_row = test_table.id_to_row(id)
-
-                elif target[2] == 'XDE_drop_affix':
-                    # Affix IDs reference either ground or skell affixes
-                    # depending on the item being dropped, so we have to
-                    # look up the referencing item.  We assume
-                    # DRP_ItemTable has already been processed so we can
-                    # just look at the xrefs.
-                    target_table = 'None'
-                    test_row = None
-                    refs = table.getrefs(row)
-                    if refs:
-                        # Pick any ref (all should be from DRP_ItemTable).
-                        ref = (tuple(refs))[0]
-                        assert ref[0] == 'DRP_ItemTable'
-                        tbl_ItemTable = tables[ref[0]]
-                        idx_type = tbl_ItemTable.field_index('ItemType')
-                        type = tbl_ItemTable.get(ref[1], idx_type)
-                        ref_table = None
-                        if type >= 1 and type <= 7:
-                            ref_table = 'BTL_ItemSkill_inner'
-                        elif type >= 10 and type <= 19:
-                            ref_table = 'BTL_ItemSkill_doll'
-                        if ref_table:
-                            test_table = tables[ref_table]
-                            test_row = test_table.id_to_row(id)
-
-                elif target[2] == 'XDE_GameCondition':
-                    # Condition type is always in the previous column
-                    type = table.get(row, field_idx-1)
-                    type_map = ('GameCondition', 'Scenario', 'Quest', 'GameEnv',
-                                'Flag', 'PTin', 'PTout', 'FriendPoint',
-                                'GameStat', 'Segment', 'FNStat', 'Probe',
-                                'SocialNpc', 'Item', 'Party', 'SquadFlag',
-                                None, 'SquadQuest', 'SquadMission', None,
-                                None, 'Mode')
-                    # NOTE: GameStat, SocialNpc, and Mode are unconfirmed.
-                    # GameStat (type 8?) appears to have been used in the
-                    # Wii U version to check BLADE level; that feature was
-                    # removed in DE, and conditions which used it have been
-                    # changed to scenario checks (there are no type 8
-                    # conditions in the DE condition list).
-                    # SocialNpc (type 12?) only appears with index 1, and
-                    # its purpose is unknown.
-                    # Mode (type 21?) has 4 entries, and the 4 referenced
-                    # conditions with type 21 also use values 1-4 once each,
-                    # but there are also 100 unreferenced conditions with
-                    # type 21 values 1-100.
-                    if type < len(type_map) and type_map[type]:
-                        type_name = type_map[type]
-                        table.set(row, field_idx-1, type_name)
-                        if type == 0:
-                            test_table = table
-                        else:
-                            test_table = tables[f'FLD_ConditionList_{type_name}']
-                        if type == 21 and id > 4:
-                            target_table = 'None'
-                            test_row = None
-                        else:
-                            test_row = test_table.id_to_row(id)
-                    else:
-                        target_table = 'None'
-                        test_row = None
-
-                elif target[2] == 'XDE_QuestTask':
-                    # Condition type is always in the previous column
-                    type = table.get(row, field_idx-1)
-                    type_name = None
-                    if type == 2:
-                        type_name = 'Suppress'
-                        ref_table = 'FLD_QuestSuppress'
-                    elif type == 3:
-                        type_name = 'Collect'
-                        ref_table = 'FLD_QuestCollect'
-                    elif type == 17:
-                        type_name = 'GameCondition'
-                        ref_table = 'FLD_GameCondition'
-                    if type_name:
-                        table.set(row, field_idx-1, type_name)
-                        test_table = tables[ref_table]
-                        test_row = test_table.id_to_row(id)
-                    else:
-                        target_table = 'None'
-                        test_row = None
-
-                elif target[2] == 'XDE_SquadTarget':
-                    # Target type is always in the previous column
-                    type = table.get(row, field_idx-1)
-                    type_name = None
-                    if type == 0:
-                        type_name = 'Enemy'
-                    elif type == 1:
-                        type_name = 'Item'
-                    if type_name:
-                        table.set(row, field_idx-1, type_name)
-                        test_table = tables[f'SCL_SquadTarget{type_name}']
-                        test_row = test_table.id_to_row(id)
-                    else:
-                        target_table = 'None'
-                        test_row = None
-
-                elif target[2] == 'XDE_seg_id':
-                    type_field = table.field_index('seg_type')
-                    type = table.get(row, type_field)
-                    type_name = None
-                    if type == 1:
-                        type_name = 'Probe'
-                    elif type == 2:
-                        type_name = 'Normal'
-                    elif type == 3:
-                        type_name = 'Clanhome'
-                    if type_name:
-                        table.set(row, type_field, type_name)
-                        test_table = tables[f'SEG_{type_name}List']
-                        test_row = test_table.id_to_row(id)
-                    else:
-                        target_table = 'None'
-                        test_row = None
-
-                elif target[2] == 'XDE_seg_term_id':
-                    # References IDs in the SEG_Terminal table of the
-                    # corresponding map, so we have to find that via xrefs.
-                    target_table = 'None'
-                    test_row = None
-                    refs = table.getrefs(row)
-                    if refs:
-                        assert len(refs) == 1
-                        ref = (tuple(refs))[0]
-                        assert ref[0].startswith('SEG_Terminal')
-                        test_table = tables[ref[0]]
-                        test_row = test_table.id_to_row(id)
-
-                elif target[2] == 'XDE_SegMapInfo':
-                    match = re.match('MNU_SegMapInfo([0-9]{4})$', table.name)
-                    assert match
-                    map_id = match.group(1)
-                    type_field = table.field_index('type')
-                    type = table.get(row, type_field)
-                    type_name = None
-                    ref_table = None
-                    if type == 1:
-                        type_name = 'Location'
-                        ref_table = 'FLD_Location'
-                    elif type == 2:
-                        type_name = 'Transport'
-                        ref_table = f'FLD_NpcPopGimmick{map_id}'
-                    elif type == 3:
-                        type_name = 'Event'
-                        ref_table = 'FLD_EventPopList'
-                    target_table = 'None'
-                    test_row = None
-                    if type_name:
-                        table.set(row, type_field, type_name)
-                        if ref_table:
-                            test_table = tables[ref_table]
-                            test_row = test_table.id_to_row(id)
-
-                else:
-                    raise Exception(f'Unhandled special case: {target[2]}')
-
-            elif name.split('.')[0].startswith('SYS_GimmickLocation'):
-                test_table = tables.get(name.split('.')[0])
-                if test_table:
-                    idx_GimmickID = test_table.field_index('GimmickID')
-                    test_row = test_table.id_to_row(id, idx_GimmickID)
-                else:
-                    test_row = None
-            elif len(target) > 2 and target[2] == 'event_name':
-                test_table = tables.get(name)
-                if test_table:
-                    hash = murmur32(id)
-                    test_row = test_table.id_to_row(f'<{hash:08X}>')
-                else:
-                    test_row = None
-            else:
-                test_table = tables.get(name)
-                if test_table:
-                    test_row = test_table.id_to_row(id)
-                else:
-                    test_row = None
-            if test_row is not None:
-                if target_row is None:
-                    target_table = test_table
-                    target_row = test_row
-                else:
-                    raise ValueError(f'Duplicate ID {id} in table {target_table.name} (reference from {table.name}#{table.get(row, 0)})')
-        if target_row is None:
-            # Suppress intentionally unmatching cases
-            if target_table == 'None':
-                pass
-            elif mode == '3' and table.name == 'QST_Purpose' and table.field(field_idx).name.startswith('NextPurpose') and (id == 30000 or id == 30001):
-                pass  # quest termination flag
-            elif mode == '3' and table.name == 'QST_TaskTalk' and table.field(field_idx).name == 'TargetID' and re.match(r'^[0-9]+$', id):
-                pass
-            elif mode == '3' and table.name == 'QST_TaskRequest' and table.field(field_idx).name.startswith('ItemSetID') and re.match(r'^[0-9]+$', id):
-                pass
-            elif mode == 'XDE' and table.name == 'BTL_DlArtsList' and table.field(field_idx).name == 'ActNo' and id < 0:
-                pass  # "empty field" value
-            elif mode == 'XDE' and table.name == 'FLD_ConditionList_Segment' and table.field(field_idx).name == 'zoneID1' and id == -1:
-                pass  # checks Mira-wide exploration instead of single zone
-            elif mode == 'XDE' and table.name == 'FLD_questlist' and table.field(field_idx).name.startswith('next_quest_') and (id == 10000 or id == 10001):
-                pass  # quest termination flag
-            elif mode == 'XDE' and table.name == 'NPC_talkSocial' and table.field(field_idx).name == 'uid' and id == -1:
-                pass  # placeholder
-            else:
-                print(f'Warning: {table.name}[{table.get(row, 0)}].{table.field(field_idx).name} ({id}) not matched', file=sys.stderr)
-            continue
-        if len(target) > 1 and target[1] is not None and (len(target) == 2 or target[2] != 'XDE_item'):
-            if islistlike(target[1]):
-                target_list = target[1]
-            else:
-                target_list = (target[1],)
-            for f in target_list:
-                target_field = target_table.field_index(f)
-                value = target_table.get(target_row, target_field)
-                if value is not None and value != '':
-                    break
-            if value is None or value == '':
-                value = id
-        else:
-            value = None  # Default rules
-        if len(target) > 2:
-            if target[2] == 'enhance':
-                value = str(value)
-                for n in (1,2,3):
-                    param_idx, param_table, param_row = table.field_index(f'Param{n}', True), \
-                        table, row
-                    if n == 3:
-                        # Param: 3 refers to Param in BTL_EnhanceEff
-                        enhance_eff_table = tables['BTL_EnhanceEff']
-                        param_table = enhance_eff_table
-                        param_row = table.get(row, table.field_index('EnhanceEffect', True)) - 1
-                        param_idx = enhance_eff_table.field_index('Param', True)
-                    if param_idx is not None:
-                        param = param_table.get(param_row, param_idx)
-                        if isinstance(param, float) or isinstance(param, int):
-                            param = f'{param:g}'
-                        value = value.replace(f'[ML:EnhanceParam paramtype={n} ]', param)
-            elif target[2] == 'XDE_enhance':
-                value = str(value)
-                for n in (1,2):
-                    param_idx, param_table, param_row = table.field_index(f'param{n}', True), \
-                        table, row
-                    if param_idx is not None:
-                        param = param_table.get(param_row, param_idx)
-                        if isinstance(param, float) or isinstance(param, int):
-                            param = f'{param:g}'
-                        value = value.replace(f'<<enp{n}>>', param)
-            elif target[2] == 'urobody_name':
-                target_row += 81
-                value = target_table.get(target_row, target_field)
-            elif target[2] == 'achievement':
-                value = target_table.get(target_row, target_field)
-                idx_type = table.field_index('AchieveType')
-                idx_param1 = table.field_index('Param1')
-                idx_param2 = table.field_index('Param2')
-                type = table.get(row, idx_type)
-                param1 = table.get(row, idx_param1)
-                param2 = table.get(row, idx_param2)
-                if type <= 7:
-                    value += f' ({param1})'
-                elif type == 12:
-                    t_EnemyData = tables['FLD_EnemyData']
-                    f_MsgName = t_EnemyData.field_index('MsgName')
-                    enemy_row = t_EnemyData.id_to_row(param1)
-                    enemy_name = (t_EnemyData.get(enemy_row, f_MsgName)
-                                  if enemy_row else str(param1))
-                    value += f' ({enemy_name}, {param2})'
-                elif type != 255:
-                    value += f' ({param2})'
-            elif target[2] == 'scn_category':
-                target_row += 40
-                value = target_table.get(target_row, target_field)
-            elif target[2] == 'scn_group':
-                category = table.get(row, field_idx-1, True)
-                if category == 1:
-                    target_row += 1
-                    value = target_table.get(target_row, target_field)
-                elif category != 0:
-                    target_table = tables['msg_player_name']
-                    target_row -= 7
-                    value = target_table.get(target_row, target_field)
-            elif target[2] == 'event_name':
-                value = table.get(row, field_idx)
-            elif target[2] == 'XDE_quest_category':
-                target_row = (4708, 4710, 4709, 4711)[target_row]
-                value = target_table.get(target_row, target_field)
-            elif target[2] in ('condition_quest', 'qst_task', 'gimmick_object',
-                               'field_vanish',  'chsu_shopitem', 'chta_reward',
-                               'flow_event', '3_FLD_ConditionList', 'XDE_item',
-                               'XDE_drop_affix', 'XDE_GameCondition',
-                               'XDE_QuestTask', 'XDE_SquadTarget',
-                               'XDE_seg_id', 'XDE_seg_term_id',
-                               'XDE_SegMapInfo'):
-                pass  # No additional logic
-            else:
-                raise Exception(f'Unhandled special case: {target[2]}')
-        if add_link:
-            add_xref(mode, table, row, field_idx, value,
-                     target_table, target_row)
-        else:
-            assert value is not None
-            table.set(row, field_idx, value)
-
-
-def resolve_table_xrefs(tables, mode, name, table):
-    """Resolve cross-references in a single table."""
-
-    if name == 'BTL_Achievement':  # Special case for value-dependent refs
-        idx_type = table.field_index('AchieveType')
-        idx_param1 = table.field_index('Param1')
-        for row in range(table.num_rows):
-            type = table.get(row, idx_type)
-            param1 = table.get(row, idx_param1)
-            if type in (9,10,11):
-                target_table = tables['BTL_Arts_PC']
-            elif type == 12:
-                target_table = tables['FLD_EnemyData']
-            elif type >= 13 and type <= 17:
-                target_table = tables['BTL_Skill_PC']
-            else:
-                target_table = None
-            if target_table:
-                target_row = target_table.id_to_row(param1)
-                target_field = target_table.field_index(row_name_fields[mode][target_table.name])
-                value = target_table.get(target_row, target_field)
-                if value == '':
-                    value = table.get(row, idx_param1)
-                add_xref(mode, table, row, idx_param1, value,
-                         target_table, target_row)
-
-    matched_fields = set()
-    if name in table_xrefs[mode]:
-        for field, target in table_xrefs[mode][name].items():
-            field_idx = table.field_index(field, allow_missing=True)
-            if field_idx is not None:
-                if target is not None:
-                    resolve_field_xrefs(tables, mode, table, field_idx,
-                                        target, True)
-
-    for field, target in field_xrefs[mode].items():
-        if name in table_xrefs[mode] and field in table_xrefs[mode][name]:
-            continue
-        field_idx = table.field_index(field, True)
-        if field_idx is not None:
-            resolve_field_xrefs(tables, mode, table, field_idx, target, True)
-
-    hash_re = re.compile(r'<([0-9A-F]{8})>$')
-    for field_idx in range(2, table.num_fields):
-        field = table.field(field_idx)
-        if field.name == 'GimmickID' and table.name.startswith('SYS_GimmickLocation'):
-            pass  # This is a key field, so any matches are hash collisions
-        elif field.value_type == BdatValueType.HSTRING:
-            for row in range(table.num_rows):
-                value = table.get(row, field_idx)
-                if isinstance(value, str):
-                    m = hash_re.match(value)
-                    row_hash = m.group(0) if m else value
-                    target_table_name, target_row = BdatTable.global_id_lookup(row_hash)
-                    if target_table_name:
-                        target_table = tables[target_table_name]
-                        add_xref(mode, table, row, field_idx, None,
-                                 target_table, target_row)
-
-def resolve_xrefs(tables, mode):
+# Each supported game's tables are described/handled by a specialization
+# of CrossReferenceResolver (see definitions below).
+
+# Type describing a single field reference.
+FieldRef = namedtuple('FieldRef', 'table field is_text lookup postproc',
+                            defaults=(None, None, False, None, None))
+FieldRef.__doc__ = 'Type describing a single field reference.'
+FieldRef.table.__doc__ = \
+    """Name of reference target table.
+
+    This may instead be a list of table names, in which case the first
+    table with a matching row is used.
+
+    May be omitted if a lookup function is provided.
+    """
+FieldRef.field.__doc__ = \
+    """Name of reference target field.
+
+    May be omitted if a lookup function is provided.
+    """
+FieldRef.is_text.__doc__ = \
+    """True if the reference is a direct text reference.
+
+    For direct text references, no link is made to the target table, and
+    the target value is copied directly into the referencing cell (as
+    possibly modified by the postproc function).
+    """
+FieldRef.lookup.__doc__ = \
+    """Optional value lookup function.
+
+    If specified, this function will be called in place of the default
+    behavior of finding the row in |table| whose ID is equal to the
+    referencing cell's value and retrieving the value of field |field|
+    in that table.
+
+    Parameters:
+        tables: Dict of all loaded tables.
+        table: Table containing the referencing cell.
+        row: Index of row containing the referencing cell.
+        field_idx: Index of field (column) containing the referencing cell.
+        id: Value of the referencing cell.
+        ref: This FieldRef instance.
+
+    Return value: Either the referenced table, or a 2-tuple (table, row)
+        including both the table and the row of the referenced cell.
+        If only a table reference is returned, the caller will look up
+        the row by calling table.id_to_row(id).  A table value of None or
+        'None' (as a string) indicates that no target cell was found; the
+        string 'None' suppresses the warning normally printed in this case.
+    """
+FieldRef.postproc.__doc__ = \
+    """Optional value postprocessing function.
+
+    Receives the value loaded from the referenced field, and returns the
+    value to store in the referencing cell.
+    """
+
+def TextRef(table, field='name', lookup=None, postproc=None):
+    """Shorthand wrapper for declaring a text reference."""
+    return FieldRef(table, field, True, lookup=lookup, postproc=postproc)
+
+# Type containing information about a single table.
+TableInfo = namedtuple('TableInfo', 'xrefs re_xrefs row_name',
+                       defaults=(None, None, None))
+TableInfo.__doc__ = 'Type containing information about a single table.'
+TableInfo.xrefs.__doc__ = 'Optional dict mapping field names to FieldRefs.'
+TableInfo.re_xrefs.__doc__ = \
+    """Optional dict mapping field name patterns to FieldRefs.
+
+    If a field name matches a pattern in this dict, the corresponding
+    FieldRef will be applied, unless the field name is also present in
+    xrefs (in which case the latter will take precedence).  Behavior is
+    undefined if multiple patterns match the same field.
+    """
+TableInfo.row_name.__doc__ = \
+    """Optional name of a field containing row names.
+
+    If not None, the value of this field for a given row (if not empty)
+    will be copied into cells which reference the row.
+    """
+
+# Class describing cross-references among a set of tables.
+# This doesn't really need to be a class the way we've implemented it,
+# but it's a convenient way to encapsulate everything in one place.
+class CrossReferenceResolver(object):
+    """Base class for declaring cross-references among a set of tables.
+
+    For any given table and field, the first found FieldRef from the
+    following list is applied:
+        (1) table_info[table].xrefs
+        (2) table_info[table].re_xrefs
+        (3) table_re_xrefs
+        (4) field_xrefs
+    Any lower-precedence FieldRefs are ignored; so, for example, a FieldRef
+    defined for a field in field_xrefs can be overridden for a specific
+    table by specifying the same field in a TableInfo for that table.
+    This check is done separately for each field, so, for example, a
+    TableInfo defining a reference on field A does not suppress a
+    field_xrefs definition for field B.
+    """
+
+    # List of tables which should be processed last when iterating over the
+    # table set.  This can be used to ensure that nested references are
+    # resolved correctly.  Tables not in this list are processed first in
+    # an unspecified order, followed by tables in this list in the order
+    # listed.
+    delayed_tables = []
+
+    # Dict of field names which are always references to specific tables
+    # regardless of where the field name appears, mapping field names to
+    # FieldRefs.
+    field_xrefs = {}
+
+    # Dict of field references to be applied to a subset of tables.
+    # Each key is a regular expression matched against the table name
+    # (anchored to both the beginning and the end of the name), and the
+    # corresponding value is a dict in the same format as field_xrefs.
+    # Behavior is undefined if multiple patterns match the same table and
+    # include a FieldRef for the same-named field.
+    table_re_xrefs = {}
+
+    # Dict of table information, mapping table names to TableInfos.
+    table_info = {}
+
+
+def resolve_xrefs(tables, resolver):
     """Resolve all cross-references in the given dict of tables."""
 
-    # Tables for which to delay resolution until the end of the table list
-    # (for cases such as recursive references).  This applies to both
-    # direct text lookup and full cross-references.
-    delayed_tables = ()
-    if mode == '3':
-        delayed_tables = (
-            'FLD_NpcList',  # must be after FLD_NpcResource
-            'BTL_Achievement',  # must be after FLD_EnemyData
-        )
-    elif mode == 'XDE':
-        delayed_tables = (
-            'DRP_AffixTable',  # must be after DRP_ItemTable
-            'FnetVeinList',  # must be after FLD_Location
-            'SEG_ProbeList',  # must be after FnetVeinConfig and SEG_Terminal*
-        )
-
-    for table_name, fields in text_xrefs[mode].items():
-        if not table_name in tables:
-            continue  # skip missing tables
-        if table_name in delayed_tables:
-            continue  # postpone until after this loop
-        table = tables[table_name]
-        for field, target in fields.items():
-            resolve_field_xrefs(tables, mode, table,
-                                table.field_index(field, True), target, False)
-    for gimmick_name, fields in gimmick_text_xrefs[mode].items():
+    for do_text in (True, False):
         for name, table in tables.items():
-            if (name == f'gimmick{gimmick_name}'
-                    or re.match(f'ma..a_GMK_{gimmick_name}$', name)):
-                for field, target in fields.items():
-                    resolve_field_xrefs(tables, mode, table,
-                                        table.field_index(field, True),
-                                        target, False)
-    for table_name in delayed_tables:
-        if table_name in text_xrefs[mode]:
-            for field, target in text_xrefs[mode][table_name].items():
-                resolve_field_xrefs(tables, mode, tables[table_name],
-                                    tables[table_name].field_index(field, True),
-                                    target, False)
-
-    for name, table in tables.items():
-        if name not in delayed_tables:
-            resolve_table_xrefs(tables, mode, name, table)
-    for name in delayed_tables:
-        resolve_table_xrefs(tables, mode, name, tables[name])
+            if name not in resolver.delayed_tables:
+                resolve_table_xrefs(tables, resolver, name, table, do_text)
+        for name in resolver.delayed_tables:
+            resolve_table_xrefs(tables, resolver, name, tables[name], do_text)
 
     # Special links from table names to tables
     for name, table in tables.items():
@@ -14915,57 +11696,2946 @@ def resolve_xrefs(tables, mode):
                             target = m.group(1)
                     if target in tables:
                         table.set(row, field, value, target, None)
+# end def
 
 
-########################################################################
-# Initialization logic for dynamically-initialized data
+def resolve_table_xrefs(tables, resolver, name, table, do_text):
+    """Resolve cross-references in a single table."""
 
-# Sanity-check unhash table
-# (enabled by default since it doesn't take very long to run)
-if True:
-    for hash, word in hashes.items():
-        if word is not None and murmur32(word) != hash:
-            raise Exception(f'murmur32({word}) != 0x{hash:08X} (should be 0x{murmur32(word):08X})')
+    matched_fields = set()
+    def do_field(field_idx, target):
+        if field_idx not in matched_fields:
+            matched_fields.add(field_idx)
+            if target is not None:
+                resolve_field_xrefs(tables, resolver, table, field_idx,
+                                    target, not do_text)
+    # end def
+    def do_fields(xrefs):
+        if not xrefs: return
+        for field, target in xrefs.items():
+            if target.is_text == do_text:
+                field_idx = table.field_index(field, allow_missing=True)
+                if field_idx:
+                    do_field(field_idx, target)
+    # end def
+    def match_fields(re_xrefs):
+        if not re_xrefs: return
+        for pattern, target in re_xrefs.items():
+            if target.is_text == do_text:
+                pattern_re = re.compile(pattern+'$') # FIXME: could cache these
+                for field_idx in range(1, table.num_fields):
+                    field = table.field(field_idx).name
+                    if pattern_re.match(field):
+                        do_field(field_idx, target)
+    # end def
+    if name in resolver.table_info:
+        do_fields(resolver.table_info[name].xrefs)
+        match_fields(resolver.table_info[name].re_xrefs)
+    for pattern, xrefs in resolver.table_re_xrefs.items():
+        if re.match(pattern+'$', name):
+            do_fields(xrefs)
+    do_fields(resolver.field_xrefs)
 
-# Compile gimmick hashes
-for map in map_names:
-    for gmk_type in gimmick_types:
-        table_name = f'{map}_GMK_{gmk_type}'
-        hash = murmur32(table_name)
-        if hash in hashes and hashes[hash] != table_name:
-            raise Exception(f'Gimmick table hash collision: [{table_name}] collides with [{hashes[hash]}]')
-        hashes[hash] = table_name
-        if gmk_type == 'Location':
-            row_name_fields['3'][table_name] = 'LocationName'
-            text_xrefs['3'][table_name] = {'LocationName': ('msg_location_name', 'name')}
+    if not do_text:
+        hash_re = re.compile(r'<([0-9A-F]{8})>$')
+        for field_idx in range(2, table.num_fields):
+            field = table.field(field_idx)
+            if field.name == 'GimmickID' and name.startswith('SYS_GimmickLocation'):
+                pass  # This is a key field, so any matches are hash collisions
+            elif field.value_type == BdatValueType.HSTRING:
+                for row in range(table.num_rows):
+                    value = table.get(row, field_idx)
+                    if isinstance(value, str):
+                        m = hash_re.match(value)
+                        row_hash = m.group(0) if m else value
+                        target_table_name, target_row = BdatTable.global_id_lookup(row_hash)
+                        if target_table_name:
+                            target_table = tables[target_table_name]
+                            add_xref(resolver, table, row, field_idx,
+                                     target_table, target_row)
+# end def
 
-# Add hashes for empty "gimmickXXX"-style tables.
-# Note: some tables may not follow this format, 
-# e.g. "gimmickElevatorCallSwitch" != "gimmickElevatorCSw"
-for gmk_type in gimmick_types:
-    empty_name = f'gimmick{gmk_type}'
-    hash = murmur32(empty_name)
-    if hash in hashes and hashes[hash] != empty_name:
-        raise Exception(f'Gimmick table hash collision: [{empty_name}] collides with [{hashes[hash]}]')
-    hashes[hash] = empty_name
-        
-# Add "*_dlc04" hashes
-for name in list(hashes.values()):
-    if not name:
-        continue
-    for suffix in ['_dlc04', '_DLC04']:
-        dlc_name = name + suffix
-        dlc_hash = murmur32(dlc_name)
-        if dlc_hash in hashes and hashes[dlc_hash] != dlc_name:
-            if dlc_name == 'ArtsID_DLC04':
-                pass  # Known collision with RSC_MapObjList_dlc04
+
+def resolve_field_xrefs(tables, resolver, table, field_idx, target, add_link):
+    """Resolve cross-references in the given table column."""
+    if not field_idx:
+        return
+    target_tables = target.table
+    if not target.lookup and not islistlike(target_tables):
+        target_tables = (target_tables,)
+    for row in range(table.num_rows):
+        id = table.get(row, field_idx)
+        if id == 0 or id == '':
+            table.set(row, field_idx, '')
+            continue
+        if target.lookup:
+            target_table = target.lookup(tables, table, row, field_idx, id,
+                                         target)
+            if isinstance(target_table, tuple):
+                target_table, target_row = target_table
+            elif target_table and target_table != 'None':
+                target_row = target_table.id_to_row(id)
             else:
-                raise Exception(f'DLC04 collision: [{dlc_name}] collides with [{hashes[dlc_hash]}]')
+                target_row = None
         else:
-            hashes[dlc_hash] = dlc_name
+            target_table = None
+            target_row = None
+            for name in target_tables:
+                if name.split('.')[0].startswith('SYS_GimmickLocation'):
+                    test_table = tables.get(name.split('.')[0])
+                    if test_table:
+                        idx_GimmickID = test_table.field_index('GimmickID')
+                        test_row = test_table.id_to_row(id, idx_GimmickID)
+                    else:
+                        test_row = None
+                elif len(target) > 2 and target[2] == 'event_name':
+                    test_table = tables.get(name)
+                    if test_table:
+                        hash = murmur32(id)
+                        test_row = test_table.id_to_row(f'<{hash:08X}>')
+                    else:
+                        test_row = None
+                else:
+                    test_table = tables.get(name)
+                    if test_table:
+                        test_row = test_table.id_to_row(id)
+                    else:
+                        test_row = None
+                if test_row is not None:
+                    if target_row is None:
+                        target_table = test_table
+                        target_row = test_row
+                    else:
+                        raise ValueError(f'Duplicate ID {id} in table {target_table.name} (reference from {table.name}#{table.get(row, 0)})')
+        if target_row is None:
+            # Suppress warning for intentionally unmatching cases
+            if target_table == 'None':
+                pass
+            elif table.name == 'QST_Purpose' and table.field(field_idx).name.startswith('NextPurpose') and (id == 30000 or id == 30001):
+                pass  # quest termination flag
+            elif table.name == 'QST_TaskTalk' and table.field(field_idx).name == 'TargetID' and re.match(r'^[0-9]+$', id):
+                pass
+            elif table.name == 'QST_TaskRequest' and table.field(field_idx).name.startswith('ItemSetID') and re.match(r'^[0-9]+$', id):
+                pass
+            elif table.name == 'BTL_DlArtsList' and table.field(field_idx).name == 'ActNo' and id < 0:
+                pass  # "empty field" value
+            elif table.name == 'FLD_ConditionList_Segment' and table.field(field_idx).name == 'zoneID1' and id == -1:
+                pass  # checks Mira-wide exploration instead of single zone
+            elif table.name == 'FLD_questlist' and table.field(field_idx).name.startswith('next_quest_') and (id == 10000 or id == 10001):
+                pass  # quest termination flag
+            elif table.name == 'NPC_talkSocial' and table.field(field_idx).name == 'uid' and id == -1:
+                pass  # placeholder
+            else:
+                print(f'Warning: {table.name}[{table.get(row, 0)}].{table.field(field_idx).name} ({id}) not matched', file=sys.stderr)
+            continue
+        if add_link:
+            add_xref(resolver, table, row, field_idx, target_table, target_row)
+        else:
+            value = target_table.get(target_row,
+                                     target_table.field_index(target.field))
+            if value is None or value == '':
+                value = id
+            if target.postproc:
+                value = target.postproc(value, table, row, tables)
+            assert value is not None
+            table.set(row, field_idx, value)
+# end def
 
-if __name__ == '__main__':
-    print('Compiled gimmick & DLC4 hashes.')
+
+def add_xref(resolver, table, row, field_idx, target_table, target_row):
+    """Add a cross-reference from table[row][field_idx] to target_table[target_row]."""
+    table.set(row, field_idx,
+              get_row_name(resolver, target_table, target_row),
+              target_table.name, target_table.get(target_row, 0))
+    target_table.addref(target_row, table.name, table.get(row, 0),
+                        get_row_name(resolver, table, row))
+# end def
+
+
+def get_row_name(resolver, table, row):
+    """Return the string to use as the given table row's name."""
+    info = resolver.table_info.get(table.name)
+    if info and info.row_name:
+        name_idx = table.field_index(info.row_name)
+        value = table.get(row, name_idx)
+    elif table.field(1).is_id():
+        id = table.get(row, 1)
+        value = '' if id.startswith('<') else id
+    else:
+        value = ''
+    if value == '':
+        value = table.get(row, 0)
+    return value
+# end def
+
+
+def get_gmk_location_table(tables):
+    """Return the correct SYS_GimmickLocation table for XC3."""
+    base = tables.get('SYS_GimmickLocation')
+    if base:
+        return base
+    dlc = tables.get('SYS_GimmickLocation_dlc04')
+    if dlc:
+        return dlc
+    raise Exception(f'No SYS_GimmickLocation table found. Is base game or DLC4 present?')
+# end def
+
+#-----------------------------------------------------------------------
+# Xenoblade 3 table descriptions
+
+# List of all event tables
+xc3_event_tables = ('EVT_listEv', 'EVT_listFev', 'EVT_listQst',
+                    'EVT_listTlk', 'D1C136A1')
+
+class XC3Resolver(CrossReferenceResolver):
+
+    ######## Value lookup functions
+
+    def lookup_achievement(tables, table, row, field_idx, id, ref):
+        type = table.get(row, table.field_index('AchieveType'))
+        if 9 <= type <= 11:
+            return tables['BTL_Arts_PC']
+        elif type == 12:
+            return tables['FLD_EnemyData']
+        elif 13 <= type <= 17:
+            return tables['BTL_Skill_PC']
+        else:
+            return 'None'
+
+    def lookup_chsu_shopitem(tables, table, row, field_idx, id, ref):
+        # This is either an emblem or a hero
+        type_field = table.field_index('field_6CA7326E')
+        type = table.get(row, type_field)
+        return tables['BTL_ChSU_Emblem'] if type == 0 else tables['CHR_PC']
+
+    def lookup_chta_reward(tables, table, row, field_idx, id, ref):
+        # Costume if CostumeChr != 0, item otherwise
+        chr_field = table.field_index('CostumeChr')
+        chr = table.get(row, chr_field)
+        return tables['RSC_PcCostumeOpen'] if chr else tables['ITM_Accessory']
+
+    def lookup_condition_list(tables, table, row, field_idx, id, ref):
+        type = table.get(row, table.field_index('ConditionType'))
+        assert type > 0
+        table_map = ('FLD_ConditionList',
+                     'FLD_ConditionScenario',
+                     'FLD_ConditionQuest',
+                     'FLD_ConditionEnv',
+                     'FLD_ConditionFlag',
+                     'FLD_ConditionItem',
+                     'FLD_ConditionPT',
+                     'FLD_ConditionMapGimmick',
+                     'FLD_ConditionUMonster',
+                     'FLD_ConditionTutorial',
+                     'FLD_ConditionPcLv',
+                     'FLD_ConditionClassLv',
+                     '0186E651')
+        return tables[table_map[type-1]]
+
+    def lookup_condition_quest(tables, table, row, field_idx, id, ref):
+        flag_idx = field_idx+1
+        if table.get(row, flag_idx) == 1:
+            return tables['QST_List']
+        else:
+            assert table.get(row, flag_idx) == 0
+            return tables['QST_Purpose']
+
+    def lookup_event_name(tables, table, row, field_idx, id, ref):
+        hash_id = f'<{murmur32(id):08X}>'
+        for target in ref.table:
+            target_table = tables[target]
+            target_row = target_table.id_to_row(hash_id)
+            if target_row is not None:
+                return target_table, target_row
+        return 'None'
+
+    def lookup_flow_event(tables, table, row, field_idx, id, ref):
+        type = table.get(row, table.field_index('EventType'))
+        if type == 0:
+            target_table = 'SYS_FlowEventFlag'
+        elif type == 3:
+            target_table = 'SYS_ScenarioFlag'
+        elif (4 <= type <= 8) or (33 <= type <= 34) or type == 51 or type == 53 or type == 56:
+            target_table = 'CHR_PC'
+        elif type == 9:
+            # Draw/sheathe swords: 0 is for the party
+            target_table = 'FLD_EnemyData'
+        elif type == 10:
+            target_table = 'SYS_FlowEventItem'
+        elif type == 11:
+            target_table = 'QST_List'
+        elif type == 14 or type == 15:
+            target_table = 'RSC_WeatherSet'
+        elif type == 17:
+            target_table = 'FLD_KizunaChangeFlag'
+        elif type == 18:
+            target_table = next(filter(lambda t: tables[t].id_to_row(id) is not None, xc3_event_tables))
+        elif type == 19 or type == 20 or type == 64:
+            target_table = 'FLD_NpcList'
+        elif type == 21:
+            target_table = 'FLD_ColonyList'
+        elif type == 22:
+            target_table = 'SYS_FlowEventAddFlag'
+        elif type == 23:
+            target_table = 'SYS_Tutorial'
+        elif type == 25:
+            target_table = 'SYS_CameraShake'
+        elif type == 27:
+            target_table = 'SYS_FlowEventLaunchGimmick'
+        elif 28 <= type <= 31:
+            target_table = 'SYS_MapPartsList'
+        elif type == 35:
+            target_table = 'CHR_Weathering'
+        elif type == 36:
+            target_table = 'SYS_FlowEventArtsStatus'
+        elif type == 37:
+            target_table = 'SYS_FlowEventSkillStatus'
+        elif type == 38:
+            target_table = 'SYS_FlowEventArtsSet'
+        elif type == 42 or type == 43:
+            target_table = 'SYS_SystemOpen'
+        elif type == 44:
+            target_table = 'SYS_IntermissionSave'
+        elif type == 46:
+            target_table = 'SYS_FlowEventPlaySE'
+        elif type == 47:
+            target_table = 'SYS_FlowEventDropInfoPiece'
+        elif type == 48:
+            target_table = 'RSC_PcCostumeOpen'
+        elif type == 49:
+            target_table = 'SYS_PopupAnnounce'
+        elif type == 50:
+            target_table = 'SYS_FlowEventFade'
+        elif type == 52:
+            target_table = 'SYS_Vibration'
+        elif type == 58:
+            target_table = 'A7FF9149'
+        elif type == 61:
+            target_table = '3B275FEB'
+        elif type == 63:
+            target_table = '46B9A047'
+        else:
+            return 'None'
+        return tables[target_table]
+
+    def lookup_gimmick_object(tables, table, row, field_idx, id, ref):
+        hash = murmur32(id)
+        target_table = get_gmk_location_table(tables)
+        idx_GimmickID = target_table.field_index('GimmickID')
+        target_row = target_table.id_to_row(f'<{hash:08X}>', idx_GimmickID)
+        return target_table, target_row
+
+    def lookup_qst_task(tables, table, row, field_idx, id, ref):
+        type_idx = field_idx-1
+        type = table.get(row, type_idx)
+        assert type >= 0
+        typename = ('Battle', 'Talk', 'Event', 'Ask',
+                    'Reach', 'Chase', 'Request', 'Collect',
+                    'Collepedia', 'Gimmick', 'Follow', 'Condition')[type]
+        return tables[f'QST_Task{typename}']
+
+    def lookup_scn_category(tables, table, row, field_idx, id, ref):
+        target_table = tables[ref.table]
+        return target_table, target_table.id_to_row(id) + 40
+
+    def lookup_scn_group(tables, table, row, field_idx, id, ref):
+        category = table.get(row, field_idx-1, True)
+        if category == 1:
+            target_table = tables[ref.table]
+            offset = 1
+            target_row = target_table.id_to_row(id) + 1
+        elif category != 0:
+            target_table = tables['msg_player_name']
+            offset = -7
+        else:
+            return 'None'
+        return target_table, target_table.id_to_row(id) + offset
+
+    def lookup_urobody_name(tables, table, row, field_idx, id, ref):
+        target_table = tables[ref.table]
+        return target_table, target_table.id_to_row(id) + 81
+
+    def lookup_vanish(tables, table, row, field_idx, id, ref):
+        type_idx = field_idx-1
+        type = table.get(row, type_idx)
+        if type == 1 or type == 2:
+            return tables['BTL_BuffDeBuff']
+        else:
+            return 'None'  # Suppress no-match warning
+
+
+    ######## Value postprocessors
+
+    def postproc_achievement(value, table, row, tables):
+        idx_type = table.field_index('AchieveType')
+        idx_param1 = table.field_index('Param1')
+        idx_param2 = table.field_index('Param2')
+        type = table.get(row, idx_type)
+        param1 = table.get(row, idx_param1)
+        param2 = table.get(row, idx_param2)
+        if type <= 7:
+            value += f' ({param1})'
+        elif type == 12:
+            t_EnemyData = tables['FLD_EnemyData']
+            f_MsgName = t_EnemyData.field_index('MsgName')
+            enemy_row = t_EnemyData.id_to_row(param1)
+            enemy_name = (t_EnemyData.get(enemy_row, f_MsgName)
+                          if enemy_row else str(param1))
+            value += f' ({enemy_name}, {param2})'
+        elif type != 255:
+            value += f' ({param2})'
+        return value
+
+    def postproc_enhance(value, table, row, tables):
+        value = str(value)
+        for n in (1,2,3):
+            param_idx, param_table, param_row = table.field_index(f'Param{n}', True), \
+                table, row
+            if n == 3:
+                # Param: 3 refers to Param in BTL_EnhanceEff
+                enhance_eff_table = tables['BTL_EnhanceEff']
+                param_table = enhance_eff_table
+                param_row = table.get(row, table.field_index('EnhanceEffect', True)) - 1
+                param_idx = enhance_eff_table.field_index('Param', True)
+            if param_idx is not None:
+                param = param_table.get(param_row, param_idx)
+                if isinstance(param, float) or isinstance(param, int):
+                    param = f'{param:g}'
+                value = value.replace(f'[ML:EnhanceParam paramtype={n} ]', param)
+        return value
+
+
+    ######## Convenience variables for reference sets
+
+    refset_event = FieldRef(xc3_event_tables)
+    refset_event_name = FieldRef(xc3_event_tables, lookup=lookup_event_name)
+    refset_gimmick = FieldRef(('SYS_GimmickLocation.GimmickID',
+                                 'SYS_GimmickLocation_dlc04.GimmickID'))
+    refset_gimmick_object = FieldRef(lookup=lookup_gimmick_object)
+    refset_item = FieldRef(('ITM_Accessory', 'ITM_Collection',
+                            'ITM_Collepedia', 'ITM_Cylinder', 'ITM_Gem',
+                            'ITM_Info', 'ITM_Precious'))
+
+
+    ######## Data tables
+
+    delayed_tables = (
+        'FLD_NpcList',      # must be after FLD_NpcResource
+        'BTL_Achievement',  # must be after FLD_EnemyData
+    )
+
+    field_xrefs = {
+        'GroupName': TextRef('msg_enemy_group_name'),
+        'LocationName': TextRef('msg_location_name'),
+
+        'ChainOrder': FieldRef('D9B88F26'),
+
+        'Debuff': FieldRef('BTL_BuffDeBuff'),
+        'Debuff1': FieldRef('BTL_BuffDeBuff'),
+        'Debuff2': FieldRef('BTL_BuffDeBuff'),
+        'Debuff3': FieldRef('BTL_BuffDeBuff'),
+        'Debuff4': FieldRef('BTL_BuffDeBuff'),
+
+         # Challenge battle - gauntlet
+        'field_7EE21AA2': FieldRef('BTL_ChSU_EnemyTable'),
+        'field_BDC9BBC2': FieldRef('BTL_ChSU_EnemyTable'),
+        'field_E0975E89': FieldRef('BTL_ChSU_EnemyTable'),
+        'field_B62754C4': FieldRef('BTL_ChSU_EnemyTable'),
+        'field_223EFE81': FieldRef('BTL_ChSU_RateShop'),
+        'field_BC6FBC62': FieldRef('BTL_ChSU_RateEvent'),
+        'field_6D8A087C': FieldRef('BTL_ChSU_RateGate'),
+
+        'Colony': FieldRef('FLD_ColonyList'),
+        'ColonyID': FieldRef('FLD_ColonyList'),
+        'ColonyID1': FieldRef('FLD_ColonyList'),
+        'ColonyID2': FieldRef('FLD_ColonyList'),
+        'ColonyID3': FieldRef('FLD_ColonyList'),
+
+        'AccessCondition': FieldRef('FLD_ConditionList'),
+        'AddCondition1': FieldRef('FLD_ConditionList'),
+        'AddCondition2': FieldRef('FLD_ConditionList'),
+        'AddCondition3': FieldRef('FLD_ConditionList'),
+        'AddCondition4': FieldRef('FLD_ConditionList'),
+        'AddCondition5': FieldRef('FLD_ConditionList'),
+        'AddCondition6': FieldRef('FLD_ConditionList'),
+        'AddCondition7': FieldRef('FLD_ConditionList'),
+        'AddCondition8': FieldRef('FLD_ConditionList'),
+        'AddCondition9': FieldRef('FLD_ConditionList'),
+        'AddCondition10': FieldRef('FLD_ConditionList'),
+        'AddCondition11': FieldRef('FLD_ConditionList'),
+        'AddCondition12': FieldRef('FLD_ConditionList'),
+        'AddCondition13': FieldRef('FLD_ConditionList'),
+        'AddCondition14': FieldRef('FLD_ConditionList'),
+        'AddCondition15': FieldRef('FLD_ConditionList'),
+        'AddCondition16': FieldRef('FLD_ConditionList'),
+        'AddCondition17': FieldRef('FLD_ConditionList'),
+        'AddCondition18': FieldRef('FLD_ConditionList'),
+        'AddCondition19': FieldRef('FLD_ConditionList'),
+        'AddCondition20': FieldRef('FLD_ConditionList'),
+        'AnimationLoadingPlay': FieldRef('FLD_ConditionList'),
+        'ChangeStatusCondition': FieldRef('FLD_ConditionList'),
+        'Combo1': FieldRef('BTL_Combo'),
+        'Condition': FieldRef('FLD_ConditionList'),  # Excluding FLD_ConditionList (special-cased below)
+        'Condition1': FieldRef('FLD_ConditionList'),
+        'Condition2': FieldRef('FLD_ConditionList'),
+        'Condition3': FieldRef('FLD_ConditionList'),
+        'Condition4': FieldRef('FLD_ConditionList'),
+        'Condition5': FieldRef('FLD_ConditionList'),
+        'Condition6': FieldRef('FLD_ConditionList'),
+        'ConditionNoTarget': FieldRef('FLD_ConditionList'),
+        'Conditon1': FieldRef('FLD_ConditionList'),
+        'Conditon2': FieldRef('FLD_ConditionList'),
+        'Conditon3': FieldRef('FLD_ConditionList'),
+        'Conditon4': FieldRef('FLD_ConditionList'),
+        'Conditon5': FieldRef('FLD_ConditionList'),
+        'Conditon6': FieldRef('FLD_ConditionList'),
+        'Conditon7': FieldRef('FLD_ConditionList'),
+        'Conditon8': FieldRef('FLD_ConditionList'),
+        'IgnoreCondition': FieldRef('FLD_ConditionList'),
+        'NameCondition': FieldRef('FLD_ConditionList'),
+        'NamedSpCond': FieldRef('FLD_ConditionList'),
+        'PriceCondition': FieldRef('FLD_ConditionList'),
+
+        'CookRecipe': FieldRef('FLD_CookRecipe'),
+
+        'EffConvert': FieldRef('SYS_EffConvert'),
+
+        'EnemyID': FieldRef('FLD_EnemyData'),
+        'EnemyID1': FieldRef('FLD_EnemyData'),
+        'EnemyID2': FieldRef('FLD_EnemyData'),
+        'EnemyID3': FieldRef('FLD_EnemyData'),
+        'EnemyID4': FieldRef('FLD_EnemyData'),
+        'EnemyID5': FieldRef('FLD_EnemyData'),
+        'EnemyID6': FieldRef('FLD_EnemyData'),
+        'EnemyID01': FieldRef('FLD_EnemyData'),
+        'EnemyID02': FieldRef('FLD_EnemyData'),
+        'EnemyID03': FieldRef('FLD_EnemyData'),
+        'MatchEnemy1': FieldRef('FLD_EnemyData'),
+        'MatchEnemy2': FieldRef('FLD_EnemyData'),
+        'MatchEnemy3': FieldRef('FLD_EnemyData'),
+        'MatchEnemy4': FieldRef('FLD_EnemyData'),
+        'Enemy1': FieldRef('FLD_EnemyData'),
+        'Enemy2': FieldRef('FLD_EnemyData'),
+        'Enemy3': FieldRef('FLD_EnemyData'),
+        'Enemy4': FieldRef('FLD_EnemyData'),
+        'Enemy5': FieldRef('FLD_EnemyData'),
+        'Enemy6': FieldRef('FLD_EnemyData'),
+        'Enemy7': FieldRef('FLD_EnemyData'),
+        'Enemy8': FieldRef('FLD_EnemyData'),
+        'EnemyMobius': FieldRef('FLD_EnemyData'),
+        'EnemyRare': FieldRef('FLD_EnemyData'),
+
+        'Enhance': FieldRef('BTL_Enhance'),
+        'Enhance1': FieldRef('BTL_Enhance'),
+        'Enhance2': FieldRef('BTL_Enhance'),
+        'Enhance3': FieldRef('BTL_Enhance'),
+        'Enhance4': FieldRef('BTL_Enhance'),
+        'Enhance5': FieldRef('BTL_Enhance'),
+        'EnhanceID': FieldRef('BTL_Enhance'),
+        'Enhance_dlc04': FieldRef('BTL_Enhance'),
+
+        'EnhanceEffect': FieldRef('BTL_EnhanceEff'),
+
+        'FlowEventID': FieldRef('SYS_FlowEventList'),
+        'flowEventID': FieldRef('SYS_FlowEventList'),
+        'field_01FB515A': FieldRef('SYS_FlowEventList'),  # "before" flow event ID
+
+        'Navi': refset_gimmick,
+
+        'IK': FieldRef('RSC_IK'),
+        'IkName': FieldRef('RSC_IK'),
+
+        'EventTable': FieldRef('FLD_InterestEventStart'),
+
+        'InfoPiece': refset_item,
+        'InfoPiece1': refset_item,
+        'InfoPiece2': refset_item,
+        'InfoPiece3': refset_item,
+        'InfoPiece4': refset_item,
+        'Item': refset_item,
+        'Item1': refset_item,
+        'Item2': refset_item,
+        'Item3': refset_item,
+        'Item4': refset_item,
+        'Item5': refset_item,
+        'Item6': refset_item,
+        'Item7': refset_item,
+        'Item01': refset_item,
+        'Item02': refset_item,
+        'Item03': refset_item,
+        'Item04': refset_item,
+        'Item05': refset_item,
+        'Item06': refset_item,
+        'Item07': refset_item,
+        'Item08': refset_item,
+        'Item09': refset_item,
+        'Item10': refset_item,
+        'ItemID': refset_item,
+        'ItemID1': refset_item,
+        'ItemID2': refset_item,
+        'ItemID3': refset_item,
+        'ItemID4': refset_item,
+        'ItemID5': refset_item,
+        'ItemID6': refset_item,
+        'ItemID7': refset_item,
+        'ItemID8': refset_item,
+        'ItemId1': refset_item,
+        'ItemId2': refset_item,
+        'ItemId3': refset_item,
+        'ItemId4': refset_item,
+        'ItemId5': refset_item,
+        'ItemId6': refset_item,
+        'ItemId7': refset_item,
+        'ItemId8': refset_item,
+        'ItemId9': refset_item,
+        'ItemId10': refset_item,
+        'NcType': refset_item,  # Nc*/Np* are Nopon coin references
+        'NpType02': refset_item,
+        'NpType03': refset_item,
+        'NpType04': refset_item,
+        'NpType05': refset_item,
+        'NpType06': refset_item,
+        'NpType07': refset_item,
+        'NpType08': refset_item,
+        'NpType09': refset_item,
+        'NpType10': refset_item,
+        'NpType11': refset_item,
+        'NpType12': refset_item,
+        'NpType13': refset_item,
+        'NpType14': refset_item,
+        'NpType15': refset_item,
+        'NpType16': refset_item,
+        'NpType17': refset_item,
+        'NpType18': refset_item,
+        'NpType19': refset_item,
+        'NpType20': refset_item,
+        'OrderCondition': FieldRef('FLD_ConditionList'),
+        'OrderCondition2': FieldRef('FLD_ConditionList'),
+        'SetItem1': refset_item,
+        'SetItem2': refset_item,
+        'SetItem3': refset_item,
+        'SetItem4': refset_item,
+        'SetItem5': refset_item,
+        'SetItem6': refset_item,
+        'SetItem7': refset_item,
+        'SetItem8': refset_item,
+        'SetItem9': refset_item,
+        'SetItem10': refset_item,
+        'ShopItem1': refset_item,
+        'ShopItem2': refset_item,
+        'ShopItem3': refset_item,
+        'ShopItem4': refset_item,
+        'ShopItem5': refset_item,
+        'ShopItem6': refset_item,
+        'ShopItem7': refset_item,
+        'ShopItem8': refset_item,
+        'ShopItem9': refset_item,
+        'ShopItem10': refset_item,
+        'ShopItem11': refset_item,
+        'ShopItem12': refset_item,
+        'ShopItem13': refset_item,
+        'ShopItem14': refset_item,
+        'ShopItem15': refset_item,
+        'ShopItem16': refset_item,
+        'ShopItem17': refset_item,
+        'ShopItem18': refset_item,
+        'ShopItem19': refset_item,
+        'ShopItem20': refset_item,
+
+        'MapJump': FieldRef('SYS_MapJumpList'),
+        'MapJumpID': FieldRef('SYS_MapJumpList'),
+
+        'CurrentMap': FieldRef('SYS_MapList'),
+        'LinkMapID': FieldRef('SYS_MapList'),
+        'MapID': FieldRef('SYS_MapList'),
+        'mapID': FieldRef('SYS_MapList'),
+
+        'NPCID': FieldRef('FLD_NpcList'),
+        'NpcID': FieldRef('FLD_NpcList'),
+        'NpcID1': FieldRef('FLD_NpcList'),
+        'NpcID2': FieldRef('FLD_NpcList'),
+        'NpcID3': FieldRef('FLD_NpcList'),
+        'NpcID4': FieldRef('FLD_NpcList'),
+        'NpcID5': FieldRef('FLD_NpcList'),
+        'NpcID6': FieldRef('FLD_NpcList'),
+
+        'CostumeChr': FieldRef('CHR_PC'),
+        'PCID1': FieldRef('CHR_PC'),
+        'PCID2': FieldRef('CHR_PC'),
+        'PCID3': FieldRef('CHR_PC'),
+        'PcID': FieldRef('CHR_PC'),
+
+        'CraftBuff': FieldRef('FLD_PerkTemporary'),
+
+        'QuestID': FieldRef('QST_List'),
+
+        'Reaction': FieldRef('BTL_Reaction'),
+
+        'AgnusReward': FieldRef('ITM_RewardDroppedSupplies'),
+        'KevesReward': FieldRef('ITM_RewardDroppedSupplies'),
+        'FirstReward': FieldRef('ITM_RewardDroppedSupplies'),
+
+        'DebScenarioFlag': FieldRef('SYS_ScenarioFlag'),
+        'ScenarioFlag': FieldRef('SYS_ScenarioFlag'),
+
+        'Stance': FieldRef('BTL_Stance'),
+        'Stance1': FieldRef('BTL_Stance'),
+        'Stance2': FieldRef('BTL_Stance'),
+        'Stance3': FieldRef('BTL_Stance'),
+        'Stance4': FieldRef('BTL_Stance'),
+        'Stance5': FieldRef('BTL_Stance'),
+
+        'SysOpenID': FieldRef('SYS_SystemOpen'),
+
+        'TalentID': FieldRef('BTL_Talent'),
+
+        'TaskID': FieldRef('QST_Task'),
+
+        'TutorialID': FieldRef('SYS_Tutorial'),
+
+        'field_E416DB96': FieldRef('VO_Group'),
+
+        'SysWeatherID': FieldRef('SYS_WeatherList'),
+
+        'weatherA': FieldRef('RSC_WeatherSet'),
+        'weatherB': FieldRef('RSC_WeatherSet'),
+        'weatherC': FieldRef('RSC_WeatherSet'),
+
+        'setupID': FieldRef('CC55A8C8'),
+    }
+
+    table_re_xrefs = {
+        'ma..a_GMK_Corpse': {'EventID': refset_event_name,
+                             'Reward': FieldRef('ITM_RewardGrieve')},
+        'ma..a_GMK_Event': {'Name': TextRef('msg_fld_searchpoint'),
+                            'EventID': refset_event_name},
+        'ma..a_GMK_KizunaEvent': {'EventName': refset_event_name,
+                                  'field_3EB3E425': refset_event_name},
+        'ma..a_GMK_TreasureBox': {'RewardID': FieldRef('ITM_RewardAssort')},
+    }
+
+    table_info = {
+        'AMB_CollectionLot': TableInfo(
+            {'RewordID': FieldRef('ITM_RewardAssort'),
+             'SetName': TextRef('msg_mnu_amiibo')}),
+        'AMB_SpecialAmiibo': TableInfo(
+            {'RewordName': TextRef('msg_mnu_amiibo'),
+             'RewordText': TextRef('msg_mnu_amiibo')}),
+        'BTL_Achievement': TableInfo(
+            {'Param1': FieldRef(lookup=lookup_achievement),
+             'Caption': TextRef('msg_btl_achievement',
+                                postproc=postproc_achievement)},
+            row_name='Caption'),
+        'BTL_Arts_Chain_Set': TableInfo(
+            {'UseTalent': FieldRef('BTL_Talent'),
+             'UseChr': FieldRef('CHR_PC'),
+             'ChainArts': FieldRef('BTL_Arts_PC')}),
+        'BTL_Arts_En': TableInfo(
+            {'Name': TextRef('msg_btl_arts_en_name'),
+             'StateName': FieldRef('BTL_MotionState'),
+             'StateName2': FieldRef('BTL_MotionState'),
+             'ArtsBuffDebuff': FieldRef('BTL_BuffDeBuff'),
+             'SetUpType': FieldRef('BTL_SetUp'),
+             'SummonData': FieldRef('BTL_EnSummon')},
+            row_name='Name'),
+        'BTL_Arts_PC': TableInfo(
+            {'Name': TextRef('msg_btl_arts_name'),
+             'Caption': TextRef('msg_btl_arts_caption'),
+             'StateName': FieldRef('BTL_MotionState'),
+             'StateName2': FieldRef('BTL_MotionState'),
+             'ArtsBuffDebuff': FieldRef('BTL_BuffDeBuff'),
+             'SetUpType': FieldRef('BTL_SetUp'),
+             'SetUpUI': FieldRef('BTL_SetUp'),
+             'EnArtsAchieve': FieldRef('BTL_Achievement')},
+            row_name='Name'),
+        'BTL_AutoSetAccessory': TableInfo(
+            re_xrefs={r'Talent\d+': refset_item}),
+        'BTL_AutoSetArts': TableInfo(
+            re_xrefs={r'Talent\d+': FieldRef('BTL_Arts_PC')}),
+        'BTL_AutoSetGem': TableInfo(
+            re_xrefs={r'Talent\d+': refset_item}),
+        'BTL_AutoSetSkill': TableInfo(
+            re_xrefs={r'Talent\d+': FieldRef('BTL_Skill_PC')}),
+        'BTL_BuffDeBuff': TableInfo(
+            {'Name': TextRef('msg_btl_buffdebuff_name'),
+             'Caption': TextRef('msg_btl_buffdebuff_caption')},
+            row_name='Name'),
+        'BTL_ChSU_Emblem': TableInfo(
+            {'Name': TextRef('msg_btl_ChSU_emblem_name'),
+             'Caption': TextRef('C20EDDF5')},
+            row_name='Name'),
+        'BTL_ChSU_List': TableInfo(
+            {'Name': TextRef('192F6292'),
+             'Caption1': TextRef('18D9E310'),
+             'Caption2': TextRef('2BA64A98'),
+             'Caption3': TextRef('2BA64A98'),
+             'OrderConditionText': TextRef('EE23CB30'),
+             'Reward': FieldRef('BTL_ChSU_Reward')}),
+        'BTL_ChSU_Reward': TableInfo(
+            {'FirstReward': FieldRef(lookup=lookup_chta_reward)}),
+        'BTL_ChSU_SettingEvent': TableInfo(
+            {'Caption': TextRef('msg_btl_ChSU_event_caption')}),
+        'BTL_ChSU_SettingGate': TableInfo(
+            {'Name': TextRef('msg_btl_ChSU_gate_name'),
+             'Caption': TextRef('msg_btl_ChSU_gate_caption')}),
+        'BTL_ChSU_SettingShop': TableInfo(
+            {'Caption': TextRef('msg_btl_ChSU_shop_caption')}),
+        'BTL_ChSU_ShopItem': TableInfo(
+            {'Item': FieldRef(lookup=lookup_chsu_shopitem)}),
+        'BTL_ChTA_List': TableInfo(
+            {'Name': TextRef('192F6292'),
+             'Caption1': TextRef('18D9E310'),
+             'Caption2': TextRef('2BA64A98'),
+             'Caption3': TextRef('2BA64A98'),
+             'OrderConditionText': TextRef('EE23CB30'),
+             'Reward': FieldRef('BTL_ChTA_Reward')}),
+        'BTL_ChTA_Reward': TableInfo(
+            {'FirstReward': FieldRef(lookup=lookup_chta_reward)}),
+        'BTL_Combo': TableInfo(
+            {'Name': TextRef('msg_btl_combo_name'),
+             'PreCombo': FieldRef('BTL_Combo')},
+            row_name='Name'),
+        'BTL_Element': TableInfo(
+            {'ImpactEnhance': FieldRef('BTL_Enhance'),
+             'KeepEnhance': FieldRef('BTL_Enhance')}),
+        'BTL_EnFamily': TableInfo(
+            {'field_6C2A5517': refset_item,
+             'field_AB489C01': refset_item,
+             'field_FD843EC5': refset_item,
+             'field_76080402': refset_item}),
+        'BTL_Enemy': TableInfo(
+            {'Resource': FieldRef('BTL_EnRsc'),
+             'EnemyAiHead': FieldRef('BTL_EnemyAi'),
+             'EnemyAiTail': FieldRef('BTL_EnemyAi'),
+             'EnemyFamily': FieldRef('BTL_EnFamily'),
+             'EnhanceSlot0': FieldRef('BTL_Enhance'),
+             'EnhanceSlot1': FieldRef('BTL_Enhance'),
+             'EnhanceSlot2': FieldRef('BTL_Enhance'),
+             'RageStance': FieldRef('BTL_Stance')},
+            re_xrefs={r'(Auto|Arts)Slot\d+': FieldRef('BTL_Arts_En')}),
+        'BTL_EnemyDrop_Material': TableInfo(
+            {'EnFamily': FieldRef('BTL_EnFamily')}),
+        'BTL_Enhance': TableInfo(
+            {'Caption': TextRef('msg_btl_enhance_cap',
+                                postproc=postproc_enhance)},
+            row_name='Caption'),
+        'BTL_EnhanceEff': TableInfo(
+            {'Name': TextRef('msg_btl_enhance_name')},
+            row_name='Name'),
+        'BTL_HyperCombo': TableInfo(
+            {'Name': TextRef('3B9EDF2E'),
+             'Caption': TextRef('6F7982E8'),
+             'Caption2': TextRef('6F7982E8'),
+             'Reaction': FieldRef('BTL_Combo')}),
+        'BTL_MotionState': TableInfo(
+            row_name='StateName'),
+        'BTL_Pair': TableInfo(
+            {'Chr1': FieldRef('CHR_PC'),
+             'Chr2': FieldRef('CHR_PC'),
+             'field_3B047206': refset_item,
+             'PairSkill': FieldRef('BTL_Skill_PC'),
+             'HyperCombo': FieldRef('BTL_HyperCombo')}),
+        'BTL_Reaction': TableInfo(
+            {'Name': TextRef('msg_btl_combo_name')},
+            row_name='Name'),
+        'BTL_SetUp': TableInfo(
+            {'Name': TextRef('msg_btl_buffdebuff_name'),
+             'BulletID': FieldRef('BTL_Bullet'),
+             'BulletEffID': FieldRef('BTL_BulletEffect'),
+             'VanishParam1': FieldRef(lookup=lookup_vanish)},
+            row_name='Name'),
+        'BTL_Skill_PC': TableInfo(
+            {'Name': TextRef('msg_btl_skill_name'),
+             'UseTalent': FieldRef('BTL_Talent'),
+             'UseChr': FieldRef('CHR_PC'),
+             'EnSkillAchieve': FieldRef('BTL_Achievement')},
+            row_name='Name'),
+        'BTL_SpUnique': TableInfo(
+            {'SpUniqueEnemy': FieldRef('FLD_EnemyData')}),
+        'BTL_Stance': TableInfo(
+            {'Name': TextRef('msg_btl_stance_name')},
+            row_name='Name'),
+        'BTL_Talent': TableInfo(
+            {'Name': TextRef('msg_btl_talent_name'),
+             'Caption': TextRef('msg_btl_talent_caption'),
+             'WeaponType': FieldRef('BTL_WpnType'),
+             'WeaponType2': FieldRef('BTL_WpnType'),
+             'TalentAptitude1': FieldRef('BTL_TalentAptitude'),
+             'TalentAptitude2': FieldRef('BTL_TalentAptitude'),
+             'TalentAptitude3': FieldRef('BTL_TalentAptitude'),
+             'TalentAptitude4': FieldRef('BTL_TalentAptitude'),
+             'TalentAptitude5': FieldRef('BTL_TalentAptitude'),
+             'TalentAptitude6': FieldRef('BTL_TalentAptitude')},
+            row_name='Name'),
+        'BTL_WpnType': TableInfo(
+            {'Name': TextRef('msg_btl_weapon_type'),
+             'Name2': TextRef('msg_btl_weapon_type')},
+            row_name='Name'),
+        'CHR_PC': TableInfo(
+            {'Name': TextRef('msg_player_name'),
+             'SpModelCond1': FieldRef('FLD_ConditionList'),
+             'SpModelCond2': FieldRef('FLD_ConditionList'),
+             'DefTalent': FieldRef('BTL_Talent'),
+             'DefAcce1': refset_item,
+             'DefAcce2': refset_item,
+             'DefAcce3': refset_item,
+             'DefGem1': FieldRef('MNU_Cloudgem'),
+             'DefGem2': FieldRef('MNU_Cloudgem'),
+             'DefGem3': FieldRef('MNU_Cloudgem'),
+             'UroBody': FieldRef('CHR_UroBody'),
+             'UroPartner': FieldRef('CHR_PC'),
+             'UroCondition': FieldRef('FLD_ConditionList'),
+             'TalentNPCArts1': FieldRef('BTL_Arts_PC'),
+             'TalentNPCArts2': FieldRef('BTL_Arts_PC'),
+             'TalentNPCArts3': FieldRef('BTL_Arts_PC'),
+             'TalentNPCArts4': FieldRef('BTL_Arts_PC'),
+             'TalentNPCArts5': FieldRef('BTL_Arts_PC'),
+             'TalentNPCArtsCond1': FieldRef('FLD_ConditionList'),
+             'TalentNPCArtsCond2': FieldRef('FLD_ConditionList'),
+             'TalentNPCArtsCond3': FieldRef('FLD_ConditionList'),
+             'TalentNPCArtsCond4': FieldRef('FLD_ConditionList'),
+             'TalentNPCArtsCond5': FieldRef('FLD_ConditionList'),
+             'TalentNPCTalentArts': FieldRef('BTL_Arts_PC'),
+             'TalentNPCTalentArtsCond': FieldRef('FLD_ConditionList'),
+             'TalentNPCSkill1': FieldRef('BTL_Skill_PC'),
+             'TalentNPCSkill2': FieldRef('BTL_Skill_PC'),
+             'TalentNPCSkill3': FieldRef('BTL_Skill_PC'),
+             'TalentNPCSkill4': FieldRef('BTL_Skill_PC'),
+             'TalentNPCSkill5': FieldRef('BTL_Skill_PC'),
+             'TalentNPCSkill6': FieldRef('BTL_Skill_PC'),
+             'TalentNPCSkillCond1': FieldRef('FLD_ConditionList'),
+             'TalentNPCSkillCond2': FieldRef('FLD_ConditionList'),
+             'TalentNPCSkillCond3': FieldRef('FLD_ConditionList'),
+             'TalentNPCSkillCond4': FieldRef('FLD_ConditionList'),
+             'TalentNPCSkillCond5': FieldRef('FLD_ConditionList'),
+             'TalentNPCSkillCond6': FieldRef('FLD_ConditionList'),
+             'HeroChainEff': FieldRef('BTL_Enhance')},
+            row_name='Name'),
+        'CHR_UroBody': TableInfo(
+            {'Name': TextRef('msg_mnu_char_ms', lookup=lookup_urobody_name),
+             'Arts1': FieldRef('BTL_Arts_PC'),
+             'Arts2': FieldRef('BTL_Arts_PC'),
+             'Arts3': FieldRef('BTL_Arts_PC'),
+             'Arts4': FieldRef('BTL_Arts_PC'),
+             'Arts5': FieldRef('BTL_Arts_PC'),
+             'Arts6': FieldRef('BTL_Arts_PC'),
+             'TalentArts1': FieldRef('BTL_Arts_PC'),
+             'TalentArts2': FieldRef('BTL_Arts_PC'),
+             'TalentArts3': FieldRef('BTL_Arts_PC')},
+            row_name='Name'),
+        'EVT_HeroEquip': TableInfo(
+            {'pc': FieldRef('CHR_PC')}),
+        'EVT_HideList': TableInfo(
+            re_xrefs={r'hideObj\d+': refset_gimmick_object}),
+        'EVT_listEv': TableInfo(
+            {'linkID': refset_event,
+             'linkCondition': FieldRef('FLD_ConditionList'),
+             'linkID2': refset_event,
+             'linkCondition2': FieldRef('FLD_ConditionList')},
+            row_name='name'),
+        'EVT_listFev': TableInfo(
+            {'linkID': refset_event,
+             'linkCondition': FieldRef('FLD_ConditionList')},
+            row_name='name'),
+        'EVT_listQst': TableInfo(
+            {'linkID': refset_event,
+             'linkCondition': FieldRef('FLD_ConditionList'),
+             'linkID2': refset_event,
+             'linkCondition2': FieldRef('FLD_ConditionList')},
+            row_name='name'),
+        'EVT_listTlk': TableInfo(
+            {'linkID': refset_event,
+             'linkCondition': FieldRef('FLD_ConditionList')},
+            row_name='mstxt'),  # "name" field is missing from table
+        'D1C136A1': TableInfo(
+            {'linkID': refset_event,
+             'linkCondition': FieldRef('FLD_ConditionList'),
+             'linkID2': refset_event,
+             'linkCondition2': FieldRef('FLD_ConditionList')},
+            row_name='name'),
+        'FLD_ColonyList': TableInfo(
+            {'Name': TextRef('msg_colony_name'),
+             'Caption': TextRef('msg_colony_text'),
+             'map': FieldRef('SYS_MapList'),
+             'Reward1': FieldRef('FLD_PerkPermanent'),
+             'Reward2': FieldRef('FLD_PerkPermanent'),
+             'Reward3': FieldRef('FLD_PerkPermanent'),
+             'Reward4': FieldRef('FLD_PerkPermanent'),
+             'Reward5': FieldRef('FLD_PerkPermanent')},
+            row_name='Name'),
+        'FLD_ConditionClassLv': TableInfo(
+            {'ClassID': FieldRef('BTL_Talent')}),
+        'FLD_ConditionEnv': TableInfo(
+            {'Weather': FieldRef('RSC_WeatherSet')}),
+        'FLD_ConditionList': TableInfo(
+            {'Condition': FieldRef(lookup=lookup_condition_list)}),
+        'FLD_ConditionQuest': TableInfo(
+            {'QuestFlag1': FieldRef(lookup=lookup_condition_quest),
+             'QuestFlag2': FieldRef(lookup=lookup_condition_quest),
+             'NotQuestFlag1': FieldRef(lookup=lookup_condition_quest),
+             'NotQuestFlag2': FieldRef(lookup=lookup_condition_quest)}),
+        'FLD_ConditionScenario': TableInfo(
+            {'ScenarioMin': FieldRef('SYS_ScenarioFlag'),
+             'ScenarioMax': FieldRef('SYS_ScenarioFlag'),
+             'NotScenarioMin': FieldRef('SYS_ScenarioFlag'),
+             'NotScenarioMax': FieldRef('SYS_ScenarioFlag')}),
+        'FLD_CookRecipe': TableInfo(
+            {'Name': TextRef('8B7D949B')},
+            row_name='Name'),
+        'FLD_CraftTerminal': TableInfo(
+            {'Name': TextRef('41AAA47D'),
+             'Caption': TextRef('41AAA47D')}),
+        'FLD_EnemyData': TableInfo(
+            {'IdBattleEnemy': FieldRef('BTL_Enemy'),
+             'field_C6717CFE': FieldRef('152F4D70'),
+             'IdDropPrecious': refset_item,
+             'MsgName': TextRef('msg_enemy_name'),
+             'GetEnArts': FieldRef('BTL_Arts_PC'),
+             'GetEnSkill': FieldRef('BTL_Skill_PC')},
+            row_name='MsgName'),
+        'FLD_InfoList': TableInfo(
+            {'Name': TextRef('CA2198EC'),
+             'EventName': refset_event_name,
+             'PieceID1': refset_item,
+             'PieceID2': refset_item,
+             'PieceID3': refset_item,
+             'PieceID4': refset_item,
+             'PieceID5': refset_item,
+             'FreePieceID1': refset_item,
+             'FreePieceID2': refset_item,
+             'FreePieceID3': refset_item,
+             'FreePieceID4': refset_item,
+             'FreePieceID5': refset_item,
+             'NeedCharacter': FieldRef('CHR_PC')}),
+        'FLD_InterestEventStart': TableInfo(
+            {'Character1': FieldRef('CHR_PC'),
+             'Character2': FieldRef('CHR_PC'),
+             'Character3': FieldRef('CHR_PC'),
+             'Character4': FieldRef('CHR_PC'),
+             'Character5': FieldRef('CHR_PC'),
+             'Text1': FieldRef('621C6EF4'),
+             'Text2': FieldRef('621C6EF4'),
+             'Text3': FieldRef('621C6EF4'),
+             'Text4': FieldRef('621C6EF4'),
+             'Text5': FieldRef('621C6EF4')}),
+        'FLD_InterestEventReaction': TableInfo(
+            {'Character': FieldRef('CHR_PC'),
+             'Text': FieldRef('621C6EF4')}),
+        'FLD_InterestEventTable': TableInfo(
+            {'StartEvent1': FieldRef('FLD_InterestEventStart'),
+             'StartEvent2': FieldRef('FLD_InterestEventStart'),
+             'StartEvent3': FieldRef('FLD_InterestEventStart'),
+             'StartEvent4': FieldRef('FLD_InterestEventStart'),
+             'StartEvent5': FieldRef('FLD_InterestEventStart'),
+             'StartEvent6': FieldRef('FLD_InterestEventStart'),
+             'ReactionEvent1': FieldRef('FLD_InterestEventReaction'),
+             'ReactionEvent2': FieldRef('FLD_InterestEventReaction'),
+             'ReactionEvent3': FieldRef('FLD_InterestEventReaction'),
+             'ReactionEvent4': FieldRef('FLD_InterestEventReaction'),
+             'ReactionEvent5': FieldRef('FLD_InterestEventReaction'),
+             'ReactionEvent6': FieldRef('FLD_InterestEventReaction')}),
+        'FLD_KizunaChangeFlag': TableInfo(
+            {'EventID': refset_event,
+             'NpcIconFlag': FieldRef('2BBE255B'),
+             'ColonyIconFlag': FieldRef('E1C78647'),
+             'ArrowNpcFlag': FieldRef('861D003A'),
+             'ArrowColonyFlag': FieldRef('FAC1F258')}),
+        'FLD_MealRecipe': TableInfo(
+            {'Name': TextRef('0103F5B8')},
+            row_name='Name'),
+        'FLD_NpcList': TableInfo(
+            {'TalkListID': FieldRef('FLD_NpcTalkList'),
+             'field_7F0A3296': TextRef('FLD_NpcResource', field='Name'),
+             'Resource1': FieldRef('FLD_NpcResource'),
+             'Resource2': FieldRef('FLD_NpcResource'),
+             'Resource3': FieldRef('FLD_NpcResource'),
+             'Resource4': FieldRef('FLD_NpcResource')},
+            row_name='field_7F0A3296'),
+        'FLD_NpcResource': TableInfo(
+            {'Name': TextRef('msg_npc_name'),
+             'Nickname': TextRef('msg_npc_tag_name')},
+            row_name='Name'),
+        'FLD_NpcTalkList': TableInfo(
+            {'BaseTalkID': FieldRef('FLD_NpcTalkResource'),
+             'QuestTalk1': FieldRef('FLD_NpcTalkResource'),
+             'QuestTalk2': FieldRef('FLD_NpcTalkResource'),
+             'QuestTalk3': FieldRef('FLD_NpcTalkResource'),
+             'QuestTalk4': FieldRef('FLD_NpcTalkResource'),
+             'QuestTalk5': FieldRef('FLD_NpcTalkResource'),
+             'QuestTalk6': FieldRef('FLD_NpcTalkResource'),
+             'QuestTalk7': FieldRef('FLD_NpcTalkResource'),
+             'QuestTalk8': FieldRef('FLD_NpcTalkResource'),
+             'TalkID1': FieldRef('FLD_NpcTalkResource'),
+             'TalkID2': FieldRef('FLD_NpcTalkResource'),
+             'TalkID3': FieldRef('FLD_NpcTalkResource'),
+             'TalkID4': FieldRef('FLD_NpcTalkResource'),
+             'TalkID5': FieldRef('FLD_NpcTalkResource')}),
+        'FLD_NpcTalkResource': TableInfo(
+            {'BaseEventName': refset_event_name,
+             'EventName1': refset_event_name,
+             'EventName2': refset_event_name,
+             'EventName3': refset_event_name,
+             'EventName4': refset_event_name,
+             'EventName5': refset_event_name,
+             'EventName6': refset_event_name,
+             'EventName7': refset_event_name,
+             'EventName8': refset_event_name,
+             'EventName9': refset_event_name,
+             'EventName10': refset_event_name}),
+        'FLD_PerkPermanent': TableInfo(
+            {'Name': TextRef('msg_fld_perk_name'),
+             'Caption': TextRef('msg_fld_perk_name')},
+            row_name='Name'),
+        'FLD_PerkTemporary': TableInfo(
+            {'Name1': TextRef('msg_fld_perk_name'),
+             'Name2': TextRef('msg_fld_perk_name'),
+             'Name3': TextRef('msg_fld_perk_name'),
+             'Caption1': TextRef('msg_fld_perk_name'),
+             'Caption2': TextRef('msg_fld_perk_name'),
+             'Caption3': TextRef('msg_fld_perk_name')}),
+        'FLD_RelationColony': TableInfo(
+            {'field_6E741E84': FieldRef('FLD_ColonyList'),
+             'field_32A30DD7': FieldRef('FLD_ColonyList'),
+             'Text1': TextRef('msg_kizuna_name'),
+             'Text2': TextRef('msg_kizuna_name'),
+             'Text3': TextRef('msg_kizuna_name'),
+             'Text4': TextRef('msg_kizuna_name'),
+             'Text5': TextRef('msg_kizuna_name')}),
+        'FLD_RelationNpc': TableInfo(
+            {'Text1': TextRef('msg_kizuna_name'),
+             'Text2': TextRef('msg_kizuna_name'),
+             'Text3': TextRef('msg_kizuna_name'),
+             'Text4': TextRef('msg_kizuna_name'),
+             'Text5': TextRef('msg_kizuna_name')}),
+        'FLD_UMonsterList': TableInfo(
+            {'Zone': FieldRef('SYS_MapList')}),
+        'ITM_Accessory': TableInfo(
+            {'Name': TextRef('msg_item_accessory')},
+            row_name='Name'),
+        'ITM_Collection': TableInfo(
+            {'Name': TextRef('msg_item_collection'),
+             'Name2': TextRef('msg_item_collection')},
+            row_name='Name'),
+        'ITM_Collepedia': TableInfo(
+            {'Name': TextRef('BEDB6533'),
+             'Text': TextRef('BEDB6533'),
+             'Text2': TextRef('BEDB6533'),
+             'Reward1': FieldRef('ITM_RewardCollepedia'),
+             'RelationID': FieldRef('FLD_RelationNpc'),
+             'ColonyRelationID': FieldRef('FLD_RelationColony')},
+            row_name='Text'),
+        'ITM_Cylinder': TableInfo(
+            {'Name': TextRef('msg_item_cylinder')},
+            row_name='Name'),
+        'ITM_Exchange': TableInfo(
+            {'Name': TextRef('msg_item_exchange')}),
+        'ITM_Extra': TableInfo(
+            {'Name': TextRef('msg_item_extra'),
+             'Name2': TextRef('msg_item_extra')}),
+        'ITM_Gem': TableInfo(
+            {'Name': TextRef('msg_item_gem'),
+             'Name_dlc04': TextRef('msg_item_gem'),
+             'Craft': FieldRef('BTL_GemCraft'),
+             'Craft2': FieldRef('BTL_GemCraft')},
+            row_name='Name'),
+        'ITM_Info': TableInfo(
+            {'Name': TextRef('CA2198EC')},
+            row_name='Name'),
+        'ITM_Precious': TableInfo(
+            {'Name': TextRef('msg_item_precious'),
+             'Caption': TextRef('msg_item_precious'),
+             'Name2': TextRef('msg_item_precious'),
+             'Caption2': TextRef('msg_item_precious')},
+            row_name='Name'),
+        'ITM_RewardAssort': TableInfo(
+            re_xrefs={r'Reward\d+': refset_item}),
+        'ITM_RewardCollepedia': TableInfo(
+            {'Reward1': refset_item}),
+        'ITM_RewardQuest': TableInfo(
+            {'Reward1': refset_item,
+             'Reward2': refset_item,
+             'Reward3': refset_item,
+             'Reward4': refset_item}),
+        'MNU_DLCVolInfo': TableInfo(
+            {'field_2AF7F370': FieldRef('msg_mnu_dlc_info'),
+             'ReleaseStatusText': FieldRef('msg_mnu_dlc_info'),
+             'SubTitleText': FieldRef('msg_mnu_dlc_info')}),
+        'MNU_DlcGift': TableInfo(
+            {'vol_id': FieldRef('MNU_DLCVolInfo'),
+             'contents_id': FieldRef('MNU_DLCContentsInfo')}),
+        'MNU_EventTheater_scn': TableInfo(
+            {'title': TextRef('msg_mnu_event_name'),
+             'scn_category': TextRef('msg_mnu_event_theater_ms',
+                                     lookup=lookup_scn_category),
+             'scn_group': TextRef('msg_mnu_event_theater_ms',
+                                  lookup=lookup_scn_group)},
+            re_xrefs={r'ev\d+_id': refset_event},
+            row_name='title'),
+        'MNU_HeroDictionary': TableInfo(
+            {'CVName': TextRef('msg_mnu_hero_book'),
+             'field_251175EF': TextRef('msg_mnu_hero_book'),
+             'ArtistName': TextRef('msg_mnu_hero_book'),
+             'field_F5E05E39': FieldRef('FLD_ConditionList'),
+             'WakeupQuest': FieldRef('QST_List'),
+             'field_3530020D': TextRef('msg_mnu_hero_hint'),
+             'field_C65F4B14': TextRef('msg_mnu_hero_hint'),
+             'Arts1': FieldRef('BTL_Arts_PC'),
+             'Arts2': FieldRef('BTL_Arts_PC'),
+             'Arts3': FieldRef('BTL_Arts_PC'),
+             'Arts4': FieldRef('BTL_Arts_PC'),
+             'Arts5': FieldRef('BTL_Arts_PC'),
+             'Arts6': FieldRef('BTL_Arts_PC')}),
+        'MNU_MapInfo': TableInfo(
+            {'disp_name': TextRef('msg_mnu_minimap_areaname')},
+            row_name='disp_name'),
+        'MNU_MapInfoFile': TableInfo(
+            {'top_id': FieldRef('MNU_MapInfo')}),
+        'MNU_PatchDetailA':
+            TableInfo({'DetailIndexText': TextRef('msg_mnu_patch_info'),
+                       'DetailInfoText': TextRef('msg_mnu_patch_info'),
+                       'field_444EEAFE': TextRef('msg_mnu_patch_info')}),
+        'MNU_PatchInfo': TableInfo(
+            {'PatchNameText': TextRef('msg_mnu_patch_info'),
+             'field_2AF7F370': TextRef('msg_mnu_patch_info')}),
+        'MNU_PatchList': TableInfo(
+            {'LinkDLC': FieldRef('MNU_DLCVolInfo')}),
+        'MNU_ShopList': TableInfo(
+            {'Name': TextRef('msg_shop_name'),
+            'TableID': FieldRef('MNU_ShopTable')},
+            row_name='Name'),
+        'MNU_TipsList': TableInfo(
+            {'Title': TextRef('msg_mnu_tutorial_tips'),
+             'Comment1': TextRef('msg_mnu_tutorial_tips'),
+             'Comment2': TextRef('msg_mnu_tutorial_tips'),
+             'Comment3': TextRef('msg_mnu_tutorial_tips'),
+             'Comment4': TextRef('msg_mnu_tutorial_tips'),
+             'Comment5': TextRef('msg_mnu_tutorial_tips'),
+             'Comment6': TextRef('msg_mnu_tutorial_tips')}),
+        'MNU_UroSkillList': TableInfo(
+            {'SkillID': FieldRef('BTL_Skill_PC'),
+             'UroBodyID': FieldRef('CHR_UroBody')}),
+        'MNU_WeaponCraft': TableInfo(
+            {'WeaponName': TextRef('msg_btl_weapon_type')}),
+        'MNU_game_option_category': TableInfo(
+            {'name': TextRef('msg_mnu_option'),
+             'help': TextRef('msg_mnu_option')}),
+        'MNU_option_brightness': TableInfo(
+            {'name': TextRef('msg_mnu_option'),
+             'help': TextRef('msg_mnu_option'),
+             'help1': TextRef('msg_mnu_option'),
+             'help2': TextRef('msg_mnu_option'),
+             'help3': TextRef('msg_mnu_option'),
+             'help4': TextRef('msg_mnu_option'),
+             'field_5925DC4C': TextRef('msg_mnu_option'),
+             'field_7D13B44A': TextRef('msg_mnu_option'),
+             'field_B6E3A0D7': TextRef('msg_mnu_option'),
+             'field_D8225635': TextRef('msg_mnu_option'),
+             'field_6FBE92E0': TextRef('msg_mnu_option')}),
+        'MNU_option_camera': TableInfo(
+            {'name': TextRef('msg_mnu_option'),
+             'help': TextRef('msg_mnu_option'),
+             'help1': TextRef('msg_mnu_option'),
+             'help2': TextRef('msg_mnu_option'),
+             'help3': TextRef('msg_mnu_option'),
+             'help4': TextRef('msg_mnu_option'),
+             'field_5925DC4C': TextRef('msg_mnu_option'),
+             'field_7D13B44A': TextRef('msg_mnu_option'),
+             'field_B6E3A0D7': TextRef('msg_mnu_option'),
+             'field_D8225635': TextRef('msg_mnu_option'),
+             'field_6FBE92E0': TextRef('msg_mnu_option')}),
+        'MNU_option_display':
+            TableInfo({'name': TextRef('msg_mnu_option'),
+                       'help': TextRef('msg_mnu_option'),
+                       'help1': TextRef('msg_mnu_option'),
+                       'help2': TextRef('msg_mnu_option'),
+                       'help3': TextRef('msg_mnu_option'),
+                       'help4': TextRef('msg_mnu_option'),
+                       'field_5925DC4C': TextRef('msg_mnu_option'),
+                       'field_7D13B44A': TextRef('msg_mnu_option'),
+                       'field_B6E3A0D7': TextRef('msg_mnu_option'),
+                       'field_D8225635': TextRef('msg_mnu_option'),
+                       'field_6FBE92E0': TextRef('msg_mnu_option')}),
+        'MNU_option_formation':
+            TableInfo({'name': TextRef('msg_mnu_option'),
+                       'help': TextRef('msg_mnu_option'),
+                       'help1': TextRef('msg_mnu_option'),
+                       'help2': TextRef('msg_mnu_option'),
+                       'help3': TextRef('msg_mnu_option'),
+                       'help4': TextRef('msg_mnu_option'),
+                       'field_5925DC4C': TextRef('msg_mnu_option'),
+                       'field_7D13B44A': TextRef('msg_mnu_option'),
+                       'field_B6E3A0D7': TextRef('msg_mnu_option')}),
+        'MNU_option_game': TableInfo(
+            {'name': TextRef('msg_mnu_option'),
+             'help': TextRef('msg_mnu_option'),
+             'help1': TextRef('msg_mnu_option'),
+             'help2': TextRef('msg_mnu_option'),
+             'help3': TextRef('msg_mnu_option'),
+             'help4': TextRef('msg_mnu_option'),
+             'field_5925DC4C': TextRef('msg_mnu_option'),
+             'field_7D13B44A': TextRef('msg_mnu_option'),
+             'field_B6E3A0D7': TextRef('msg_mnu_option'),
+             'field_D8225635': TextRef('msg_mnu_option'),
+             'field_6FBE92E0': TextRef('msg_mnu_option')}),
+        'MNU_option_message': TableInfo(
+            {'name': TextRef('msg_mnu_option'),
+             'help': TextRef('msg_mnu_option'),
+             'help1': TextRef('msg_mnu_option'),
+             'help2': TextRef('msg_mnu_option'),
+             'help3': TextRef('msg_mnu_option'),
+             'help4': TextRef('msg_mnu_option'),
+             'field_5925DC4C': TextRef('msg_mnu_option'),
+             'field_7D13B44A': TextRef('msg_mnu_option'),
+             'field_B6E3A0D7': TextRef('msg_mnu_option'),
+             'field_D8225635': TextRef('msg_mnu_option'),
+             'field_6FBE92E0': TextRef('msg_mnu_option')}),
+        'MNU_option_notice': TableInfo(
+            {'name': TextRef('msg_mnu_option'),
+             'help': TextRef('msg_mnu_option'),
+             'help1': TextRef('msg_mnu_option'),
+             'help2': TextRef('msg_mnu_option'),
+             'help3': TextRef('msg_mnu_option'),
+             'help4': TextRef('msg_mnu_option'),
+             'field_5925DC4C': TextRef('msg_mnu_option'),
+             'field_7D13B44A': TextRef('msg_mnu_option'),
+             'field_B6E3A0D7': TextRef('msg_mnu_option'),
+             'field_D8225635': TextRef('msg_mnu_option'),
+             'field_6FBE92E0': TextRef('msg_mnu_option')}),
+        'MNU_option_sound': TableInfo(
+            {'name': TextRef('msg_mnu_option'),
+             'help': TextRef('msg_mnu_option'),
+             'help1': TextRef('msg_mnu_option'),
+             'help2': TextRef('msg_mnu_option'),
+             'help3': TextRef('msg_mnu_option'),
+             'help4': TextRef('msg_mnu_option'),
+             'field_5925DC4C': TextRef('msg_mnu_option'),
+             'field_7D13B44A': TextRef('msg_mnu_option'),
+             'field_B6E3A0D7': TextRef('msg_mnu_option'),
+             'field_D8225635': TextRef('msg_mnu_option'),
+             'field_6FBE92E0': TextRef('msg_mnu_option')}),
+        'MNU_saveload_scenario': TableInfo(
+            {'Chapter': TextRef('msg_mnu_saveload'),
+             'ScenarioCond': FieldRef('FLD_ConditionList')}),
+        'QST_List': TableInfo(
+            {'QuestTitle': TextRef('msg_qst_task'),
+             'Summary': TextRef('msg_qst_task'),
+             'ResultA': TextRef('msg_qst_task'),
+             'ResultB': TextRef('msg_qst_task'),
+             'RewardSetA': FieldRef('ITM_RewardQuest'),
+             'RewardSetB': FieldRef('ITM_RewardQuest'),
+             'StartPurpose': FieldRef('QST_Purpose'),
+             'LinkQuest': FieldRef('QST_List')},
+            row_name='QuestTitle'),
+        'QST_OverWrite': TableInfo(
+            {'OverWriteText': TextRef('msg_qst_overwrite')}),
+        'QST_Purpose': TableInfo(
+            {'CallEventA': refset_event_name,
+             'CallEventB': refset_event_name,
+             'NextPurposeA': FieldRef('QST_Purpose'),
+             'NextPurposeB': FieldRef('QST_Purpose')}),
+        'QST_RequestItemSet': TableInfo(
+            {'Name': TextRef('msg_qst_RequestItemSet')},
+            row_name='Name'),
+        'QST_Task': TableInfo(
+            {'TaskID1': FieldRef(lookup=lookup_qst_task),
+             'TaskLog1': TextRef('msg_qst_task'),
+             'TaskID2': FieldRef(lookup=lookup_qst_task),
+             'TaskLog2': TextRef('msg_qst_task'),
+             'TaskID3': FieldRef(lookup=lookup_qst_task),
+             'TaskID4': FieldRef(lookup=lookup_qst_task)},
+            row_name='TaskLog1'),
+        'QST_TaskCollect': TableInfo(
+            {'TargetID': refset_item}),
+        'QST_TaskRequest': TableInfo(
+            {'ItemSetID1': FieldRef('QST_RequestItemSet'),
+             'ItemSetID2': FieldRef('QST_RequestItemSet'),
+             'ItemSetID3': FieldRef('QST_RequestItemSet'),
+             'ItemSetID4': FieldRef('QST_RequestItemSet'),
+             'ItemSetID5': FieldRef('QST_RequestItemSet'),
+             'ItemSetID6': FieldRef('QST_RequestItemSet'),
+             'ItemSetID7': FieldRef('QST_RequestItemSet'),
+             'ItemSetID8': FieldRef('QST_RequestItemSet'),
+             'LinkQuestTask': FieldRef('QST_Task')}),
+        'QST_TaskTalk': TableInfo(
+            {'TargetID': FieldRef('FLD_NpcList')}),
+        'RSC_IK': TableInfo(
+            {'FootL00': FieldRef('RSC_FootIK'),
+             'FootR00': FieldRef('RSC_FootIK'),
+             'FootL01': FieldRef('RSC_FootIK'),
+             'FootR01': FieldRef('RSC_FootIK'),
+             'FootL02': FieldRef('RSC_FootIK'),
+             'FootR02': FieldRef('RSC_FootIK'),
+             'Placement': FieldRef('RSC_PlacementIK'),
+             'Toe': FieldRef('RSC_ToeIK'),
+             'Spine': FieldRef('RSC_SpineIK'),
+             'LookAt': FieldRef('RSC_LookAtIK'),
+             'Eye': FieldRef('RSC_EyeIK'),
+             'SlopeGround': FieldRef('RSC_SlopeGroundIK')}),
+        'SYS_FlowEventArtsSet': TableInfo(
+            {'ChrID': FieldRef('CHR_PC'),
+             'ClassID': FieldRef('BTL_Talent'),
+             'ArtsID': FieldRef('BTL_Arts_PC')}),
+        'SYS_FlowEventList': TableInfo(
+            {'EventID': FieldRef(lookup=lookup_flow_event)}),
+        'SYS_FlowEventDropInfoPiece': TableInfo(
+            {'NPC': FieldRef('FLD_NpcList')}),
+        'SYS_GimmickLocation': TableInfo(
+            row_name='GimmickID'),
+        'SYS_GimmickLocation_dlc04': TableInfo(
+            row_name='GimmickID'),
+        'SYS_GimmickPreparing': TableInfo(
+            {'Gimmick': refset_gimmick}),
+        'SYS_MapJumpList': TableInfo(
+            {'FormationID': refset_gimmick}),
+        'SYS_MapList': TableInfo(
+            {'Name': TextRef('msg_location_name'),
+             'ResourceId': FieldRef('RSC_MapFile'),
+             'WeatherData': FieldRef('SYS_WeatherTable')},
+            row_name='Name'),
+        'SYS_TrialList': TableInfo(
+            {'Title': TextRef('msg_mnu_tutorial_tips'),
+             'Leader': FieldRef('CHR_PC'),
+             'Party': FieldRef('SYS_TrialPartyInfo')},
+            row_name='Title'),
+        'SYS_TrialPartyInfo': TableInfo(
+            {'PC01': FieldRef('CHR_PC'),
+             'ArtsSet01': FieldRef('SYS_TrialPcInfo'),
+             'PC02': FieldRef('CHR_PC'),
+             'ArtsSet02': FieldRef('SYS_TrialPcInfo'),
+             'PC03': FieldRef('CHR_PC'),
+             'ArtsSet03': FieldRef('SYS_TrialPcInfo'),
+             'PC04': FieldRef('CHR_PC'),
+             'ArtsSet04': FieldRef('SYS_TrialPcInfo'),
+             'PC05': FieldRef('CHR_PC'),
+             'ArtsSet05': FieldRef('SYS_TrialPcInfo'),
+             'PC06': FieldRef('CHR_PC'),
+             'ArtsSet06': FieldRef('SYS_TrialPcInfo')}),
+        'SYS_TrialPcInfo': TableInfo(
+            {'Talent': FieldRef('BTL_Talent'),
+             'arts01': FieldRef('BTL_Arts_PC'),
+             'arts02': FieldRef('BTL_Arts_PC'),
+             'arts03': FieldRef('BTL_Arts_PC'),
+             'arts04': FieldRef('BTL_Arts_PC'),
+             'arts05': FieldRef('BTL_Arts_PC'),
+             'arts06': FieldRef('BTL_Arts_PC'),
+             'NoahTalentArts': FieldRef('BTL_Arts_PC')}),
+        'SYS_Tutorial': TableInfo(
+            {'EnemyInfo': FieldRef('SYS_TutorialEnemyInfo')}),
+        'SYS_TutorialEnemyInfo': TableInfo(
+            {'field_10FF2123': FieldRef('FLD_EnemyData'),
+             'field_1A391DEB': FieldRef('FLD_EnemyData'),
+             'field_032170A4': FieldRef('FLD_EnemyData')}),
+        'SYS_TutorialHintA': TableInfo(
+            {'Text1': TextRef('msg_mnu_tutorial_tips'),
+             'Text2': TextRef('msg_mnu_tutorial_tips')}),
+        'SYS_TutorialMessage': TableInfo(
+            {'Title': TextRef('msg_mnu_tutorial_tips'),
+             'Text': TextRef('msg_mnu_tutorial_tips'),
+             'Text2': TextRef('msg_mnu_tutorial_tips')},
+            row_name='Title'),
+        'SYS_TutorialSummary': TableInfo(
+            {'Title': TextRef('msg_mnu_tutorial_tips')},
+            row_name='Title'),
+        'SYS_TutorialTask': TableInfo(
+            {'Title': TextRef('msg_mnu_tutorial_tips')},
+            row_name='Title'),
+        'SYS_TutorialTelop': TableInfo(
+            {'Title': TextRef('msg_mnu_tutorial_tips')}),
+        'SYS_WeatherRate': TableInfo(
+            {'Weather1': FieldRef('RSC_WeatherSet'),
+             'Weather2': FieldRef('RSC_WeatherSet'),
+             'Weather3': FieldRef('RSC_WeatherSet'),
+             'Weather4': FieldRef('RSC_WeatherSet')}),
+        'SYS_WeatherTable': TableInfo(
+            {'TimeZone01': FieldRef('SYS_WeatherRate'),
+             'TimeZone02': FieldRef('SYS_WeatherRate'),
+             'TimeZone03': FieldRef('SYS_WeatherRate'),
+             'TimeZone04': FieldRef('SYS_WeatherRate'),
+             'TimeZone05': FieldRef('SYS_WeatherRate')}),
+        'gimmickEvent': TableInfo(
+            {'Name': TextRef('msg_fld_searchpoint')}),
+        'gimmickLocation': TableInfo(
+            {'LocationName': TextRef('msg_location_name')},
+             row_name='LocationName'),
+        'ma01a_GMK_Location': TableInfo(
+            row_name='LocationName'),
+        'ma04a_GMK_Location': TableInfo(
+            row_name='LocationName'),
+        'ma07a_GMK_Location': TableInfo(
+            row_name='LocationName'),
+        'ma09a_GMK_Location': TableInfo(
+            row_name='LocationName'),
+        'ma11a_GMK_Location': TableInfo(
+            row_name='LocationName'),
+        'ma14a_GMK_Location': TableInfo(
+            row_name='LocationName'),
+        'ma15a_GMK_Location': TableInfo(
+            row_name='LocationName'),
+        'ma17a_GMK_Location': TableInfo(
+            row_name='LocationName'),
+        'ma20a_GMK_Location': TableInfo(
+            row_name='LocationName'),
+        'ma22a_GMK_Location': TableInfo(
+            row_name='LocationName'),
+        'ma25a_GMK_Location': TableInfo(
+            row_name='LocationName'),
+        'ma40a_GMK_Location': TableInfo(
+            row_name='LocationName'),
+        'ma44a_GMK_Location': TableInfo(
+            row_name='LocationName'),
+        'ma90a_GMK_Location': TableInfo(
+            row_name='LocationName'),
+        '02E2BD0D': TableInfo(
+            {'affType': FieldRef('76D0D7D9'),
+             'matchPop1': refset_gimmick,
+             'matchPop2': refset_gimmick,
+             'matchPop3': refset_gimmick,
+             'matchPop4': refset_gimmick,
+             'CollectionID': FieldRef('FLD_AffCollection')}),
+        '0184414B': TableInfo(
+            {'Contents1': FieldRef('7138BADF'),
+             'Contents2': FieldRef('7138BADF'),
+             'Contents3': FieldRef('7138BADF'),
+             'Contents4': FieldRef('7138BADF')}),
+        '0B368E78': TableInfo(
+            {'EffectCondition': FieldRef('FLD_ConditionList'),
+             'SeCondition': FieldRef('FLD_ConditionList')}),
+        '0F058F3F': TableInfo(
+            {'Contents1': FieldRef('ABE85D5D'),
+             'Contents2': FieldRef('ABE85D5D'),
+             'Contents3': FieldRef('ABE85D5D'),
+             'Contents4': FieldRef('ABE85D5D')}),
+        '0F68F195': TableInfo(
+            {'Contents1': FieldRef('70810224'),
+             'Contents2': FieldRef('70810224'),
+             'Contents3': FieldRef('70810224'),
+             'Contents4': FieldRef('70810224')}),
+        '152F4D70': TableInfo(
+            {'field_791E2B72': FieldRef('BTL_EnemyDrop_Appoint')}),
+        '1623B3A0': TableInfo(
+            {'ContentsID': FieldRef('MNU_DLCContentsInfo')}),
+        '1A109460': TableInfo(
+            {'ItmGemID': refset_item}),  # mapping from gem ID to item ID
+        '268AE713': TableInfo(
+            {'affType': FieldRef('76D0D7D9')}),
+        '296A9010': TableInfo(
+            {'EventID': refset_event_name}),
+        '39D667D1': TableInfo(
+            {'Talent': FieldRef('BTL_Talent'),
+             'UIName1': TextRef('msg_mnu_char_ms'),
+             'UIName2': TextRef('msg_mnu_char_ms'),
+             'UIName3': TextRef('msg_mnu_char_ms'),
+             'UIName4': TextRef('msg_mnu_char_ms'),
+             'UIName5': TextRef('msg_mnu_char_ms'),
+             'UIName6': TextRef('msg_mnu_char_ms')}),
+        '4DA4962C': TableInfo(
+            {'NPC': FieldRef('FLD_NpcList')}),
+        '55C603C7': TableInfo(
+            {'affType': FieldRef('76D0D7D9')}),
+        '57554B95': TableInfo(
+            {'Contents1': FieldRef('D4A3534F'),
+             'Contents2': FieldRef('D4A3534F'),
+             'Contents3': FieldRef('D4A3534F'),
+             'Contents4': FieldRef('D4A3534F')}),
+        '5A6A68B2': TableInfo(
+            {'PC1': FieldRef('CHR_PC'),
+             'PC2': FieldRef('CHR_PC')}),
+        '5A744A5C': TableInfo(
+            {'name': TextRef('msg_mnu_mainmenu'),
+             'hint': TextRef('msg_mnu_mainmenu')}),
+        '5B1907A1': TableInfo(
+            {'TargetID1': FieldRef('FLD_NpcList'),
+             'TargetID2': FieldRef('FLD_NpcList'),
+             'TargetID3': FieldRef('FLD_NpcList'),
+             'TargetID4': FieldRef('FLD_NpcList'),
+             'TargetID5': FieldRef('FLD_NpcList'),
+             'TargetID6': FieldRef('FLD_NpcList'),
+             'TargetID7': FieldRef('FLD_NpcList'),
+             'TargetID8': FieldRef('FLD_NpcList')}),
+        '5F654D94': TableInfo(
+            {'Talent': FieldRef('BTL_Talent'),
+             'SkillID': FieldRef('BTL_Skill_PC')}),
+        '62E4FA3E': TableInfo(
+            {'Contents1': FieldRef('7A6735C6'),
+             'Contents2': FieldRef('7A6735C6'),
+             'Contents3': FieldRef('7A6735C6'),
+             'Contents4': FieldRef('7A6735C6')}),
+        '6EC8096C': TableInfo(
+            {'CookName': FieldRef('FLD_CookRecipe')}),
+        '70810224': TableInfo(
+            {'Text1': TextRef('msg_autotalk'),
+             'Text2': TextRef('msg_autotalk'),
+             'Text3': TextRef('msg_autotalk')}),
+        '7138BADF': TableInfo(
+            {'Text1': TextRef('msg_autotalk'),
+             'Text2': TextRef('msg_autotalk'),
+             'Text3': TextRef('msg_autotalk')}),
+        '72C56041': TableInfo(
+            {'PC1': FieldRef('CHR_PC'),
+             'Object1': FieldRef('RSC_MapObjList'),
+             'PC2': FieldRef('CHR_PC'),
+             'Object2': FieldRef('RSC_MapObjList')}),
+        '76FFBF3F': TableInfo(
+            {'affType': FieldRef('76D0D7D9')}),
+        '7A066663': TableInfo(
+            {'TaskID': FieldRef(
+                ('QST_TaskAsk', 'QST_TaskBattle', 'QST_TaskChase',
+                 'QST_TaskCollect', 'QST_TaskCollepedia', 'QST_TaskCondition',
+                 'QST_TaskEvent', 'QST_TaskFollow', 'QST_TaskGimmick',
+                 'QST_TaskReach', 'QST_TaskRequest', 'QST_TaskTalk',
+                 'QST_TaskTalkGroup'))}),
+        '7A25F920': TableInfo(
+            {'Contents1': FieldRef('808F8A04'),
+             'Contents2': FieldRef('808F8A04'),
+             'Contents3': FieldRef('808F8A04'),
+             'Contents4': FieldRef('808F8A04')}),
+        '7A6735C6': TableInfo(
+            {'Text1': TextRef('msg_autotalk'),
+             'Text2': TextRef('msg_autotalk'),
+             'Text3': TextRef('msg_autotalk')}),
+        '7E6F5DCC': TableInfo(
+            {'name': TextRef('msg_mnu_mainmenu')}),
+        '808F8A04': TableInfo({
+                'Text1': TextRef('msg_autotalk'),
+                'Text2': TextRef('msg_autotalk'),
+                'Text3': TextRef('msg_autotalk')}),
+        '861D003A': TableInfo(
+            {'RelationID1': FieldRef('FLD_RelationNpc'),
+             'RelationID2': FieldRef('FLD_RelationNpc'),
+             'RelationID3': FieldRef('FLD_RelationNpc'),
+             'RelationID4': FieldRef('FLD_RelationNpc'),
+             'RelationID5': FieldRef('FLD_RelationNpc'),
+             'RelationID6': FieldRef('FLD_RelationNpc'),
+             'RelationID7': FieldRef('FLD_RelationNpc'),
+             'RelationID8': FieldRef('FLD_RelationNpc'),
+             'RelationID9': FieldRef('FLD_RelationNpc'),
+             'RelationID10': FieldRef('FLD_RelationNpc')}),
+        '947C9B0C': TableInfo(
+            {'field_7A94A94B': FieldRef('ma40a_GMK_Location'),
+             'Category': TextRef('msg_mnu_dlc_collepedia')}),
+        '9AE9C010': TableInfo(
+            {'Text1': TextRef('msg_autotalk'),
+             'Text2': TextRef('msg_autotalk'),
+             'Text3': TextRef('msg_autotalk')}),
+        '9ED5F02A': TableInfo(
+            {'EventID': refset_event_name}),
+        'A24771FC': TableInfo(
+            {'Contents1': FieldRef('9AE9C010'),
+             'Contents2': FieldRef('9AE9C010'),
+             'Contents3': FieldRef('9AE9C010'),
+             'Contents4': FieldRef('9AE9C010')}),
+        'A6AAF689': TableInfo(
+            {'ArtsID': FieldRef('BTL_Arts_PC')}),
+        'ABE85D5D': TableInfo(
+            {'Text1': TextRef('msg_autotalk'),
+             'Text2': TextRef('msg_autotalk'),
+             'Text3': TextRef('msg_autotalk')}),
+        'B30AE3F7': TableInfo(
+            {'name': TextRef('msg_mnu_mainmenu'),
+             'hint': TextRef('msg_mnu_mainmenu')}),
+        'B4158056': TableInfo(
+            {'field_7A94A94B': FieldRef('ma40a_GMK_Location')}),
+        'B971C420': TableInfo(
+            {'Talent': FieldRef('BTL_Talent'),
+             'ArtsID': FieldRef(('BTL_Arts_PC', 'E29EF7E9'))}),
+        'BB82DEE6': TableInfo(
+            {'Name': TextRef('F6E689C3')},
+            row_name='Name'),
+        'BF287371': TableInfo(
+            {'affType': FieldRef('76D0D7D9')}),
+        'C29E28FD': TableInfo(
+            {'Object1': FieldRef('RSC_MapObjList')}),
+        'C566F8E6': TableInfo(
+            {'RewardID': FieldRef('ITM_RewardAssort')}), # some ma40a_GMK table
+        'CC55A8C8': TableInfo(
+            {'setupName': refset_event_name}),
+        'D327B2BC': TableInfo(
+            {'TaskID': FieldRef('QST_Task')}),
+        'D4A3534F': TableInfo(
+            {'Text1': TextRef('msg_autotalk'),
+             'Text2': TextRef('msg_autotalk'),
+             'Text3': TextRef('msg_autotalk')}),
+        'D9B88F26': TableInfo(
+            {'Name': TextRef('msg_btl_chainorder_name'),
+             'CompBonus1': FieldRef('BTL_Enhance'),
+             'CompBonus2': FieldRef('BTL_Enhance'),
+             'CompBonus3': FieldRef('BTL_Enhance'),
+             'CompBonus4': FieldRef('BTL_Enhance'),
+             'CompBonus5': FieldRef('BTL_Enhance'),
+             'KeyChr1': FieldRef('CHR_PC'),
+             'KeyChr2': FieldRef('CHR_PC'),
+             'KeyChr3': FieldRef('CHR_PC'),
+             'KeyChr4': FieldRef('CHR_PC'),
+             'KeyChr5': FieldRef('CHR_PC'),
+             'KeyChr6': FieldRef('CHR_PC')},
+            row_name='Name'),
+        'DA526616': TableInfo(
+            {'VolID': FieldRef('5CD15665')}),
+        'DEC58736': TableInfo(
+            {'name': TextRef('msg_mnu_mainmenu'),
+             'hint': TextRef('msg_mnu_mainmenu')}),
+        'DF81B4D2': TableInfo(
+            {'affType': FieldRef('76D0D7D9')}),
+        'E44BEAA2': TableInfo(
+            {'PC': FieldRef('CHR_PC')}),
+        'E97C90CE': TableInfo(
+            {'name': TextRef('msg_mnu_mainmenu'),
+             'hint': TextRef('msg_mnu_mainmenu')}),
+        'F0A0A1B1': TableInfo(
+            {'Text1': TextRef('msg_autotalk'),
+             'Text2': TextRef('msg_autotalk'),
+             'Text3': TextRef('msg_autotalk')}),
+        'F0D5C3B6': TableInfo(
+            {'EventID': refset_event_name}),
+        'F936594B': TableInfo(
+            {'SpotName': TextRef('msg_comspot_name')}),
+        'FAC1F258': TableInfo(
+            {'RelationID1': FieldRef('FLD_RelationColony'),
+             'RelationID2': FieldRef('FLD_RelationColony'),
+             'RelationID3': FieldRef('FLD_RelationColony'),
+             'RelationID4': FieldRef('FLD_RelationColony')}),
+        'FD4384CB': TableInfo(
+            {'EventID': refset_event_name}),
+        'FEF315B6': TableInfo(
+            {'EventID': refset_event_name}),
+    }
+
+#-----------------------------------------------------------------------
+# Xenoblade X DE table descriptions
+
+class XCXDEResolver(CrossReferenceResolver):
+
+    ######## Value lookup functions
+
+    def lookup_GameCondition(tables, table, row, field_idx, id, ref):
+        # Condition type is always in the previous column.
+        type = table.get(row, field_idx-1)
+        type_map = ('GameCondition', 'Scenario', 'Quest', 'GameEnv',
+                    'Flag', 'PTin', 'PTout', 'FriendPoint',
+                    'GameStat', 'Segment', 'FNStat', 'Probe',
+                    'SocialNpc', 'Item', 'Party', 'SquadFlag',
+                    None, 'SquadQuest', 'SquadMission', None,
+                    None, 'Mode')
+        # NOTE: GameStat, SocialNpc, and Mode are unconfirmed.
+        # GameStat (type 8?) appears to have been used in the
+        # Wii U version to check BLADE level; that feature was
+        # removed in DE, and conditions which used it have been
+        # changed to scenario checks (there are no type 8
+        # conditions in the DE condition list).
+        # SocialNpc (type 12?) only appears with index 1, and
+        # its purpose is unknown.
+        # Mode (type 21?) has 4 entries, and the 4 referenced
+        # conditions with type 21 also use values 1-4 once each,
+        # but there are also 100 unreferenced conditions with
+        # type 21 values 1-100.
+        if type < len(type_map) and type_map[type]:
+            type_name = type_map[type]
+            table.set(row, field_idx-1, type_name)
+            if type == 0:
+                return table
+            elif type == 21 and id > 4:
+                return 'None'
+            else:
+                return tables[f'FLD_ConditionList_{type_name}']
+        else:
+            return 'None'
+
+    def lookup_QuestTask(tables, table, row, field_idx, id, ref):
+        # Condition type is always in the previous column.
+        type = table.get(row, field_idx-1)
+        type_name = None
+        if type == 2:
+            type_name = 'Suppress'
+            ref_table = 'FLD_QuestSuppress'
+        elif type == 3:
+            type_name = 'Collect'
+            ref_table = 'FLD_QuestCollect'
+        elif type == 17:
+            type_name = 'GameCondition'
+            ref_table = 'FLD_GameCondition'
+        if type_name:
+            table.set(row, field_idx-1, type_name)
+            return tables[ref_table]
+        else:
+            return 'None'
+
+    def lookup_SegMapInfo(tables, table, row, field_idx, id, ref):
+        match = re.match('MNU_SegMapInfo([0-9]{4})$', table.name)
+        assert match
+        map_id = match.group(1)
+        type_field = table.field_index('type')
+        type = table.get(row, type_field)
+        if type == 1:
+            type_name = 'Location'
+            ref_table = 'FLD_Location'
+        elif type == 2:
+            type_name = 'Transport'
+            ref_table = f'FLD_NpcPopGimmick{map_id}'
+        elif type == 3:
+            type_name = 'Event'
+            ref_table = 'FLD_EventPopList'
+        else:
+            return 'None'
+        table.set(row, type_field, type_name)
+        return tables[ref_table]
+
+    def lookup_SquadTarget(tables, table, row, field_idx, id, ref):
+        # Target type is always in the previous column.
+        type = table.get(row, field_idx-1)
+        try:
+            type_name = ('Enemy', 'Item')[type]
+        except IndexError:
+            return 'None'
+        table.set(row, field_idx-1, type_name)
+        return tables[f'SCL_SquadTarget{type_name}']
+
+    def lookup_drop_affix(tables, table, row, field_idx, id, ref):
+        # Affix IDs reference either ground or skell affixes depending on
+        # the item being dropped, so we have to look up the referencing item.
+        # We assume DRP_ItemTable has already been processed so we can just
+        # look at the xrefs.
+        refs = table.getrefs(row)
+        if refs:
+            # Pick any ref (all should be from DRP_ItemTable).
+            ref = (tuple(refs))[0]
+            assert ref[0] == 'DRP_ItemTable'
+            tbl_ItemTable = tables[ref[0]]
+            idx_type = tbl_ItemTable.field_index('ItemType')
+            type = tbl_ItemTable.get(ref[1], idx_type)
+            target_table = None
+            if 1 <= type <= 7:
+                return tables['BTL_ItemSkill_inner']
+            elif 10 <= type <= 19:
+                return tables['BTL_ItemSkill_doll']
+        return 'None'
+
+    # This lookup routine expects the item category field to be specified
+    # in FieldRef.field.
+    def lookup_item(tables, table, row, field_idx, id, ref):
+        category = table.get(row, table.field_index(ref.field))
+        if 1 <= category <= 5:
+            target_table = 'AMR_PcList'
+        elif 6 <= category <= 7:
+            target_table = 'WPN_PcList'
+        elif category == 9:
+            target_table = 'DEF_DlList'
+        elif 10 <= category <= 14:
+            target_table = 'AMR_DlList'
+        elif 15 <= category <= 19:
+            target_table = 'WPN_DlList'
+        elif category == 21:
+            target_table = 'BTL_ItemSkill_inner'
+        elif category == 24:
+            target_table = 'BTL_ItemSkill_doll'
+        elif category == 25:
+            target_table = 'ITM_RareRscList'
+        elif category == 26:
+            target_table = 'ITM_MaterialList'
+        elif category == 27:
+            target_table = 'ITM_CollectList'
+        elif category == 28:
+            target_table = 'ITM_BeaconList'
+        elif category == 29:
+            target_table = 'ITM_PreciousList'
+        elif category == 30:
+            target_table = 'ITM_PieceList'
+        elif category == 31:
+            target_table = 'ITM_BattleItem'
+        elif category == 64:
+            target_table = 'ITM_FigList'
+        elif category == 65:
+            target_table = 'ITM_Blueprint'
+        elif category == 66:
+            target_table = 'ITM_InfoList'
+        else:
+            return 'None'
+        return tables[target_table]
+
+    def lookup_quest_category(tables, table, row, field_idx, id, ref):
+        target_table = tables[ref.table]
+        target_id = (4709, 4711, 4710, 4712)[id-1]
+        return target_table, target_table.id_to_row(target_id)
+
+    def lookup_seg_id(tables, table, row, field_idx, id, ref):
+        type_field = table.field_index('seg_type')
+        type = table.get(row, type_field)
+        assert type > 0
+        try:
+            type_name = ('Probe', 'Normal', 'Clanhome')[type-1]
+        except IndexError:
+            return 'None'
+        table.set(row, type_field, type_name)
+        return tables[f'SEG_{type_name}List']
+
+    def lookup_seg_term_id(tables, table, row, field_idx, id, ref):
+        # These fields reference IDs in the SEG_Terminal table of the
+        # corresponding map, so we have to find that via xrefs.
+        refs = table.getrefs(row)
+        if not refs:
+            return 'None'
+        assert len(refs) == 1
+        ref = (tuple(refs))[0]
+        assert ref[0].startswith('SEG_Terminal')
+        return tables[ref[0]]
+
+
+    ######## Value postprocessors
+
+    def postproc_enhance(value, table, row, tables):
+        value = str(value)
+        for n in (1,2):
+            param_idx, param_table, param_row = \
+                table.field_index(f'param{n}', True), table, row
+            if param_idx is not None:
+                param = param_table.get(param_row, param_idx)
+                if isinstance(param, float) or isinstance(param, int):
+                    param = f'{param:g}'
+                value = value.replace(f'<<enp{n}>>', param)
+        return value
+
+
+    ######## Data tables
+
+    delayed_tables = (
+        'DRP_AffixTable',  # must be after DRP_ItemTable
+        'FnetVeinList',    # must be after FLD_Location
+        'SEG_ProbeList',   # must be after FnetVeinConfig and SEG_Terminal*
+    )
+
+    field_xrefs = {
+
+        'LearnArts01': FieldRef('BTL_ArtsList'),
+        'LearnArts02': FieldRef('BTL_ArtsList'),
+
+        'BufEff1': FieldRef('BTL_BufEffList'),
+        'BufEff2': FieldRef('BTL_BufEffList'),
+        'BufEff3': FieldRef('BTL_BufEffList'),
+
+        'Buff': FieldRef('BTL_BuffList'),
+        'BuffA': FieldRef('BTL_BuffList'),
+        'BuffB': FieldRef('BTL_BuffList'),
+        'BuffC': FieldRef('BTL_BuffList'),
+        'BuffD': FieldRef('BTL_BuffList'),
+        'BuffE': FieldRef('BTL_BuffList'),
+        'BuffID': FieldRef('BTL_BuffList'),
+        'buff_debuff': FieldRef('BTL_BuffList'),
+
+        'BulletID': FieldRef('BTL_BulletList'),
+
+        'BookID': FieldRef('BTL_EnBook'),
+
+        'EnhanceID1': FieldRef('BTL_Enhance'),
+        'EnhanceID2': FieldRef('BTL_Enhance'),
+        'EnhanceID3': FieldRef('BTL_Enhance'),
+        'Enhance[0]': FieldRef('BTL_Enhance'),
+        'Enhance[1]': FieldRef('BTL_Enhance'),
+        'Enhance[2]': FieldRef('BTL_Enhance'),
+        'Enhance[3]': FieldRef('BTL_Enhance'),
+        'Enhance[4]': FieldRef('BTL_Enhance'),
+        'enhanceID': FieldRef('BTL_Enhance'),
+
+        'LearnSkill01': FieldRef('BTL_ArtsList'),
+        'LearnSkill02': FieldRef('BTL_ArtsList'),
+
+        'SoulCode': FieldRef('BTL_SoulCode'),
+
+        'OpenClass': FieldRef('CHR_ClassInfo'),
+
+        'EnemyId': FieldRef('CHR_EnList'),
+        'enemy_id': FieldRef('CHR_EnList'),
+
+        'ProxyID': FieldRef('CHR_ProxyList'),
+
+        'CONDITION1': FieldRef('FLD_GameCondition'),
+        'CONDITION2': FieldRef('FLD_GameCondition'),
+        'CONDITION3': FieldRef('FLD_GameCondition'),
+        'CONDITION4': FieldRef('FLD_GameCondition'),
+        'Condition': FieldRef('FLD_GameCondition'),
+        'Condition1': FieldRef('FLD_GameCondition'),
+        'ConditionA': FieldRef('FLD_GameCondition'),
+        'ConditionB': FieldRef('FLD_GameCondition'),
+        'GameCondition': FieldRef('FLD_GameCondition'),
+        'cond1': FieldRef('FLD_GameCondition'),
+        'cond2': FieldRef('FLD_GameCondition'),
+        'cond3': FieldRef('FLD_GameCondition'),
+        'cond4': FieldRef('FLD_GameCondition'),
+        'cond5': FieldRef('FLD_GameCondition'),
+        'gameCondId': FieldRef('FLD_GameCondition'),
+        # These are in FLD_TownInfo*, possibly a "negative condition" for each message
+        'field_F55F6CD2': FieldRef('FLD_GameCondition'),
+        'field_A9B2A981': FieldRef('FLD_GameCondition'),
+        'field_45FA18DE': FieldRef('FLD_GameCondition'),
+        'field_17D7EE60': FieldRef('FLD_GameCondition'),
+        'field_FE705DC0': FieldRef('FLD_GameCondition'),
+
+        'fieldLoc_id': FieldRef('FLD_Location'),
+
+        'wtr_id': FieldRef('FLD_WeatherAsset'),
+
+        'ItemID': FieldRef(field='ItemType', lookup=lookup_item),
+        'itm1ID': FieldRef(field='item1Type', lookup=lookup_item),
+        'itm2ID': FieldRef(field='item2Type', lookup=lookup_item),
+        'itm3ID': FieldRef(field='item3Type', lookup=lookup_item),
+        'itm4ID': FieldRef(field='item4Type', lookup=lookup_item),
+        'itm5ID': FieldRef(field='item5Type', lookup=lookup_item),
+        'itm6ID': FieldRef(field='item6Type', lookup=lookup_item),
+        'itm7ID': FieldRef(field='item7Type', lookup=lookup_item),
+        'itm8ID': FieldRef(field='item8Type', lookup=lookup_item),
+
+        'info': FieldRef('ITM_InfoList'),
+
+        'materialMA[0]': FieldRef('ITM_MaterialList'),
+        'materialMA[1]': FieldRef('ITM_MaterialList'),
+        'materialMA[2]': FieldRef('ITM_MaterialList'),
+        'materialST[0]': FieldRef('ITM_MaterialList'),
+        'materialST[1]': FieldRef('ITM_MaterialList'),
+        'materialST[2]': FieldRef('ITM_MaterialList'),
+
+        'zone': FieldRef('MNU_ZoneNameConvert'),
+        'zone_id': FieldRef('MNU_ZoneNameConvert'),
+
+        'bgmCondition': FieldRef('RSC_BgmCondition'),
+
+        'TypeGenus': FieldRef('RSC_EnGenusList'),
+
+        'SeEnvID': FieldRef('RSC_SeEnvList'),
+        'se_env_id': FieldRef('RSC_SeEnvList'),
+
+        'call_uid': FieldRef('npc_union'),
+        'uid': FieldRef('npc_union'),
+        'union_id': FieldRef('npc_union'),
+
+        'infoID': FieldRef(lookup=lookup_SegMapInfo),
+        'seg_id': FieldRef(lookup=lookup_seg_id),
+    }
+
+    table_info = {
+        'AMR_DlList': TableInfo(
+            {'Name': TextRef('AMR_DlList_ms'),
+             'TypeAmr': TextRef('amrdl_catlist'),
+             'Affix[0]': FieldRef('BTL_ItemSkill_doll'),
+             'Affix[1]': FieldRef('BTL_ItemSkill_doll'),
+             'Affix[2]': FieldRef('BTL_ItemSkill_doll')},
+            row_name='Name'),
+        'AMR_PcList': TableInfo(
+            {'Name': TextRef('AMR_PcList_ms'),
+             'Caption': TextRef('AMR_PcList_cap'),
+             'TypeAmr': TextRef('amrpc_catlist_ms'),
+             'Affix[0]': FieldRef('BTL_ItemSkill_inner'),
+             'Affix[1]': FieldRef('BTL_ItemSkill_inner'),
+             'Affix[2]': FieldRef('BTL_ItemSkill_inner')},
+            row_name='Name'),
+        'BLH_PCAmrList': TableInfo(
+            {'HEAD': FieldRef('AMR_PcList'),
+             'UPPER': FieldRef('AMR_PcList'),
+             'ARM_R': FieldRef('AMR_PcList'),
+             'ARM_L': FieldRef('AMR_PcList'),
+             'LOWER': FieldRef('AMR_PcList')}),
+        'BLH_PetList': TableInfo(
+            {'Name': TextRef('BLH_RoomList_ms'),
+             'ItemID': FieldRef('ITM_PreciousList')},
+            row_name='Name'),
+        'BLH_RoomList': TableInfo(
+            {'Parts0NAME': TextRef('BLH_RoomList_ms'),
+             'Parts1NAME': TextRef('BLH_RoomList_ms'),
+             'Parts2NAME': TextRef('BLH_RoomList_ms'),
+             'Parts3NAME': TextRef('BLH_RoomList_ms'),
+             'Parts4NAME': TextRef('BLH_RoomList_ms')}),
+        'BTL_ArtsList': TableInfo(
+            {'Name': TextRef('BTL_ArtsList_ms'),
+             'Caption': TextRef('BTL_ArtsList_ms'),
+             'RangeCaption': TextRef('BTL_ArtsList_ms')},
+            row_name='Name'),
+        'BTL_BufEffList': TableInfo(
+            {'Caption': TextRef('BTL_BufEffList_ms')}),
+        'BTL_BuffList': TableInfo(
+            {'Name': TextRef('BTL_BuffList_ms')},
+            row_name='Name'),
+        'BTL_BuffWeatherList': TableInfo(
+            {'Name': TextRef('BTL_BuffWeatherList_ms')},
+            row_name='Name'),
+        'BTL_CoLimitList': TableInfo(
+            {'CEO': TextRef('CoTxtList_ms'),
+             'Caption1': TextRef('CoTxtList_ms'),
+             'Caption2': TextRef('CoTxtList_ms')}),
+        'BTL_DlArtsList': TableInfo(
+            {'Name': TextRef('BTL_DlArtsList_ms'),
+             'Caption': TextRef('BTL_DlArtsList_ms'),
+             'RangeCaption': TextRef('BTL_DlArtsList_ms'),
+             'ActNo': FieldRef('BTL_DlArtsActNoList')},
+            row_name='Name'),
+        'BTL_DollGearEffect': TableInfo(
+            {'GearEffName': TextRef('BTL_DollGearEffect_ms')},
+            row_name='GearEffName'),
+        'BTL_DollGearList': TableInfo(
+            {'job01': FieldRef('BTL_DollGearEffect'),
+             'job02': FieldRef('BTL_DollGearEffect'),
+             'job03': FieldRef('BTL_DollGearEffect'),
+             'job04': FieldRef('BTL_DollGearEffect'),
+             'job05': FieldRef('BTL_DollGearEffect'),
+             'job06': FieldRef('BTL_DollGearEffect')}),
+        'BTL_DrBonus': TableInfo(
+            {'Name': TextRef('BTL_DrBonus_ms')}),
+        'BTL_EnArtsList': TableInfo(
+            {'Name': TextRef('BTL_EnArtsList_ms')},
+            row_name='Name'),
+        'BTL_EnBook': TableInfo(
+            {'Caption': TextRef('BTL_EnBook_ms'),
+             'BaseEnemyID': FieldRef('CHR_EnList'),
+             'HighEnemyID': FieldRef('CHR_EnList'),
+             'MaterialNor1': FieldRef('ITM_MaterialList'),
+             'MaterialNor2': FieldRef('ITM_MaterialList'),
+             'MaterialNor3': FieldRef('ITM_MaterialList'),
+             'MaterialNor4': FieldRef('ITM_MaterialList'),
+             'MaterialNor5': FieldRef('ITM_MaterialList'),
+             'MaterialNor6': FieldRef('ITM_MaterialList'),
+             'MaterialNor7': FieldRef('ITM_MaterialList'),
+             'MaterialNor8': FieldRef('ITM_MaterialList')}),
+        'BTL_EnBookZone': TableInfo(
+            {'Name': TextRef('fieldnamelist_ms'),
+             'ZoneID': FieldRef('MNU_ZoneNameConvert')}),
+        'BTL_Enhance': TableInfo(
+            {'caption': TextRef('BTL_Enhance_ms', postproc=postproc_enhance)},
+            row_name='caption'),
+        'BTL_GearChain': TableInfo(
+            {'Text': TextRef('BTL_Gear_ms')}),
+        'BTL_GearColor': TableInfo(
+            {'Text': TextRef('BTL_Gear_ms')}),
+        'BTL_GearCombo': TableInfo(
+            {'Text': TextRef('BTL_Gear_ms')}),
+        'BTL_ItemSkill_doll': TableInfo(
+            {'Name': TextRef('BattleSkill_DL_ms'),
+             'Caption': TextRef('BattleSkill_DL_ms')},
+            row_name='Name'),
+        'BTL_ItemSkill_inner': TableInfo(
+            {'Name': TextRef('BattleSkill_ms'),
+             'Caption': TextRef('BattleSkill_ms')},
+            row_name='Name'),
+        'BTL_SkillClass': TableInfo(
+            {'Name': TextRef('BTL_SkillClass_ms'),
+             'Caption': TextRef('BTL_SkillClass_ms')},
+            row_name='Name'),
+        'BTL_SoulArts': TableInfo(
+            {'Name': TextRef('BTL_SoulArts_ms')},
+            row_name='Name'),
+        'BTL_SoulData': TableInfo(
+            {'VoiceID': FieldRef('BTL_SoulVoice')}),
+        'BTL_SoulResponse': TableInfo(
+            re_xrefs={r'svRes(MA|FE|NP)\[\d+\]': FieldRef('BTL_SoulResCode')}),
+        'BTL_SoulTrigger': TableInfo(
+            {'Name': TextRef('BTL_SoulVoiceSystem'),
+             'Caption': TextRef('BTL_SoulVoiceSystem'),
+             'Voice1': FieldRef('BTL_SoulVoice'),
+             'Voice2': FieldRef('BTL_SoulVoice'),
+             'Voice3': FieldRef('BTL_SoulVoice')},
+            row_name='Name'),
+        'BTL_SoulVoice': TableInfo(
+            {'word_1': TextRef('BTL_SoulVoice01'),
+             'word_2': TextRef('BTL_SoulVoice02'),
+             'word_3': TextRef('BTL_SoulVoice03'),
+             'word_4': TextRef('BTL_SoulVoice04'),
+             'word_5': TextRef('BTL_SoulVoice05'),
+             'word_6': TextRef('BTL_SoulVoice06'),
+             'word_7': TextRef('BTL_SoulVoice07'),
+             'word_8': TextRef('BTL_SoulVoice08'),
+             'word_9': TextRef('BTL_SoulVoice09'),
+             'word_10': TextRef('BTL_SoulVoice10'),
+             'word_21': TextRef('BTL_SoulVoice21'),
+             'word_22': TextRef('BTL_SoulVoice22'),
+             'word_23': TextRef('BTL_SoulVoice23'),
+             'word_24': TextRef('BTL_SoulVoice24'),
+             'word_25': TextRef('BTL_SoulVoice25'),
+             'word_26': TextRef('BTL_SoulVoice26'),
+             'word_27': TextRef('BTL_SoulVoice27'),
+             'word_28': TextRef('BTL_SoulVoice28'),
+             'word_29': TextRef('BTL_SoulVoice29'),
+             'word_30': TextRef('BTL_SoulVoice30'),
+             'word_41': TextRef('BTL_SoulVoice41'),
+             'word_42': TextRef('BTL_SoulVoice42'),
+             'word_43': TextRef('BTL_SoulVoice43'),
+             'word_44': TextRef('BTL_SoulVoice44'),
+             'word_45': TextRef('BTL_SoulVoice45'),
+             'word_46': TextRef('BTL_SoulVoice46'),
+             'word_47': TextRef('BTL_SoulVoice47'),
+             'word_48': TextRef('BTL_SoulVoice48'),
+             'word_49': TextRef('BTL_SoulVoice49'),
+             'word_50': TextRef('BTL_SoulVoice50'),
+             'word_51': TextRef('BTL_SoulVoice51'),
+             'word_52': TextRef('BTL_SoulVoice52'),
+             'word_53': TextRef('BTL_SoulVoice53'),
+             'word_54': TextRef('BTL_SoulVoice54'),
+             'word_55': TextRef('BTL_SoulVoice55'),
+             'word_56': TextRef('BTL_SoulVoice56'),
+             'word_57': TextRef('BTL_SoulVoice57'),
+             'word_58': TextRef('BTL_SoulVoice58'),
+             'word_70': TextRef('BTL_SoulVoice70'),
+             'word_71': TextRef('BTL_SoulVoice71'),
+             'word_72': TextRef('BTL_SoulVoice72'),
+             'word_73': TextRef('BTL_SoulVoice73')}),
+        'CHR_ClassInfo': TableInfo(
+            {'Name': TextRef('CHR_ClassList_ms'),
+             'Caption': TextRef('CHR_ClassListCaption_ms'),
+             'promotion_A': FieldRef('CHR_ClassInfo'),
+             'promotion_B': FieldRef('CHR_ClassInfo'),
+             'promotion_C': FieldRef('CHR_ClassInfo')},
+            row_name='Name'),
+        'CHR_DlList': TableInfo(
+            {'Name': TextRef('CHR_DlList_ms')},
+            row_name='Name'),
+        'CHR_EnList': TableInfo(
+            {'ParamID': FieldRef('CHR_EnParam'),
+             'TypeAi': FieldRef('ai'),
+             'Name': TextRef('CHR_EnList_ms'),
+             'ParamRev': FieldRef('CHR_EnParamRev'),
+             'FieldPatternID': FieldRef('CHR_EnFieldPattern'),
+             'Partner': FieldRef('CHR_EnList'),
+             'PopParamID': FieldRef('CHR_EnPopParam'),
+             'DropTableID': FieldRef('DRP_BoxTable'),
+             'StartupBuff': FieldRef('BTL_BuffList'),
+             'BGMID': FieldRef('RSC_BattleBgm'),
+             'ZoneID': FieldRef('MNU_ZoneNameConvert')},
+            row_name='Name'),
+        'CHR_EnParam': TableInfo(
+            {'ResourceID': FieldRef('RSC_EnList')},
+            re_xrefs={r'ArtsNum\d+': FieldRef('BTL_EnArtsList')}),
+        'DEF_DlList': TableInfo(
+            {'Name': TextRef('CHR_DlList_ms'),
+             'Caption': TextRef('CHR_DlList_ms'),
+             'Armor[0]': FieldRef('AMR_DlList'),
+             'Armor[1]': FieldRef('AMR_DlList'),
+             'Armor[2]': FieldRef('AMR_DlList'),
+             'Armor[3]': FieldRef('AMR_DlList'),
+             'Armor[4]': FieldRef('AMR_DlList'),
+             'Wpn[0]': FieldRef('WPN_DlList'),
+             'Wpn[1]': FieldRef('WPN_DlList'),
+             'Wpn[2]': FieldRef('WPN_DlList'),
+             'Wpn[3]': FieldRef('WPN_DlList'),
+             'Wpn[4]': FieldRef('WPN_DlList'),
+             'Wpn[5]': FieldRef('WPN_DlList'),
+             'Wpn[6]': FieldRef('WPN_DlList'),
+             'Wpn[7]': FieldRef('WPN_DlList'),
+             'Wpn[8]': FieldRef('WPN_DlList'),
+             'Wpn[9]': FieldRef('WPN_DlList')},
+            row_name='Name'),
+        'DEF_NpcList': TableInfo(
+            {'DefAmr1': FieldRef('AMR_PcList'),
+             'DefAmr2': FieldRef('AMR_PcList'),
+             'DefAmr3': FieldRef('AMR_PcList'),
+             'DefAmr4': FieldRef('AMR_PcList'),
+             'DefAmr5': FieldRef('AMR_PcList')}),
+        'DEF_PcList': TableInfo(
+            {'Name': TextRef('DEF_PcList_ms'),
+             'ClassType': FieldRef('CHR_ClassInfo'),
+             'DefWpnFar': FieldRef('WPN_PcList'),
+             'DefWpnNear': FieldRef('WPN_PcList')},
+            re_xrefs={r'DefAmr\d+': FieldRef('AMR_PcList'),
+                      r'ArtsNo\d+': FieldRef('BTL_ArtsList'),
+                      r'SoulTrigger\d+': FieldRef('BTL_SoulTrigger'),
+                      r'SoulData\d+': FieldRef('BTL_SoulData')},
+            row_name='Name'),
+        'DRP_AffixTable': TableInfo(
+            re_xrefs={'AffixID_\d+': FieldRef(lookup=lookup_drop_affix)}),
+        'DRP_BoxTable': TableInfo(
+            {'PartsName': TextRef('ITM_MaterialList_ms'),
+             'LotRank': FieldRef('DRP_LotRankTable'),
+             'GoldBox': FieldRef('DRP_GoldBoxTable'),
+             'SilverBox': FieldRef('DRP_SilverBoxTable'),
+             'BronzeBox': FieldRef('DRP_BronzeBoxTable')},
+            row_name='PartsName'),
+        'DRP_BronzeBoxTable': TableInfo(
+            re_xrefs={r'Item_\d+': FieldRef('DRP_ItemTable')}),
+        'DRP_DlArmorTable_Gold': TableInfo(
+            re_xrefs={r'armor\[\d+\]': FieldRef('DRP_ItemTable')}),
+        'DRP_DlArmorTable_Silver': TableInfo(
+            re_xrefs={r'armor\[\d+\]': FieldRef('DRP_ItemTable')}),
+        'DRP_DlWpnTable_Gold': TableInfo(
+            re_xrefs={r'wpn\[\d+\]': FieldRef('DRP_ItemTable')}),
+        'DRP_DlWpnTable_Silver': TableInfo(
+            re_xrefs={r'wpn\[\d+\]': FieldRef('DRP_ItemTable')}),
+        'DRP_GoldBoxTable': TableInfo(
+            re_xrefs={r'Item_\d+': FieldRef('DRP_ItemTable')}),
+        'DRP_ItemTable': TableInfo(
+            {'AffixLot': FieldRef('DRP_AffixTable'),
+             'AffixLotGood': FieldRef('DRP_AffixTable'),
+             'AffixNumLot': FieldRef('DRP_AffixSlotTable'),
+             'SlotNumLot': FieldRef('DRP_AffixSlotTable'),
+             'AffixNumLotG': FieldRef('DRP_AffixSlotTable'),
+             'SlotNumLotG': FieldRef('DRP_AffixSlotTable')},
+            row_name='ItemID'),
+        'DRP_PcArmorTable_Gold': TableInfo(
+            re_xrefs={r'armor\[\d+\]': FieldRef('DRP_ItemTable')}),
+        'DRP_PcArmorTable_Silver': TableInfo(
+            re_xrefs={r'armor\[\d+\]': FieldRef('DRP_ItemTable')}),
+        'DRP_PcWpnTable_Gold': TableInfo(
+            re_xrefs={r'wpn\[\d+\]': FieldRef('DRP_ItemTable')}),
+        'DRP_PcWpnTable_Silver': TableInfo(
+            re_xrefs={'wpn\[\d+\]': FieldRef('DRP_ItemTable')}),
+        'DRP_SilverBoxTable': TableInfo(
+            re_xrefs={r'Item_\d+': FieldRef('DRP_ItemTable')}),
+        'FLD_ConditionList_FNStat': TableInfo(
+            {'veinID': FieldRef('FnetVeinList')}),
+        'FLD_ConditionList_FriendPoint': TableInfo(
+            {'FriendID': FieldRef('npc_union')}),
+        'FLD_ConditionList_Item': TableInfo(
+            {'itemID': FieldRef(field='itemType', lookup=lookup_item)}),
+        'FLD_ConditionList_PTin': TableInfo(
+            {'PTinID1': FieldRef('npc_union'),
+             'PTinID2': FieldRef('npc_union'),
+             'PTinID3': FieldRef('npc_union')}),
+        'FLD_ConditionList_PTout': TableInfo(
+            {'PToutID1': FieldRef('npc_union'),
+             'PToutID2': FieldRef('npc_union'),
+             'PToutID3': FieldRef('npc_union')}),
+        'FLD_ConditionList_Quest': TableInfo(
+            {'questNo1': FieldRef('FLD_questlist'),
+             'questNo2': FieldRef('FLD_questlist'),
+             'questNo3': FieldRef('FLD_questlist'),
+             'questNo4': FieldRef('FLD_questlist')}),
+        'FLD_ConditionList_Segment': TableInfo(
+            {'zoneID1': FieldRef('MNU_ZoneNameConvert'),
+             'zoneID2': FieldRef('MNU_ZoneNameConvert')}),
+        'FLD_EvtHexInfo': TableInfo(
+            {'DigreeInfo': TextRef('FLD_EvtHexInfo_ms')}),
+        'FLD_FieldNameList': TableInfo(
+            {'name': TextRef('fieldnamelist_ms'),
+             'nameCondition': FieldRef('FLD_NameCondition')},
+            row_name='name'),
+        'FLD_GameCondition': TableInfo(
+            re_xrefs={r'cond\d+': FieldRef(lookup=lookup_GameCondition)}),
+        'FLD_Location': TableInfo(
+            {'Loc_name': TextRef('fieldnamelist_ms'),
+             'F_spot': FieldRef('FnetVeinList')},
+            row_name='Loc_name'),
+        'FLD_MobGrpList0003': TableInfo(
+            re_xrefs={r'mob_\d+': FieldRef('FLD_MobIndivList0003')}),
+        'FLD_MobGrpList0080': TableInfo(
+            re_xrefs={r'mob_\d+': FieldRef('FLD_MobIndivList0080')}),
+        'FLD_MobGrpList1001': TableInfo(
+            re_xrefs={r'mob_\d+': FieldRef('FLD_MobIndivList1001')}),
+        'FLD_MobGrpList1101': TableInfo(
+            re_xrefs={r'mob_\d+': FieldRef('FLD_MobIndivList1101')}),
+        'FLD_MobGrpList1201': TableInfo(
+            re_xrefs={r'mob_\d+': FieldRef('FLD_MobIndivList1201')}),
+        'FLD_MobGrpList1301': TableInfo(
+            re_xrefs={r'mob_\d+': FieldRef('FLD_MobIndivList1301')}),
+        'FLD_MobGrpList1401': TableInfo(
+            re_xrefs={r'mob_\d+': FieldRef('FLD_MobIndivList1401')}),
+        'FLD_MobGrpList1501': TableInfo(
+            re_xrefs={r'mob_\d+': FieldRef('FLD_MobIndivList1501')}),
+        'FLD_MobGrpList1601': TableInfo(
+            re_xrefs={r'mob_\d+': FieldRef('FLD_MobIndivList1601')}),
+        'FLD_MobGrpList1701': TableInfo(
+            re_xrefs={r'mob_\d+': FieldRef('FLD_MobIndivList1701')}),
+        'FLD_MobGrpList2001': TableInfo(
+            re_xrefs={r'mob_\d+': FieldRef('FLD_MobIndivList2001')}),
+        'FLD_MobGrpList2201': TableInfo(
+            re_xrefs={r'mob_\d+': FieldRef('FLD_MobIndivList2201')}),
+        'FLD_MobGrpList5000': TableInfo(
+            re_xrefs={r'mob_\d+': FieldRef('FLD_MobIndivList5000')}),
+        'FLD_MobGrpList6000': TableInfo(
+            re_xrefs={r'mob_\d+': FieldRef('FLD_MobIndivList6000')}),
+        'FLD_MobList0003': TableInfo(
+            {'res_group': FieldRef('FLD_MobGrpList0003')}),
+        'FLD_MobList0080': TableInfo(
+            {'res_group': FieldRef('FLD_MobGrpList0080')}),
+        'FLD_MobList1001': TableInfo(
+            {'res_group': FieldRef('FLD_MobGrpList1001')}),
+        'FLD_MobList1101': TableInfo(
+            {'res_group': FieldRef('FLD_MobGrpList1101')}),
+        'FLD_MobList1201': TableInfo(
+            {'res_group': FieldRef('FLD_MobGrpList1201')}),
+        'FLD_MobList1301': TableInfo(
+            {'res_group': FieldRef('FLD_MobGrpList1301')}),
+        'FLD_MobList1401': TableInfo(
+            {'res_group': FieldRef('FLD_MobGrpList1401')}),
+        'FLD_MobList1501': TableInfo(
+            {'res_group': FieldRef('FLD_MobGrpList1501')}),
+        'FLD_MobList1601': TableInfo(
+            {'res_group': FieldRef('FLD_MobGrpList1601')}),
+        'FLD_MobList1701': TableInfo(
+            {'res_group': FieldRef('FLD_MobGrpList1701')}),
+        'FLD_MobList2001': TableInfo(
+            {'res_group': FieldRef('FLD_MobGrpList2001')}),
+        'FLD_MobList2201': TableInfo(
+            {'res_group': FieldRef('FLD_MobGrpList2201')}),
+        'FLD_MobList5000': TableInfo(
+            {'res_group': FieldRef('FLD_MobGrpList5000')}),
+        'FLD_MobList6000': TableInfo(
+            {'res_group': FieldRef('FLD_MobGrpList6000')}),
+        'FLD_NameCondition': TableInfo(
+            {'NameID0': TextRef('fieldnamelist_ms'),
+             'NameID1': TextRef('fieldnamelist_ms')}),
+        'FLD_PrcPopList': TableInfo(
+            {'itm1ID': FieldRef(field='itm1Type', lookup=lookup_item)}),  # Note different spelling from the Litem* tables!
+        'FLD_ProgressPopList': TableInfo(
+            {'targetCondId': FieldRef('FLD_GameCondition')}),
+        'FLD_QuestCollect': TableInfo(
+            {'item_id': FieldRef(field='ref_item_bdat', lookup=lookup_item)}),
+        'FLD_QuestSuppress': TableInfo(
+            {'WeaponID': FieldRef('WPN_PcList')}),
+        'FLD_QuestTask': TableInfo(
+            {'purpose1': FieldRef(lookup=lookup_QuestTask),
+             'purpose_log1': TextRef('quest_ms'),
+             'purpose2': FieldRef(lookup=lookup_QuestTask),
+             'purpose_log2': TextRef('quest_ms'),
+             'purpose3': FieldRef(lookup=lookup_QuestTask),
+             'purpose_log3': TextRef('quest_ms')}),
+        'FLD_SkipTravel': TableInfo(
+            {'formationId': FieldRef('FLD_FormationList')}),
+        'FLD_TboxAll': TableInfo(
+            {'item_id': FieldRef(field='item_cat', lookup=lookup_item),
+             'next_id': FieldRef('FLD_TboxAll')}),
+        'FLD_TboxPopList': TableInfo(
+            {'name_id': TextRef('FLD_ObjectName'),
+             'reward': FieldRef('FLD_TboxAll'),
+             'kizuna_id': FieldRef('FLD_KizunaActionList')},
+            row_name='name_id'),
+        'FLD_TownInfo1001': TableInfo(
+            {'name': TextRef('FLD_TownInfo_ms'),
+             'msg1': TextRef('FLD_TownInfo_ms'),
+             'msg2': TextRef('FLD_TownInfo_ms'),
+             'msg3': TextRef('FLD_TownInfo_ms'),
+             'msg4': TextRef('FLD_TownInfo_ms'),
+             'msg5': TextRef('FLD_TownInfo_ms')}),
+        'FLD_TownInfo1101': TableInfo(
+            {'name': TextRef('FLD_TownInfo_ms'),
+             'msg1': TextRef('FLD_TownInfo_ms'),
+             'msg2': TextRef('FLD_TownInfo_ms'),
+             'msg3': TextRef('FLD_TownInfo_ms'),
+             'msg4': TextRef('FLD_TownInfo_ms'),
+             'msg5': TextRef('FLD_TownInfo_ms')}),
+        'FLD_TownInfo1201': TableInfo(
+            {'name': TextRef('FLD_TownInfo_ms'),
+             'msg1': TextRef('FLD_TownInfo_ms'),
+             'msg2': TextRef('FLD_TownInfo_ms'),
+             'msg3': TextRef('FLD_TownInfo_ms'),
+             'msg4': TextRef('FLD_TownInfo_ms'),
+             'msg5': TextRef('FLD_TownInfo_ms')}),
+        'FLD_TownInfo1301': TableInfo(
+            {'name': TextRef('FLD_TownInfo_ms'),
+             'msg1': TextRef('FLD_TownInfo_ms'),
+             'msg2': TextRef('FLD_TownInfo_ms'),
+             'msg3': TextRef('FLD_TownInfo_ms'),
+             'msg4': TextRef('FLD_TownInfo_ms'),
+             'msg5': TextRef('FLD_TownInfo_ms')}),
+        'FLD_TownInfo1401': TableInfo(
+            {'name': TextRef('FLD_TownInfo_ms'),
+             'msg1': TextRef('FLD_TownInfo_ms'),
+             'msg2': TextRef('FLD_TownInfo_ms'),
+             'msg3': TextRef('FLD_TownInfo_ms'),
+             'msg4': TextRef('FLD_TownInfo_ms'),
+             'msg5': TextRef('FLD_TownInfo_ms')}),
+        'FLD_TownInfo1501': TableInfo(
+            {'name': TextRef('FLD_TownInfo_ms'),
+             'msg1': TextRef('FLD_TownInfo_ms'),
+             'msg2': TextRef('FLD_TownInfo_ms'),
+             'msg3': TextRef('FLD_TownInfo_ms'),
+             'msg4': TextRef('FLD_TownInfo_ms'),
+             'msg5': TextRef('FLD_TownInfo_ms')}),
+        'FLD_TownInfo1601': TableInfo(
+            {'name': TextRef('FLD_TownInfo_ms'),
+             'msg1': TextRef('FLD_TownInfo_ms'),
+             'msg2': TextRef('FLD_TownInfo_ms'),
+             'msg3': TextRef('FLD_TownInfo_ms'),
+             'msg4': TextRef('FLD_TownInfo_ms'),
+             'msg5': TextRef('FLD_TownInfo_ms')}),
+        'FLD_TownInfo1701': TableInfo(
+            {'name': TextRef('FLD_TownInfo_ms'),
+             'msg1': TextRef('FLD_TownInfo_ms'),
+             'msg2': TextRef('FLD_TownInfo_ms'),
+             'msg3': TextRef('FLD_TownInfo_ms'),
+             'msg4': TextRef('FLD_TownInfo_ms'),
+             'msg5': TextRef('FLD_TownInfo_ms')}),
+        'FLD_TownInfo2001': TableInfo(
+            {'name': TextRef('FLD_TownInfo_ms'),
+             'msg1': TextRef('FLD_TownInfo_ms'),
+             'msg2': TextRef('FLD_TownInfo_ms'),
+             'msg3': TextRef('FLD_TownInfo_ms'),
+             'msg4': TextRef('FLD_TownInfo_ms'),
+             'msg5': TextRef('FLD_TownInfo_ms')}),
+        'FLD_TownInfo2201': TableInfo(
+            {'name': TextRef('FLD_TownInfo_ms'),
+             'msg1': TextRef('FLD_TownInfo_ms'),
+             'msg2': TextRef('FLD_TownInfo_ms'),
+             'msg3': TextRef('FLD_TownInfo_ms'),
+             'msg4': TextRef('FLD_TownInfo_ms'),
+             'msg5': TextRef('FLD_TownInfo_ms')}),
+        'FLD_TownInfo6000': TableInfo(
+            {'name': TextRef('FLD_TownInfo_ms'),
+             'msg1': TextRef('FLD_TownInfo_ms'),
+             'msg2': TextRef('FLD_TownInfo_ms'),
+             'msg3': TextRef('FLD_TownInfo_ms'),
+             'msg4': TextRef('FLD_TownInfo_ms'),
+             'msg5': TextRef('FLD_TownInfo_ms')}),
+        'FLD_WarpPopList': TableInfo(
+            {'formationId': FieldRef('FLD_FormationList')}),
+        'FLD_WeatherAsset': TableInfo(
+            {'wtr_name': TextRef('FLD_WeatherNameList_ms')},
+            row_name='wtr_name'),
+        'FLD_questlist': TableInfo(
+            {'quest_title': TextRef('quest_ms'),
+             'category': TextRef('menu_program_ms',
+                                 lookup=lookup_quest_category),
+             'name': FieldRef('npc_union'),
+             'area': FieldRef('MNU_ZoneNameConvert'),
+             'summary': TextRef('quest_ms'),
+             'HexCondition': FieldRef('FLD_EvtHexInfo'),
+             'result_text_a': TextRef('quest_ms'),
+             'result_text_b': TextRef('quest_ms'),
+             'itemset_id_1': FieldRef('QUEST_itemset'),
+             'itemset_id_2': FieldRef('QUEST_itemset'),
+             'prt_quest_id': FieldRef('FLD_questlist'),
+             'task_id': FieldRef('FLD_QuestTask'),
+             'next_quest_a': FieldRef('FLD_questlist'),
+             'next_quest_b': FieldRef('FLD_questlist')},
+            row_name='quest_title'),
+        'FnetBeaconType': TableInfo(
+            {'Name': TextRef('ITM_BeaconList_ms')},
+            row_name='Name'),
+        'FnetVeinList': TableInfo(
+            {'name': FieldRef('FLD_Location'),
+             'caption': TextRef('FNT_VeinList_ms'),
+             'itm1ID': FieldRef('ITM_RareRscList'),
+             'itm2ID': FieldRef('ITM_RareRscList'),
+             'itm3ID': FieldRef('ITM_RareRscList'),
+             'itm4ID': FieldRef('ITM_RareRscList'),
+             'itm5ID': FieldRef('ITM_RareRscList')},
+            row_name='name'),  # references FLD_Location.Loc_name
+        'ITM_BattleItem': TableInfo(
+            {'Name': TextRef('ITM_BattleItem_ms'),
+             'Caption': TextRef('ITM_BattleItem_ms')},
+            row_name='Name'),
+        'ITM_BeaconList': TableInfo(
+            {'Name': TextRef('ITM_BeaconList_ms'),
+             'Caption': TextRef('ITM_BeaconList_ms'),
+             'type': FieldRef('FnetBeaconType'),
+             'zoneBuf1': FieldRef('BTL_BuffList'),
+             'zoneBuf2': FieldRef('BTL_BuffList'),
+             'zoneBuf3': FieldRef('BTL_BuffList'),
+             'zoneBuf4': FieldRef('BTL_BuffList'),
+             'zoneBuf5': FieldRef('BTL_BuffList')},
+            row_name='Name'),
+        'ITM_Blueprint': TableInfo(
+            {'Name': TextRef('ITM_Blueprint_ms'),
+             'Caption': TextRef('ITM_Blueprint_ms'),
+             'itemID': FieldRef(field='category', lookup=lookup_item),
+             'material_0': FieldRef('ITM_MaterialList'),
+             'material_1': FieldRef('ITM_MaterialList'),
+             'material_2': FieldRef('ITM_MaterialList'),
+             'material_3': FieldRef('ITM_MaterialList'),
+             'material_4': FieldRef('ITM_MaterialList'),
+             'material_5': FieldRef('ITM_MaterialList'),
+             'rareReID': FieldRef('ITM_RareRscList')},
+            row_name='Name'),
+        'ITM_CollectList': TableInfo(
+            {'Name': TextRef('ITM_CollectList_ms'),
+             'Caption': TextRef('ITM_CollectList_ms'),
+             'category': FieldRef('MNU_CollectItemCategory'),
+             'zoneID': FieldRef('MNU_ZoneNameConvert')},
+            row_name='Name'),
+        'ITM_FigList': TableInfo(
+            {'Name': TextRef('ITM_FigList_ms'),
+             'Caption': TextRef('ITM_FigList_ms')},
+            row_name='Name'),
+        'ITM_InfoList': TableInfo(
+            {'Name': TextRef('ITM_InfoList_ms'),
+             'Caption': TextRef('ITM_InfoList_ms')},
+            row_name='Name'),
+        'ITM_MaterialList': TableInfo(
+            {'Name': TextRef('ITM_MaterialList_ms'),
+             'Caption': TextRef('ITM_MaterialList_ms'),
+             'Lot': FieldRef('DRP_LotMaterialTable'),
+             'LotParts': FieldRef('DRP_LotMaterialTable')},
+            row_name='Name'),
+        'ITM_PieceList': TableInfo(
+            {'Name': TextRef('ITM_PieceList_ms'),
+             'Caption': TextRef('ITM_PieceList_ms')},
+            row_name='Name'),
+        'ITM_PreciousList': TableInfo(
+            {'Name': TextRef('ITM_PreciousList_ms'),
+             'Caption': TextRef('ITM_PreciousList_ms')},
+            row_name='Name'),
+        'ITM_RareRscList': TableInfo(
+            {'Name': TextRef('ITM_RareRscList_ms'),
+             'Caption': TextRef('ITM_RareRscList_ms')},
+            row_name='Name'),
+        'MNU_Announce': TableInfo(
+            {'txt[0]': TextRef('MNU_Announce_ms'),
+             'txt[1]': TextRef('MNU_Announce_ms'),
+             'txt[2]': TextRef('MNU_Announce_ms'),
+             'txt[3]': TextRef('MNU_Announce_ms'),
+             'txt[4]': TextRef('MNU_Announce_ms'),
+             'txt[5]': TextRef('MNU_Announce_ms'),
+             'NpcID': FieldRef('DEF_PcList')}),
+        'MNU_CollectItemCategory': TableInfo(
+            {'CategoryName': TextRef('menu_program_ms')},
+            row_name='CategoryName'),
+        'MNU_CommonTelop': TableInfo(
+            {'Text': TextRef('MNU_CommonTelop_ms')}),
+        'MNU_EnemyTalk': TableInfo(
+            {'Text': TextRef('MNU_EnemyTalk_ms')}),
+        'MNU_Filtering': TableInfo(
+            {'HeadText': TextRef('menu_program_ms'),
+             'ListText[0]': TextRef('menu_program_ms'),
+             'ListText[1]': TextRef('menu_program_ms'),
+             'ListText[2]': TextRef('menu_program_ms'),
+             'ListText[3]': TextRef('menu_program_ms'),
+             'ListText[4]': TextRef('menu_program_ms'),
+             'ListText[5]': TextRef('menu_program_ms'),
+             'ListText[6]': TextRef('menu_program_ms'),
+             'ListText[7]': TextRef('menu_program_ms'),
+             'ListText[8]': TextRef('menu_program_ms')}),
+        'MNU_GlossaryList': TableInfo(
+            {'title': TextRef('MNU_GlossaryList_ms'),
+             'condition': FieldRef('FLD_GameCondition'),
+             'field_3E139884': FieldRef('MNU_GlossaryPage'),
+             'field_A5F5679A': FieldRef('MNU_GlossaryPage')},
+            row_name='title'),
+        'MNU_GlossaryPage': TableInfo(
+            {'field_13D4F614': TextRef('MNU_GlossaryList_ms')}),
+        'MNU_HomeTerminal': TableInfo(
+            {'Text': TextRef('menu_program_ms')}),
+        'MNU_NetTerminal': TableInfo(
+            {'Text': TextRef('menu_program_ms')}),
+        'MNU_SocialInfo': TableInfo(
+            {'Text': TextRef('menu_program_ms'),
+             'field_606792C8': TextRef('MNU_SocialInfo_ms'),
+             'field_CDF215F8': TextRef('MNU_SocialInfo_ms')}),
+        'MNU_SoulVoiceStyle': TableInfo(
+            {'Text': TextRef('MNU_SoulVoiceStyle_ms')},
+            row_name='Text'),
+        'MNU_TipsList': TableInfo(
+            {'title': TextRef('MNU_TipsList_ms'),
+             'field_8C58BABA': TextRef('MNU_TipsList_ms')},
+            row_name='title'),
+        'MNU_TownMesWindow': TableInfo(
+            {'Text': TextRef('MNU_TownMesWindow_ms')}),
+        'MNU_ZoneNameConvert': TableInfo(
+            {'name': TextRef('fieldnamelist_ms'),
+             'MenuZoneName': TextRef('menu_zonenamelist_ms')},
+            row_name='name'),
+        'MNU_option_battle': TableInfo(
+            {'name': TextRef('MNU_Option_ms'),
+             'help': TextRef('MNU_Option_ms'),
+             'field_75EB95AD': TextRef('MNU_Option_ms'),
+             'field_E2DF5D40': TextRef('MNU_Option_ms'),
+             'field_2C42EC4E': TextRef('MNU_Option_ms'),
+             'field_AF4E3326': TextRef('MNU_Option_ms'),
+             'field_CA6B5496': TextRef('MNU_Option_ms')}),
+        'MNU_option_camera': TableInfo(
+            {'name': TextRef('MNU_Option_ms'),
+             'help': TextRef('MNU_Option_ms'),
+             'field_75EB95AD': TextRef('MNU_Option_ms'),
+             'field_E2DF5D40': TextRef('MNU_Option_ms'),
+             'field_2C42EC4E': TextRef('MNU_Option_ms'),
+             'field_AF4E3326': TextRef('MNU_Option_ms'),
+             'field_CA6B5496': TextRef('MNU_Option_ms')}),
+        'MNU_option_event': TableInfo(
+            {'name': TextRef('MNU_Option_ms'),
+             'help': TextRef('MNU_Option_ms'),
+             'field_75EB95AD': TextRef('MNU_Option_ms'),
+             'field_E2DF5D40': TextRef('MNU_Option_ms'),
+             'field_2C42EC4E': TextRef('MNU_Option_ms'),
+             'field_AF4E3326': TextRef('MNU_Option_ms'),
+             'field_CA6B5496': TextRef('MNU_Option_ms')}),
+        'MNU_option_field': TableInfo(
+            {'name': TextRef('MNU_Option_ms'),
+             'help': TextRef('MNU_Option_ms'),
+             'field_75EB95AD': TextRef('MNU_Option_ms'),
+             'field_E2DF5D40': TextRef('MNU_Option_ms'),
+             'field_2C42EC4E': TextRef('MNU_Option_ms'),
+             'field_AF4E3326': TextRef('MNU_Option_ms'),
+             'field_CA6B5496': TextRef('MNU_Option_ms')}),
+        'MNU_option_game': TableInfo(
+            {'name': TextRef('MNU_Option_ms'),
+             'help': TextRef('MNU_Option_ms'),
+             'field_75EB95AD': TextRef('MNU_Option_ms'),
+             'field_E2DF5D40': TextRef('MNU_Option_ms'),
+             'field_2C42EC4E': TextRef('MNU_Option_ms'),
+             'field_AF4E3326': TextRef('MNU_Option_ms'),
+             'field_CA6B5496': TextRef('MNU_Option_ms')}),
+        'MNU_option_graphic': TableInfo(
+            {'name': TextRef('MNU_Option_ms'),
+             'help': TextRef('MNU_Option_ms'),
+             'field_75EB95AD': TextRef('MNU_Option_ms'),
+             'field_E2DF5D40': TextRef('MNU_Option_ms'),
+             'field_2C42EC4E': TextRef('MNU_Option_ms'),
+             'field_AF4E3326': TextRef('MNU_Option_ms'),
+             'field_CA6B5496': TextRef('MNU_Option_ms')}),
+        'MNU_option_notify': TableInfo(
+            {'name': TextRef('MNU_Option_ms'),
+             'help': TextRef('MNU_Option_ms'),
+             'field_75EB95AD': TextRef('MNU_Option_ms'),
+             'field_E2DF5D40': TextRef('MNU_Option_ms'),
+             'field_2C42EC4E': TextRef('MNU_Option_ms'),
+             'field_AF4E3326': TextRef('MNU_Option_ms'),
+             'field_CA6B5496': TextRef('MNU_Option_ms')}),
+        'MNU_option_online': TableInfo(
+            {'name': TextRef('MNU_Option_ms'),
+             'help': TextRef('MNU_Option_ms'),
+             'field_75EB95AD': TextRef('MNU_Option_ms'),
+             'field_E2DF5D40': TextRef('MNU_Option_ms'),
+             'field_2C42EC4E': TextRef('MNU_Option_ms'),
+             'field_AF4E3326': TextRef('MNU_Option_ms'),
+             'field_CA6B5496': TextRef('MNU_Option_ms')}),
+        'MNU_option_sign': TableInfo(
+            {'name': TextRef('MNU_Option_ms'),
+             'help': TextRef('MNU_Option_ms'),
+             'field_75EB95AD': TextRef('MNU_Option_ms'),
+             'field_E2DF5D40': TextRef('MNU_Option_ms'),
+             'field_2C42EC4E': TextRef('MNU_Option_ms'),
+             'field_AF4E3326': TextRef('MNU_Option_ms'),
+             'field_CA6B5496': TextRef('MNU_Option_ms')}),
+        'MNU_option_social': TableInfo(
+            {'name': TextRef('MNU_Option_ms'),
+             'help': TextRef('MNU_Option_ms'),
+             'field_75EB95AD': TextRef('MNU_Option_ms'),
+             'field_E2DF5D40': TextRef('MNU_Option_ms'),
+             'field_2C42EC4E': TextRef('MNU_Option_ms'),
+             'field_AF4E3326': TextRef('MNU_Option_ms'),
+             'field_CA6B5496': TextRef('MNU_Option_ms')}),
+        'MNU_option_sound': TableInfo(
+            {'name': TextRef('MNU_Option_ms'),
+             'help': TextRef('MNU_Option_ms'),
+             'field_75EB95AD': TextRef('MNU_Option_ms'),
+             'field_E2DF5D40': TextRef('MNU_Option_ms'),
+             'field_2C42EC4E': TextRef('MNU_Option_ms'),
+             'field_AF4E3326': TextRef('MNU_Option_ms'),
+             'field_CA6B5496': TextRef('MNU_Option_ms')}),
+        'MNU_option_status': TableInfo(
+            {'name': TextRef('MNU_Option_ms'),
+             'help': TextRef('MNU_Option_ms'),
+             'field_75EB95AD': TextRef('MNU_Option_ms'),
+             'field_E2DF5D40': TextRef('MNU_Option_ms'),
+             'field_2C42EC4E': TextRef('MNU_Option_ms'),
+             'field_AF4E3326': TextRef('MNU_Option_ms'),
+             'field_CA6B5496': TextRef('MNU_Option_ms')}),
+        'MNU_option_telop': TableInfo(
+            {'name': TextRef('MNU_Option_ms'),
+             'help': TextRef('MNU_Option_ms'),
+             'field_75EB95AD': TextRef('MNU_Option_ms'),
+             'field_E2DF5D40': TextRef('MNU_Option_ms'),
+             'field_2C42EC4E': TextRef('MNU_Option_ms'),
+             'field_AF4E3326': TextRef('MNU_Option_ms'),
+             'field_CA6B5496': TextRef('MNU_Option_ms')}),
+        'MNU_option_voice': TableInfo(
+            {'name': TextRef('MNU_Option_ms'),
+             'help': TextRef('MNU_Option_ms'),
+             'field_75EB95AD': TextRef('MNU_Option_ms'),
+             'field_E2DF5D40': TextRef('MNU_Option_ms'),
+             'field_2C42EC4E': TextRef('MNU_Option_ms'),
+             'field_AF4E3326': TextRef('MNU_Option_ms'),
+             'field_CA6B5496': TextRef('MNU_Option_ms')}),
+        'MNU_qiconsetlist': TableInfo(
+            {'questNo': FieldRef('FLD_questlist')}),
+        'QUEST_itemset': TableInfo(
+            {'item_id1': FieldRef(field='ref_item_bdat_1', lookup=lookup_item),
+             'item_id2': FieldRef(field='ref_item_bdat_2', lookup=lookup_item),
+             'item_id3': FieldRef(field='ref_item_bdat_3', lookup=lookup_item),
+             'item_id4': FieldRef(field='ref_item_bdat_4', lookup=lookup_item)}),
+        'RSC_BattleBgm': TableInfo(
+            {'BgmID': FieldRef('RSC_BgmList'),
+             'BgmID2': FieldRef('RSC_BgmList')}),
+        'RSC_BgmCondition': TableInfo(
+            {'BgmIDA': FieldRef('RSC_BgmList'),
+             'BgmIDB': FieldRef('RSC_BgmList')}),
+        'RSC_EnGenusList': TableInfo(
+            {'Name': TextRef('RSC_EnGenusList_ms'),
+             'Caption': TextRef('RSC_EnGenusList_ms')},
+            row_name='Name'),
+        'RSC_EnList': TableInfo(
+            {'TypeFamily': TextRef('RSC_EnFamilyList_ms')}),
+        'SCL_AchiveList': TableInfo(
+            {'Title': TextRef('MNU_Achievement_ms'),
+             'Description': TextRef('MNU_Achievement_ms')},
+            row_name='Title'),
+        'SCL_BRPT_TagList': TableInfo(
+            {'Title': TextRef('MNU_BladeReport_ms'),
+             'Suggest': TextRef('MNU_BladeReport_ms')}),
+        'SCL_NamedLinkList': TableInfo(
+            {'EnNumber': FieldRef('CHR_EnList')}),
+        'SCL_QuestTableList': TableInfo(
+            {'QuestCondition1': FieldRef('FLD_GameCondition'),
+             'QuestID1': FieldRef('SCL_SquadQuestList'),
+             'QuestCondition2': FieldRef('FLD_GameCondition'),
+             'QuestID2': FieldRef('SCL_SquadQuestList'),
+             'QuestCondition3': FieldRef('FLD_GameCondition'),
+             'QuestID3': FieldRef('SCL_SquadQuestList'),
+             'QuestCondition4': FieldRef('FLD_GameCondition'),
+             'QuestID4': FieldRef('SCL_SquadQuestList'),
+             'QuestCondition5': FieldRef('FLD_GameCondition'),
+             'QuestID5': FieldRef('SCL_SquadQuestList'),
+             'QuestCondition6': FieldRef('FLD_GameCondition'),
+             'QuestID6': FieldRef('SCL_SquadQuestList'),
+             'QuestCondition7': FieldRef('FLD_GameCondition'),
+             'QuestID7': FieldRef('SCL_SquadQuestList'),
+             'QuestCondition8': FieldRef('FLD_GameCondition'),
+             'QuestID8': FieldRef('SCL_SquadQuestList'),
+             'QuestCondition9': FieldRef('FLD_GameCondition'),
+             'QuestID9': FieldRef('SCL_SquadQuestList'),
+             'QuestCondition10': FieldRef('FLD_GameCondition'),
+             'QuestID10': FieldRef('SCL_SquadQuestList'),
+             'OrderCondition': FieldRef('FLD_GameCondition')}),
+        'SCL_RankingList': TableInfo(
+            {'Name': TextRef('MNU_Ranking_ms')},
+            row_name='Name'),
+        'SCL_SNPCQuest': TableInfo(
+            {'UnionID': FieldRef('npc_union'),
+             'QuestID': FieldRef('FLD_questlist')}),
+        'SCL_SquadItemPerList': TableInfo(
+            {'QuestID': FieldRef('SCL_SquadQuestList'),
+             'item_id1': FieldRef(field='ref_item_bdat1', lookup=lookup_item),
+             'item_id2': FieldRef(field='ref_item_bdat1', lookup=lookup_item),
+             'item_id3': FieldRef(field='ref_item_bdat1', lookup=lookup_item),
+             'item_id4': FieldRef(field='ref_item_bdat1', lookup=lookup_item),
+             'item_id5': FieldRef(field='ref_item_bdat1', lookup=lookup_item),
+             'item_id6': FieldRef(field='ref_item_bdat1', lookup=lookup_item),
+             'item_id7': FieldRef(field='ref_item_bdat1', lookup=lookup_item),
+             'item_id8': FieldRef(field='ref_item_bdat1', lookup=lookup_item),
+             'item_id9': FieldRef(field='ref_item_bdat1', lookup=lookup_item),
+             'item_id10': FieldRef(field='ref_item_bdat1', lookup=lookup_item),
+             'item_id11': FieldRef(field='ref_item_bdat1', lookup=lookup_item),
+             'item_id12': FieldRef(field='ref_item_bdat1', lookup=lookup_item),
+             'item_id13': FieldRef(field='ref_item_bdat1', lookup=lookup_item),
+             'item_id14': FieldRef(field='ref_item_bdat1', lookup=lookup_item),
+             'item_id15': FieldRef(field='ref_item_bdat1', lookup=lookup_item),
+             'item_id16': FieldRef(field='ref_item_bdat1', lookup=lookup_item)}),
+        'SCL_SquadMissionList': TableInfo(
+            {'SquadTarget1': FieldRef(lookup=lookup_SquadTarget),
+             'SquadTarget2': FieldRef(lookup=lookup_SquadTarget),
+             'SquadTarget3': FieldRef(lookup=lookup_SquadTarget),
+             'SquadTarget4': FieldRef(lookup=lookup_SquadTarget),
+             'SquadTarget5': FieldRef(lookup=lookup_SquadTarget),
+             'QuestTable': FieldRef('SCL_QuestTableList'),
+             'OrderCondition': FieldRef('FLD_GameCondition')}),
+        'SCL_SquadProgressList': TableInfo(
+            re_xrefs={r'TaskID\d+': FieldRef('SCL_SquadTaskList')}),
+        'SCL_SquadQuestList': TableInfo(
+            {'title': TextRef('MultiQuest_Title_ms'),
+             'summary': TextRef('MultiQuest_Summary_ms'),
+             'task': FieldRef('SCL_SquadProgressList'),
+             'PurposeTxt': TextRef('MultiQuest_Purpose_ms'),
+             'weather': FieldRef('FLD_WeatherAsset'),
+             'formationID': FieldRef('FLD_FormationList'),
+             'unionID': FieldRef('npc_union')},
+            row_name='title'),
+        'SCL_SquadTaskList': TableInfo(
+            {'enemyID1': FieldRef('CHR_EnList'),
+             'enemyID2': FieldRef('CHR_EnList'),
+             'enemyID2': FieldRef('CHR_EnList'),
+             'enemyID2': FieldRef('CHR_EnList'),
+             'Navi_Title': TextRef('MultiQuest_Navi_ms')}),
+        'SCL_SquadTargetEnemy': TableInfo(
+            {'GenusId': FieldRef('RSC_EnGenusList'),
+             'TargetId': FieldRef('CHR_EnList')}),
+        'SCL_SquadTargetItem': TableInfo(
+            {'GroupId': FieldRef('MNU_CollectItemCategory'),
+             'TargetId': FieldRef('ITM_CollectList')}),
+        'SCL_SupportBuff': TableInfo(
+            {'Union': FieldRef('SCL_Union'),
+             'UnionBuff': FieldRef('BTL_BuffList')}),
+        'SCL_Union': TableInfo(
+            {'UnionName': TextRef('unionnamelist_ms'),
+             'UnionCaption': TextRef('unionnamelist_ms')},
+            row_name='UnionName'),
+        'SCL_WldEnReword': TableInfo(
+            {'TargetEnemy': FieldRef('CHR_EnList')}),
+        'SEG_ProbeList': TableInfo(
+            {'vein_id': FieldRef('FnetVeinList'),
+             'seg_term_id1': FieldRef(lookup=lookup_seg_term_id),
+             'seg_term_id2': FieldRef(lookup=lookup_seg_term_id),
+             'seg_term_id3': FieldRef(lookup=lookup_seg_term_id),
+             'seg_term_id4': FieldRef(lookup=lookup_seg_term_id),
+             'seg_term_id5': FieldRef(lookup=lookup_seg_term_id),
+             'seg_term_id6': FieldRef(lookup=lookup_seg_term_id)}),
+        'SHP_AmrDL': TableInfo(
+            {'shpAmrDlList01': FieldRef('AMR_DlList'),
+             'shpAmrDlList02': FieldRef('AMR_DlList'),
+             'shpAmrDlList03': FieldRef('AMR_DlList'),
+             'shpAmrDlList04': FieldRef('AMR_DlList'),
+             'shpAmrDlList05': FieldRef('AMR_DlList')}),
+        'SHP_AmrPC': TableInfo(
+            {'shpAmrPcList01': FieldRef('AMR_PcList'),
+             'shpAmrPcList02': FieldRef('AMR_PcList'),
+             'shpAmrPcList03': FieldRef('AMR_PcList'),
+             'shpAmrPcList04': FieldRef('AMR_PcList'),
+             'shpAmrPcList05': FieldRef('AMR_PcList')}),
+        'SHP_AssetDL': TableInfo(
+            {'name': TextRef('CHR_DlList_ms'),
+             'caption': TextRef('CHR_DlList_ms'),
+             'DollSetupID': FieldRef('DEF_DlList')}),
+        'SHP_ItemSkill_Cat_doll': TableInfo(
+            {'name': TextRef('SHP_ItemSkill_doll_ms')},
+            row_name='name'),
+        'SHP_ItemSkill_Cat_inner': TableInfo(
+            {'name': TextRef('SHP_ItemSkill_inner_ms')},
+            row_name='name'),
+        'SHP_ItemSkill_doll': TableInfo(
+            {'name': TextRef('SHP_ItemSkill_doll_ms'),
+             'Caption': TextRef('SHP_ItemSkill_doll_ms'),
+             'category': FieldRef('SHP_ItemSkill_Cat_doll'),
+             'skillTopID': FieldRef('BTL_ItemSkill_doll')}),
+        'SHP_ItemSkill_inner': TableInfo(
+            {'name': TextRef('SHP_ItemSkill_inner_ms'),
+             'Caption': TextRef('SHP_ItemSkill_inner_ms'),
+             'category': FieldRef('SHP_ItemSkill_Cat_inner'),
+             'skillTopID': FieldRef('BTL_ItemSkill_inner')}),
+        'SHP_WpnDL': TableInfo(
+            {'shpWpnDlList01': FieldRef('WPN_DlList'),
+             'shpWpnDlList02': FieldRef('WPN_DlList'),
+             'shpWpnDlList03': FieldRef('WPN_DlList'),
+             'shpWpnDlList04': FieldRef('WPN_DlList'),
+             'shpWpnDlList05': FieldRef('WPN_DlList')}),
+        'SHP_WpnPC': TableInfo(
+            re_xrefs={r'shpWpnPcList\d+': FieldRef('WPN_PcList')}),
+        'WPN_DlList': TableInfo(
+            {'Name': TextRef('WPN_DlList_ms'),
+             'TypeWpn': TextRef('wpndl_catlist_ms'),
+             'Affix[0]': FieldRef('BTL_ItemSkill_doll'),
+             'Affix[1]': FieldRef('BTL_ItemSkill_doll'),
+             'Affix[2]': FieldRef('BTL_ItemSkill_doll')},
+            row_name='Name'),
+        'WPN_EnList': TableInfo(
+            {'Name': TextRef('WPN_EnList_ms')}),
+        'WPN_PcList': TableInfo(
+            {'Name': TextRef('WPN_PcList_ms'),
+             'Caption': TextRef('WPN_PcList_ms'),
+             'TypeWpn': TextRef('wpnpc_catlist_ms'),
+             'Affix[0]': FieldRef('BTL_ItemSkill_inner'),
+             'Affix[1]': FieldRef('BTL_ItemSkill_inner'),
+             'Affix[2]': FieldRef('BTL_ItemSkill_inner')},
+            row_name='Name'),
+        'collepediareward': TableInfo(
+            {'zoneID': FieldRef('MNU_ZoneNameConvert'),
+             'category': FieldRef('MNU_CollectItemCategory'),
+             'Item_ID': FieldRef(field='Lgroup', lookup=lookup_item)}),
+        'npc_relatelist': TableInfo(
+            {'unionID1': FieldRef('npc_union'),
+             'unionID2': FieldRef('npc_union'),
+             # These indicate a range of messages, so it makes sense to link
+             # to the message table rather than inserting the text directly.
+             'msg_start': FieldRef('npc_relatelist_ms'),
+             'msg_end': FieldRef('npc_relatelist_ms')}),
+        'npc_union': TableInfo(
+            {'name': TextRef('npc_union_ms'),
+             'job1': TextRef('npc_peopleinfolist_ms'),
+             'job2': TextRef('npc_peopleinfolist_ms'),
+             'job3': TextRef('npc_peopleinfolist_ms'),
+             'job4': TextRef('npc_peopleinfolist_ms'),
+             'outline1': TextRef('npc_peopleinfolist_ms'),
+             'outline2': TextRef('npc_peopleinfolist_ms'),
+             'outline3': TextRef('npc_peopleinfolist_ms'),
+             'outline4': TextRef('npc_peopleinfolist_ms'),
+             'outline5': TextRef('npc_peopleinfolist_ms'),
+             'outline6': TextRef('npc_peopleinfolist_ms'),
+             'outline7': TextRef('npc_peopleinfolist_ms'),
+             'UnionSet': FieldRef('SCL_Union')},
+            row_name='name'),
+        'A8012BAC': TableInfo(
+            {'item_id': FieldRef(field='field_9E390E27', lookup=lookup_item)}),
+        'FA12D19B': TableInfo(
+            {'item_id': FieldRef(field='field_9E390E27', lookup=lookup_item)}),
+    }
 
 
 ########################################################################
@@ -15035,9 +14705,14 @@ def main(argv):
         except KeyError:
             pass
 
-    if mode == '3' or mode == 'XDE':
+    if mode in ('3', 'XDE'):
         resolve_labels(tables, mode)
-    resolve_xrefs(tables, mode)
+
+    resolvers = {'3': XC3Resolver,
+                 'XDE': XCXDEResolver}
+    if mode in resolvers:
+        resolver = resolvers[mode]
+        resolve_xrefs(tables, resolver)
 
     langcodes = {'cn': 'zh-Hans',
                  'fr': 'fr',
