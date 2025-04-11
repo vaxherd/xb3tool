@@ -13777,6 +13777,17 @@ class XCXDEResolver(CrossReferenceResolver):
 
     delayed_tables = (
         'DRP_AffixTable',  # must be after DRP_ItemTable
+        'DRP_BronzeBoxTable',       # must be after DRP_ItemTable
+        'DRP_DlArmorTable_Gold',    # must be after DRP_ItemTable
+        'DRP_DlArmorTable_Silver',  # must be after DRP_ItemTable
+        'DRP_DlWpnTable_Gold',      # must be after DRP_ItemTable
+        'DRP_DlWpnTable_Silver',    # must be after DRP_ItemTable
+        'DRP_GoldBoxTable',         # must be after DRP_ItemTable
+        'DRP_PcArmorTable_Gold',    # must be after DRP_ItemTable
+        'DRP_PcArmorTable_Silver',  # must be after DRP_ItemTable
+        'DRP_PcWpnTable_Gold',      # must be after DRP_ItemTable
+        'DRP_PcWpnTable_Silver',    # must be after DRP_ItemTable
+        'DRP_SilverBoxTable',       # must be after DRP_ItemTable
         'FnetVeinList',    # must be after FLD_Location
         'SEG_ProbeList',   # must be after FnetVeinConfig and SEG_Terminal*
     )
