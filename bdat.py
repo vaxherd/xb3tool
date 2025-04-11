@@ -14837,8 +14837,9 @@ def main(argv):
     parser.add_argument('-v', '--verbose', action='count',
                         help=('Output status messages during parsing.\n'
                               'Use multiple times for more verbosity.'))
-    parser.add_argument('-l', '--language', metavar='LANG', default='gb',
-                        help='Language code for text files, one of: cn fr gb ge it jp kr sp tw (default: gb)')
+    parser.add_argument('-l', '--language', metavar='LANG', default='en',
+                        help=('Language subdirectory for text files, typically one of: cn fr gb ge it jp kr sp tw us.\n'
+                              'The default of "en" selects English text, either "gb" or "us" depending on which one is present.'))
     parser.add_argument('-o', '--outdir', metavar='OUTPUT-DIR', required=True,
                         help='Path of output directory for table HTML files.')
     parser.add_argument('bdatdir', metavar='BDAT-DIR', nargs='+',
@@ -14865,6 +14866,11 @@ def main(argv):
             print(f'{dir} does not look like a BDAT directory',
                   file=sys.stderr)
             sys.exit(1)
+        if args.language == 'en':
+            if os.path.exists(os.path.join(dir, 'gb')):
+                args.language = 'gb'
+            elif os.path.exists(os.path.join(dir, 'us')):
+                args.language = 'us'
         if not os.path.exists(os.path.join(dir, args.language)):
             print(f'Language directory not found: {args.language}',
                   file=sys.stderr)
