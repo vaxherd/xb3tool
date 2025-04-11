@@ -11859,14 +11859,14 @@ def resolve_table_xrefs(tables, resolver, name, table, do_text):
     def do_field(field_idx, target):
         if field_idx not in matched_fields:
             matched_fields.add(field_idx)
-            if target is not None:
+            if target:
                 resolve_field_xrefs(tables, resolver, table, field_idx,
                                     target, not do_text)
     # end def
     def do_fields(xrefs):
         if not xrefs: return
         for field, target in xrefs.items():
-            if target.is_text == do_text:
+            if (target is not None and target.is_text) == do_text:
                 field_idx = table.field_index(field, allow_missing=True)
                 if field_idx:
                     do_field(field_idx, target)
@@ -11874,7 +11874,7 @@ def resolve_table_xrefs(tables, resolver, name, table, do_text):
     def match_fields(re_xrefs):
         if not re_xrefs: return
         for pattern, target in re_xrefs.items():
-            if target.is_text == do_text:
+            if (target is not None and target.is_text) == do_text:
                 pattern_re = re.compile(pattern+'$') # FIXME: could cache these
                 for field_idx in range(1, table.num_fields):
                     field = table.field(field_idx).name
@@ -13763,6 +13763,16 @@ class XCXDEResolver(CrossReferenceResolver):
         return value
 
 
+    ######## Convenience variables for reference sets
+
+    # It's unclear which table is used as the base "company list".
+    # BTL_CoLimitList looks like an obvious choice, but it has the
+    # Meredith and Ma-non name labels swapped, and using it as the
+    # reference target would show incorrect names elsewhere.
+    # For now we just load names from the message table directly.
+    refset_arms_company = TextRef('companynamelist_ms')
+
+
     ######## Data tables
 
     delayed_tables = (
@@ -13772,6 +13782,8 @@ class XCXDEResolver(CrossReferenceResolver):
     )
 
     field_xrefs = {
+
+        'MakerID': refset_arms_company,
 
         'LearnArts01': FieldRef('BTL_ArtsList'),
         'LearnArts02': FieldRef('BTL_ArtsList'),
@@ -13793,6 +13805,7 @@ class XCXDEResolver(CrossReferenceResolver):
 
         'BookID': FieldRef('BTL_EnBook'),
 
+        'Enhance': FieldRef('BTL_Enhance'),
         'EnhanceID1': FieldRef('BTL_Enhance'),
         'EnhanceID2': FieldRef('BTL_Enhance'),
         'EnhanceID3': FieldRef('BTL_Enhance'),
@@ -13803,8 +13816,8 @@ class XCXDEResolver(CrossReferenceResolver):
         'Enhance[4]': FieldRef('BTL_Enhance'),
         'enhanceID': FieldRef('BTL_Enhance'),
 
-        'LearnSkill01': FieldRef('BTL_ArtsList'),
-        'LearnSkill02': FieldRef('BTL_ArtsList'),
+        'LearnSkill01': FieldRef('BTL_SkillClass'),
+        'LearnSkill02': FieldRef('BTL_SkillClass'),
 
         'SoulCode': FieldRef('BTL_SoulCode'),
 
@@ -13919,7 +13932,8 @@ class XCXDEResolver(CrossReferenceResolver):
              'RangeCaption': TextRef('BTL_ArtsList_ms')},
             row_name='Name'),
         'BTL_BufEffList': TableInfo(
-            {'Caption': TextRef('BTL_BufEffList_ms')}),
+            {'Caption': TextRef('BTL_BufEffList_ms')},
+            row_name='Caption'),
         'BTL_BuffList': TableInfo(
             {'Name': TextRef('BTL_BuffList_ms')},
             row_name='Name'),
@@ -13927,14 +13941,15 @@ class XCXDEResolver(CrossReferenceResolver):
             {'Name': TextRef('BTL_BuffWeatherList_ms')},
             row_name='Name'),
         'BTL_CoLimitList': TableInfo(
-            {'CEO': TextRef('CoTxtList_ms'),
+            {'name': TextRef('companynamelist_ms'),  # IDs 3 and 4 are swapped in the data!  See note at refset_arms_company
+             'CEO': TextRef('CoTxtList_ms'),
              'Caption1': TextRef('CoTxtList_ms'),
              'Caption2': TextRef('CoTxtList_ms')}),
         'BTL_DlArtsList': TableInfo(
             {'Name': TextRef('BTL_DlArtsList_ms'),
+             'ActNo': FieldRef('BTL_DlArtsActNoList'),
              'Caption': TextRef('BTL_DlArtsList_ms'),
-             'RangeCaption': TextRef('BTL_DlArtsList_ms'),
-             'ActNo': FieldRef('BTL_DlArtsActNoList')},
+             'RangeCaption': TextRef('BTL_DlArtsList_ms')},
             row_name='Name'),
         'BTL_DollGearEffect': TableInfo(
             {'GearEffName': TextRef('BTL_DollGearEffect_ms')},
@@ -13967,7 +13982,8 @@ class XCXDEResolver(CrossReferenceResolver):
             {'Name': TextRef('fieldnamelist_ms'),
              'ZoneID': FieldRef('MNU_ZoneNameConvert')}),
         'BTL_Enhance': TableInfo(
-            {'caption': TextRef('BTL_Enhance_ms', postproc=postproc_enhance)},
+            {'condition': None,  # Unknown, but probably not a GameCondition
+             'caption': TextRef('BTL_Enhance_ms', postproc=postproc_enhance)},
             row_name='caption'),
         'BTL_GearChain': TableInfo(
             {'Text': TextRef('BTL_Gear_ms')}),
@@ -14781,10 +14797,14 @@ class XCXDEResolver(CrossReferenceResolver):
             re_xrefs={r'shpWpnPcList\d+': FieldRef('WPN_PcList')}),
         'WPN_DlList': TableInfo(
             {'Name': TextRef('WPN_DlList_ms'),
+             'RBodyRscID': FieldRef('RSC_DlWpnList'),
+             'LBodyRscID': FieldRef('RSC_DlWpnList'),
+             'RscBullet': FieldRef('RSC_BulletList'),
              'TypeWpn': TextRef('wpndl_catlist_ms'),
              'Affix[0]': FieldRef('BTL_ItemSkill_doll'),
              'Affix[1]': FieldRef('BTL_ItemSkill_doll'),
-             'Affix[2]': FieldRef('BTL_ItemSkill_doll')},
+             'Affix[2]': FieldRef('BTL_ItemSkill_doll'),
+             'ArtsID': FieldRef('BTL_DlArtsList')},
             row_name='Name'),
         'WPN_EnList': TableInfo(
             {'Name': TextRef('WPN_EnList_ms')}),
