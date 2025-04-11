@@ -13993,7 +13993,8 @@ class XCXDEResolver(CrossReferenceResolver):
             {'Text': TextRef('BTL_Gear_ms')}),
         'BTL_ItemSkill_doll': TableInfo(
             {'Name': TextRef('BattleSkill_DL_ms'),
-             'Caption': TextRef('BattleSkill_DL_ms')},
+             'Caption': TextRef('BattleSkill_DL_ms'),
+             'field_2BB78B9E': FieldRef('ITM_RareRscList')},
             row_name='Name'),
         'BTL_ItemSkill_inner': TableInfo(
             {'Name': TextRef('BattleSkill_ms'),
