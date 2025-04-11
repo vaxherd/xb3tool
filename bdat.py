@@ -14052,7 +14052,9 @@ class XCXDEResolver(CrossReferenceResolver):
              'promotion_C': FieldRef('CHR_ClassInfo')},
             row_name='Name'),
         'CHR_DlList': TableInfo(
-            {'Name': TextRef('CHR_DlList_ms')},
+            {'Name': TextRef('CHR_DlList_ms'),
+             'EngineID': FieldRef('RSC_DlEngineList'),
+             'DollGearID': FieldRef('BTL_DollGearList')},
             row_name='Name'),
         'CHR_EnList': TableInfo(
             {'ParamID': FieldRef('CHR_EnParam'),
