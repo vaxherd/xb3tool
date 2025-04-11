@@ -10911,20 +10911,20 @@ class BdatTable(object):
         else:
             self._rows[row][field] = (initial_value, value)
 
-    def addref(self, row, ref_name, ref_row, ref_text):
+    def addref(self, row, ref_name, ref_row_id, ref_text):
         """Add a reference to the given row from the named table and row.
 
         Parameters:
             row: Row in this table which is referenced.
             ref_name: Name of the referencing table.
-            ref_row: ID of the referencing row in the referencing table.
+            ref_row_id: ID of the referencing row in the referencing table.
             ref_text: Text to use for the reference link.
         """
         assert row < len(self._rows)
         assert isinstance(ref_name, str)
         if not self._refs[row]:
             self._refs[row] = set()
-        self._refs[row].add((ref_name, ref_row, ref_text))
+        self._refs[row].add((ref_name, ref_row_id, ref_text))
 
     def getrefs(self, row):
         """Return all recorded references to the given row.
@@ -10934,9 +10934,9 @@ class BdatTable(object):
 
         Return value:
             Set containing all recorded references to this row.  Each
-            element of the set is a tuple (name, row, value):
+            element of the set is a tuple (name, row_id, text):
                 name: Name of the referencing table.
-                row: Row index in the referencing table.
+                row_id: ID of the referencing row in the referencing table.
                 text: Text to use for the reference link.
         """
         assert row < len(self._rows)
@@ -13696,7 +13696,7 @@ class XCXDEResolver(CrossReferenceResolver):
             assert ref[0] == 'DRP_ItemTable'
             tbl_ItemTable = tables[ref[0]]
             idx_type = tbl_ItemTable.field_index('ItemType')
-            type = tbl_ItemTable.get(ref[1], idx_type)
+            type = tbl_ItemTable.get(tbl_ItemTable.id_to_row(ref[1]), idx_type)
             target_table = None
             if 1 <= type <= 7:
                 return tables['BTL_ItemSkill_inner']
