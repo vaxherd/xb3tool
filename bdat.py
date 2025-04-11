@@ -10911,19 +10911,20 @@ class BdatTable(object):
         else:
             self._rows[row][field] = (initial_value, value)
 
-    def addref(self, row, ref_name, ref_row, ref_value):
+    def addref(self, row, ref_name, ref_row, ref_text):
         """Add a reference to the given row from the named table and row.
 
         Parameters:
             row: Row in this table which is referenced.
             ref_name: Name of the referencing table.
             ref_row: ID of the referencing row in the referencing table.
+            ref_text: Text to use for the reference link.
         """
         assert row < len(self._rows)
         assert isinstance(ref_name, str)
         if not self._refs[row]:
             self._refs[row] = set()
-        self._refs[row].add((ref_name, ref_row, ref_value))
+        self._refs[row].add((ref_name, ref_row, ref_text))
 
     def getrefs(self, row):
         """Return all recorded references to the given row.
@@ -10936,7 +10937,7 @@ class BdatTable(object):
             element of the set is a tuple (name, row, value):
                 name: Name of the referencing table.
                 row: Row index in the referencing table.
-                value: Value of the referencing cell.
+                text: Text to use for the reference link.
         """
         assert row < len(self._rows)
         return set(self._refs[row]) if self._refs[row] else None
@@ -11881,9 +11882,34 @@ def resolve_table_xrefs(tables, resolver, name, table, do_text):
                     if pattern_re.match(field):
                         do_field(field_idx, target)
     # end def
-    if name in resolver.table_info:
-        do_fields(resolver.table_info[name].xrefs)
-        match_fields(resolver.table_info[name].re_xrefs)
+    def do_row_name(info):
+        row_name_idx = table.field_index(info.row_name)
+        target = info.xrefs.get(info.row_name)
+        if target and not target.is_text:
+            do_field(row_name_idx, target)
+        if info.re_xrefs:
+            for pattern, target in info.re_xrefs.items():
+                if re.match(pattern+'$', info.row_name) and not target.is_text:
+                    do_field(row_name_idx, target)
+        for pattern, xrefs in resolver.table_re_xrefs.items():
+            if re.match(pattern+'$', name):
+                target = xrefs.get(info.row_name)
+                if target and not target.is_text:
+                    do_field(row_name_idx, target)
+        target = resolver.field_xrefs.get(info.row_name)
+        if target and not target.is_text:
+            do_field(row_name_idx, target)
+    # end def
+    rowname_field = None
+    info = resolver.table_info.get(name)
+    if info:
+        # If the row name field is a link rather than a direct text
+        # reference, we need to make sure we look it up first so
+        # links in other tables get the correct row name text.
+        if info.row_name and not do_text:
+            do_row_name(info)
+        do_fields(info.xrefs)
+        match_fields(info.re_xrefs)
     for pattern, xrefs in resolver.table_re_xrefs.items():
         if re.match(pattern+'$', name):
             do_fields(xrefs)
