@@ -13945,7 +13945,8 @@ class XCXDEResolver(CrossReferenceResolver):
              'TypeAmr': TextRef('amrpc_catlist_ms'),
              'Affix[0]': FieldRef('BTL_ItemSkill_inner'),
              'Affix[1]': FieldRef('BTL_ItemSkill_inner'),
-             'Affix[2]': FieldRef('BTL_ItemSkill_inner')},
+             'Affix[2]': FieldRef('BTL_ItemSkill_inner'),
+             'Fashion': FieldRef('ITM_FashionEquip')},
             row_name='Name'),
         'BLH_PCAmrList': TableInfo(
             {'HEAD': FieldRef('AMR_PcList'),
