@@ -14036,7 +14036,8 @@ class XCXDEResolver(CrossReferenceResolver):
             row_name='Name'),
         'BTL_ItemSkill_inner': TableInfo(
             {'Name': TextRef('BattleSkill_ms'),
-             'Caption': TextRef('BattleSkill_ms')},
+             'Caption': TextRef('BattleSkill_ms'),
+             'field_2BB78B9E': FieldRef('ITM_RareRscList')},
             row_name='Name'),
         'BTL_SkillClass': TableInfo(
             {'Name': TextRef('BTL_SkillClass_ms'),
