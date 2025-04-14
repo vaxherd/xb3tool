@@ -11884,9 +11884,10 @@ def resolve_table_xrefs(tables, resolver, name, table, do_text):
     # end def
     def do_row_name(info):
         row_name_idx = table.field_index(info.row_name)
-        target = info.xrefs.get(info.row_name)
-        if target and not target.is_text:
-            do_field(row_name_idx, target)
+        if info.xrefs:
+            target = info.xrefs.get(info.row_name)
+            if target and not target.is_text:
+                do_field(row_name_idx, target)
         if info.re_xrefs:
             for pattern, target in info.re_xrefs.items():
                 if re.match(pattern+'$', info.row_name) and not target.is_text:
