@@ -1468,6 +1468,7 @@ hashes = {
     0x46E72942: "MNU_Font",
     0x9E28D486: "MNU_FontCn",
     0xC672FFEF: "MNU_FontKr",
+    0x23C625B6: "MNU_FontSet",
     0xA31BFB8D: "MNU_FontTw",
     0xEBD7F140: "MNU_FooterGuide",
     0xC424AD16: "MNU_GlossaryList",
@@ -1518,6 +1519,7 @@ hashes = {
     0x7A47835E: "MNU_ZoneNameConvert",
     0x2C191C79: "MNU_option_battle",
     #0x85C68AD1: "MNU_option_camera",  # also in XC3
+    0x32765E03: "MNU_option_category",
     0x7C843955: "MNU_option_event",
     0x3BBFC442: "MNU_option_field",
     #0xED440CCA: "MNU_option_game",  # also in XC3
@@ -1806,6 +1808,7 @@ hashes = {
     0x9DF55398: "unionnamelist_ms",
     0xF26ED06C: "wpndl_catlist_ms",
     0x32009CBD: "wpnpc_catlist_ms",
+    0x1ABEC938: None,  # Unknown, appears to be a copy of ITM_MaterialList
     0xFA12D19B: None,  # Exploration rewards table
 
     # Generic strings
@@ -7072,6 +7075,7 @@ hashes = {
     0xDD60C642: "loc_flg",
     0x63497156: "loc_name",
     0x92337F61: "locationEvent",
+    0x70F37937: "location_id",
     0x5268CA95: "lodIdCond",
     0xFDCE96E4: "lod_id",
     0xD2518544: "lookHeight",
@@ -7291,6 +7295,8 @@ hashes = {
     0x5B0CDAF3: "obj_name",
     0x8ACC256B: "offsetX",
     0x2FE8D5EA: "offsetY",
+    0x42AE12E5: "offset_x",
+    0xB8A1D4D5: "offset_y",
     0x9A04E349: "one_cond[0]",
     0xCBB7DB7F: "one_cond[1]",
     0x1301EDA2: "one_cond[2]",
@@ -8091,6 +8097,8 @@ hashes = {
     0xBEB12304: "zoneID2",
     0x5BF515B1: "zoneNo",
     0x554A58C8: "zone_id",
+
+    0x990B2B2F: None,  # Field in XCX DE location label list (table 290B21DF) indicating whether a label is shown when the map is zoomed out
 
     # Dumped gimmick strings from DLC2
     0x747E7330: "MA01A_INT_001_259_01_19_01",
@@ -10888,7 +10896,8 @@ class BdatTable(object):
 
     def set(self, row, field, value, link_table=None, link_row=None):
         """Set the content of the given cell to the given value and optional
-        table link.
+        table link.  If link_table is given but link_row is None, a link
+        will be made to the table itself rather than a row within the table.
 
         Parameters:
             row: Row index.
@@ -11699,8 +11708,9 @@ def resolve_labels(tables, mode):
 # of CrossReferenceResolver (see definitions below).
 
 # Type describing a single field reference.
-FieldRef = namedtuple('FieldRef', 'table field is_text lookup postproc',
-                            defaults=(None, None, False, None, None))
+FieldRef = namedtuple('FieldRef',
+                      'table field is_text is_table lookup postproc',
+                      defaults=(None, None, False, False, None, None))
 FieldRef.__doc__ = 'Type describing a single field reference.'
 FieldRef.table.__doc__ = \
     """Name of reference target table.
@@ -11722,6 +11732,14 @@ FieldRef.is_text.__doc__ = \
     the target value is copied directly into the referencing cell (as
     possibly modified by the postproc function).
     """
+FieldRef.is_table.__doc__ = \
+    """True if the reference is to an entire table rather than a single row.
+
+    In this case, |field| is ignored.
+
+    If no lookup function is given, the referencing field is expected to be
+    a string field whose value is the name of the referenced table.
+    """
 FieldRef.lookup.__doc__ = \
     """Optional value lookup function.
 
@@ -11739,22 +11757,37 @@ FieldRef.lookup.__doc__ = \
         ref: This FieldRef instance.
 
     Return value: Either the referenced table, or a 2-tuple (table, row)
-        including both the table and the row of the referenced cell.
+        including both the table and the row index of the referenced cell.
         If only a table reference is returned, the caller will look up
         the row by calling table.id_to_row(id).  A table value of None or
         'None' (as a string) indicates that no target cell was found; the
         string 'None' suppresses the warning normally printed in this case.
+        A row index of -1 indicates that the reference is to the table as a
+        whole rather than a specific row.
     """
 FieldRef.postproc.__doc__ = \
-    """Optional value postprocessing function.
+    """Optional value postprocessing function for text references.
 
     Receives the value loaded from the referenced field, and returns the
     value to store in the referencing cell.
+
+    This field is ignored for non-text references.
+
+    Parameters:
+        value: Value of the referenced cell.
+        table: Referencing table.
+        row: Index of referencing row.
+        tables: Dict of all loaded tables.
     """
 
 def TextRef(table, field='name', lookup=None, postproc=None):
     """Shorthand wrapper for declaring a text reference."""
-    return FieldRef(table, field, True, lookup=lookup, postproc=postproc)
+    return FieldRef(table=table, field=field, is_text=True, lookup=lookup,
+                    postproc=postproc)
+
+def TableRef(lookup=None):
+    """Shorthand wrapper for declaring a table reference."""
+    return FieldRef(is_table=True, lookup=lookup)
 
 # Type containing information about a single table.
 TableInfo = namedtuple('TableInfo', 'xrefs re_xrefs row_name',
@@ -11829,27 +11862,6 @@ def resolve_xrefs(tables, resolver):
                 resolve_table_xrefs(tables, resolver, name, table, do_text)
         for name in resolver.delayed_tables:
             resolve_table_xrefs(tables, resolver, name, tables[name], do_text)
-
-    # Special links from table names to tables
-    for name, table in tables.items():
-        for field_name in ('ForgeType',           # ITM_Accessory
-                           'TalentParamRev',      # BTL_Talent
-                           'mstxt', 'mstxt_ext',  # Event lists
-                           'menu_sheet',          # Menu tables
-                           'page_sheet'):         # MNU_game_option_category
-            field = table.field_index(field_name, True)
-            if field is not None:
-                for row in range(table.num_rows):
-                    value = table.get(row, field)
-                    if field_name.startswith('mstxt'):
-                        target = 'msg_' + value
-                    else:
-                        target = value
-                        m = re.match(r'^<([0-9A-F]{8})>$', target)
-                        if m:
-                            target = m.group(1)
-                    if target in tables:
-                        table.set(row, field, value, target, None)
 # end def
 
 
@@ -11957,6 +11969,12 @@ def resolve_field_xrefs(tables, resolver, table, field_idx, target, add_link):
                 target_row = target_table.id_to_row(id)
             else:
                 target_row = None
+        elif target.is_table:
+            # If the value is a hashed string we can't unhash, strip the
+            # angle brackets which were inserted by resolve_labels().
+            m = re.match('<([0-9A-F]{8})>$', id)
+            target_table = tables.get(m.group(1) if m else id)
+            target_row = -1 if target_table else None
         else:
             target_table = None
             target_row = None
@@ -12023,12 +12041,19 @@ def resolve_field_xrefs(tables, resolver, table, field_idx, target, add_link):
 
 
 def add_xref(resolver, table, row, field_idx, target_table, target_row):
-    """Add a cross-reference from table[row][field_idx] to target_table[target_row]."""
-    table.set(row, field_idx,
-              get_row_name(resolver, target_table, target_row),
-              target_table.name, target_table.get(target_row, 0))
-    target_table.addref(target_row, table.name, table.get(row, 0),
-                        get_row_name(resolver, table, row))
+    """Add a cross-reference from table[row][field_idx] to target_table[target_row].
+
+    If target_row is -1, the reference is taken to be to target_table as a
+    whole."""
+    if target_row == -1:
+        table.set(row, field_idx, table.get(row, field_idx),
+                  target_table.name, None)
+    else:
+        table.set(row, field_idx,
+                  get_row_name(resolver, target_table, target_row),
+                  target_table.name, target_table.get(target_row, 0))
+        target_table.addref(target_row, table.name, table.get(row, 0),
+                            get_row_name(resolver, table, row))
 # end def
 
 
@@ -12119,6 +12144,12 @@ class XC3Resolver(CrossReferenceResolver):
         else:
             assert table.get(row, flag_idx) == 0
             return tables['QST_Purpose']
+
+    def lookup_event_mstxt(tables, table, row, field_idx, id, ref):
+        try:
+            return tables['msg_'+id], -1
+        except KeyError:
+            return None
 
     def lookup_event_name(tables, table, row, field_idx, id, ref):
         hash_id = f'<{murmur32(id):08X}>'
@@ -12305,6 +12336,11 @@ class XC3Resolver(CrossReferenceResolver):
     )
 
     field_xrefs = {
+        'menu_sheet': TableRef(),
+
+        'mstxt': TableRef(lookup=lookup_event_mstxt),
+        'mstxt_ext': TableRef(lookup=lookup_event_mstxt),
+
         'GroupName': TextRef('msg_enemy_group_name'),
         'LocationName': TextRef('msg_location_name'),
 
@@ -12740,6 +12776,7 @@ class XC3Resolver(CrossReferenceResolver):
              'Caption': TextRef('msg_btl_talent_caption'),
              'WeaponType': FieldRef('BTL_WpnType'),
              'WeaponType2': FieldRef('BTL_WpnType'),
+             'TalentParamRev': TableRef(),
              'TalentAptitude1': FieldRef('BTL_TalentAptitude'),
              'TalentAptitude2': FieldRef('BTL_TalentAptitude'),
              'TalentAptitude3': FieldRef('BTL_TalentAptitude'),
@@ -12995,7 +13032,8 @@ class XC3Resolver(CrossReferenceResolver):
         'FLD_UMonsterList': TableInfo(
             {'Zone': FieldRef('SYS_MapList')}),
         'ITM_Accessory': TableInfo(
-            {'Name': TextRef('msg_item_accessory')},
+            {'Name': TextRef('msg_item_accessory'),
+             'ForgeType': TableRef()},
             row_name='Name'),
         'ITM_Collection': TableInfo(
             {'Name': TextRef('msg_item_collection'),
@@ -13102,7 +13140,8 @@ class XC3Resolver(CrossReferenceResolver):
         'MNU_WeaponCraft': TableInfo(
             {'WeaponName': TextRef('msg_btl_weapon_type')}),
         'MNU_game_option_category': TableInfo(
-            {'name': TextRef('msg_mnu_option'),
+            {'page_sheet': TableRef(),
+             'name': TextRef('msg_mnu_option'),
              'help': TextRef('msg_mnu_option')}),
         'MNU_option_brightness': TableInfo(
             {'name': TextRef('msg_mnu_option'),
@@ -13891,6 +13930,10 @@ class XCXDEResolver(CrossReferenceResolver):
         'cond4': FieldRef('FLD_GameCondition'),
         'cond5': FieldRef('FLD_GameCondition'),
         'condition': FieldRef('FLD_GameCondition'),
+        'condition2': FieldRef('FLD_GameCondition'),
+        'condition3': FieldRef('FLD_GameCondition'),
+        'condition4': FieldRef('FLD_GameCondition'),
+        'condition5': FieldRef('FLD_GameCondition'),
         'gameCond': FieldRef('FLD_GameCondition'),
         'gameCondId': FieldRef('FLD_GameCondition'),
         # These are in FLD_TownInfo*, possibly a "negative condition" for each message
@@ -13901,6 +13944,7 @@ class XCXDEResolver(CrossReferenceResolver):
         'field_FE705DC0': FieldRef('FLD_GameCondition'),
 
         'fieldLoc_id': FieldRef('FLD_Location'),
+        'location_id': FieldRef('FLD_Location'),
 
         'wtr_id': FieldRef('FLD_WeatherAsset'),
 
@@ -14587,6 +14631,9 @@ class XCXDEResolver(CrossReferenceResolver):
              'field_2C42EC4E': TextRef('MNU_Option_ms'),
              'field_AF4E3326': TextRef('MNU_Option_ms'),
              'field_CA6B5496': TextRef('MNU_Option_ms')}),
+        'MNU_option_category': TableInfo(
+            {'sheet': TableRef(),
+             'name': TextRef('menu_program_ms')}),
         'MNU_option_event': TableInfo(
             {'name': TextRef('MNU_Option_ms'),
              'help': TextRef('MNU_Option_ms'),
