@@ -13704,6 +13704,13 @@ class XCXDEResolver(CrossReferenceResolver):
                 return tables['BTL_ItemSkill_doll']
         return 'None'
 
+    def lookup_en_family(tables, table, row, field_idx, id, ref):
+        # Text IDs are off by 1 from the family ID.  There doesn't seem to
+        # be a table containing this mapping; it may be hardcoded into the
+        # program itself.
+        target_table = tables[ref.table]
+        return target_table, target_table.id_to_row(id+1)
+
     # This lookup routine expects the item category field to be specified
     # in FieldRef.field.
     def lookup_item(tables, table, row, field_idx, id, ref):
@@ -13747,6 +13754,8 @@ class XCXDEResolver(CrossReferenceResolver):
         return tables[target_table]
 
     def lookup_quest_category(tables, table, row, field_idx, id, ref):
+        # Can't find an explicit table mapping quest categories to strings,
+        # but this gets us the right labels.
         target_table = tables[ref.table]
         target_id = (4709, 4711, 4710, 4712)[id-1]
         return target_table, target_table.id_to_row(target_id)
@@ -14691,7 +14700,8 @@ class XCXDEResolver(CrossReferenceResolver):
              'Caption': TextRef('RSC_EnGenusList_ms')},
             row_name='Name'),
         'RSC_EnList': TableInfo(
-            {'TypeFamily': TextRef('RSC_EnFamilyList_ms')}),
+            {'TypeFamily': TextRef('RSC_EnFamilyList_ms',
+                                   lookup=lookup_en_family)}),
         'SCL_AchiveList': TableInfo(
             {'Title': TextRef('MNU_Achievement_ms'),
              'Description': TextRef('MNU_Achievement_ms')},
