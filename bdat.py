@@ -13765,9 +13765,9 @@ class XCXDEResolver(CrossReferenceResolver):
             target_table = 'AMR_DlList'
         elif 15 <= category <= 19:
             target_table = 'WPN_DlList'
-        elif category == 21:
+        elif 20 <= category <= 21:
             target_table = 'BTL_ItemSkill_inner'
-        elif category == 24:
+        elif 22 <= category <= 24:
             target_table = 'BTL_ItemSkill_doll'
         elif category == 25:
             target_table = 'ITM_RareRscList'
